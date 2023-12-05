@@ -43,24 +43,7 @@ contract LlamaTokenVotingFactory {
     uint256 creationThreshold,
     uint256 minApprovalPct,
     uint256 minDisapprovalPct
-  ) public returns (address, address) {
-    return _deployTokenVotingModule(
-      ILlamaExecutor(msg.sender), token, isERC20, creationThreshold, minApprovalPct, minDisapprovalPct
-    );
-  }
-
-  // ====================================
-  // ======== Internal Functions ========
-  // ====================================
-
-  function _deployTokenVotingModule(
-    ILlamaExecutor executor,
-    address token,
-    bool isERC20,
-    uint256 creationThreshold,
-    uint256 minApprovalPct,
-    uint256 minDisapprovalPct
-  ) internal returns (address actionCreator, address caster) {
+  ) external returns (address actionCreator, address caster) {
     ILlamaCore core = ILlamaCore(executor.LLAMA_CORE());
     if (isERC20) {
       actionCreator = address(_deployERC20TokenholderActionCreator(ERC20Votes(token), core, creationThreshold));
@@ -70,6 +53,10 @@ contract LlamaTokenVotingFactory {
       caster = address(_deployERC721TokenholderCaster(ERC721Votes(token), core, 0, minApprovalPct, minDisapprovalPct));
     }
   }
+
+  // ====================================
+  // ======== Internal Functions ========
+  // ====================================
 
   function _deployERC20TokenholderActionCreator(ERC20Votes token, ILlamaCore llamaCore, uint256 creationThreshold)
     internal

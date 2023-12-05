@@ -111,7 +111,7 @@ abstract contract TokenholderCaster {
   /// the address of the tokenholder that casted, while the `LlamaCore` version will emit the address of this contract
   /// as the action creator. Additionally, there is no `role` emitted here as all tokenholders are eligible to vote.
   event ApprovalCast(
-    uint256 id, address indexed policyholder, uint8 indexed role, uint8 indexed support, uint256 quantity, string reason
+    uint256 id, address indexed tokenholder, uint8 indexed role, uint8 indexed support, uint256 quantity, string reason
   );
 
   /// @dev Emitted when cast approvals are submitted to the `LlamaCore` contract.
@@ -125,7 +125,7 @@ abstract contract TokenholderCaster {
   /// the address of the tokenholder that casted, while the `LlamaCore` version will emit the
   /// address of this contract as the action creator.
   event DisapprovalCast(
-    uint256 id, address indexed policyholder, uint8 indexed role, uint8 indexed support, uint256 quantity, string reason
+    uint256 id, address indexed tokenholder, uint8 indexed role, uint8 indexed support, uint256 quantity, string reason
   );
 
   /// @dev Emitted when cast approvals are submitted to the `LlamaCore` contract.
