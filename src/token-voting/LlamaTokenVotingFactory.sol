@@ -44,7 +44,7 @@ contract LlamaTokenVotingFactory {
     uint256 minApprovalPct,
     uint256 minDisapprovalPct
   ) external returns (address actionCreator, address caster) {
-    ILlamaCore core = ILlamaCore(ILlamaExecutor(executor).LLAMA_CORE());
+    ILlamaCore core = ILlamaCore(ILlamaExecutor(msg.sender).LLAMA_CORE());
     if (isERC20) {
       actionCreator = address(_deployERC20TokenholderActionCreator(ERC20Votes(token), core, creationThreshold));
       caster = address(_deployERC20TokenholderCaster(ERC20Votes(token), core, 0, minApprovalPct, minDisapprovalPct));
