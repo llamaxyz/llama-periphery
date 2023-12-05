@@ -4,6 +4,7 @@ pragma solidity 0.8.23;
 import {Script} from "forge-std/Script.sol";
 
 import {DeployUtils} from "script/DeployUtils.sol";
+import {LlamaTokenVotingFactory} from "src/token-voting/LlamaTokenVotingFactory.sol";
 
 contract DeployLlamaFactory is Script {
   LlamaTokenVotingFactory tokenVotingFactory;

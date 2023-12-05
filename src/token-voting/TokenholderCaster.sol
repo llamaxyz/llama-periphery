@@ -89,6 +89,9 @@ abstract contract TokenholderCaster {
   /// @dev Thrown when an invalid `llamaCore` address is passed to the constructor.
   error InvalidLlamaCoreAddress();
 
+  /// @dev The recovered signer does not match the expected tokenholder.
+  error InvalidSignature();
+
   /// @dev Thrown when an invalid `token` address is passed to the constructor.
   error InvalidTokenAddress();
 
@@ -115,9 +118,7 @@ abstract contract TokenholderCaster {
   );
 
   /// @dev Emitted when cast approvals are submitted to the `LlamaCore` contract.
-  event ApprovalsSubmitted(
-    uint256 id, uint96 indexed quantityFor, uint96 indexed quantityAgainst, uint96 indexed quantityAbstain
-  );
+  event ApprovalsSubmitted(uint256 id, uint96 quantityFor, uint96 quantityAgainst, uint96 quantityAbstain);
 
   /// @dev Emitted when a disapproval is cast.
   /// @dev This is the same as the `DisapprovalCast` event from `LlamaCore`. The two events will be
@@ -129,9 +130,7 @@ abstract contract TokenholderCaster {
   );
 
   /// @dev Emitted when cast approvals are submitted to the `LlamaCore` contract.
-  event DisapprovalsSubmitted(
-    uint256 id, uint96 indexed quantityFor, uint96 indexed quantityAgainst, uint96 indexed quantityAbstain
-  );
+  event DisapprovalsSubmitted(uint256 id, uint96 quantityFor, uint96 quantityAgainst, uint96 quantityAbstain);
   // =================================================
   // ======== Constants and Storage Variables ========
   // =================================================
@@ -155,8 +154,32 @@ abstract contract TokenholderCaster {
   /// @dev This role is expected to have the ability to force approve and disapprove actions.
   uint8 public immutable ROLE;
 
+  /// @dev EIP-712 base typehash.
+  bytes32 internal constant EIP712_DOMAIN_TYPEHASH =
+    keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
+
+  /// @notice EIP-712 castApproval typehash.
+  bytes32 internal constant CAST_APPROVAL_BY_SIG_TYPEHASH = keccak256(
+    "CastApproval(address tokenHolder,uint8 support,ActionInfo actionInfo,string reason,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
+  );
+
+  /// @notice EIP-712 castDisapproval typehash.
+  bytes32 internal constant CAST_DISAPPROVAL_BY_SIG_TYPEHASH = keccak256(
+    "CastDisapproval(address tokenHolder,uint8 role,ActionInfo actionInfo,string reason,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
+  );
+
+  /// @dev EIP-712 actionInfo typehash.
+  bytes32 internal constant ACTION_INFO_TYPEHASH = keccak256(
+    "ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
+  );
+
   /// @notice Mapping from action ID to the status of existing casts.
   mapping(uint256 actionId => CastData) public casts;
+
+  /// @notice Mapping of tokenholders to function selectors to current nonces for EIP-712 signatures.
+  /// @dev This is used to prevent replay attacks by incrementing the nonce for each operation (`createAction`,
+  /// `cancelAction`, `castApproval` and `castDisapproval`) signed by the tokenholders.
+  mapping(address tokenholders => mapping(bytes4 selector => uint256 currentNonce)) public nonces;
 
   /// @param llamaCore The `LlamaCore` contract for this Llama instance.
   /// @param role The role used by this contract to cast approvals and disapprovals.
@@ -185,29 +208,25 @@ abstract contract TokenholderCaster {
   ///   2 = Abstain, but this is not currently supported.
   /// @param reason The reason given for the approval by the tokenholder.
   function castApproval(ActionInfo calldata actionInfo, uint8 support, string calldata reason) external {
-    Action memory action = LLAMA_CORE.getAction(actionInfo.id);
-
-    actionInfo.strategy.checkIfApprovalEnabled(actionInfo, msg.sender, ROLE); // Reverts if not allowed.
-    if (LLAMA_CORE.getActionState(actionInfo) != uint8(ActionState.Active)) revert ActionNotActive();
-    if (casts[actionInfo.id].castApproval[msg.sender]) revert AlreadyCastApproval();
-    if (
-      block.timestamp
-        > action.creationTime
-          + (ILlamaRelativeStrategyBase(address(actionInfo.strategy)).approvalPeriod() * TWO_THIRDS_IN_BPS)
-            / ONE_HUNDRED_IN_BPS
-    ) revert CastingPeriodOver();
-
-    uint256 balance = _getPastVotes(msg.sender, action.creationTime - 1);
-    _preCastAssertions(balance, support);
-
-    if (support == 0) casts[actionInfo.id].approvalsAgainst += LlamaUtils.toUint96(balance);
-    else if (support == 1) casts[actionInfo.id].approvalsFor += LlamaUtils.toUint96(balance);
-    else if (support == 2) casts[actionInfo.id].approvalsAbstain += LlamaUtils.toUint96(balance);
-    casts[actionInfo.id].castApproval[msg.sender] = true;
-    emit ApprovalCast(actionInfo.id, msg.sender, ROLE, support, balance, reason);
+    _castApproval(msg.sender, actionInfo, support, reason);
   }
 
-  /// @notice How tokenholders add their support of the disapproval of an action with a reason.
+  function castApprovalBySig(
+    address caster,
+    uint8 support,
+    ActionInfo calldata actionInfo,
+    string calldata reason,
+    uint8 v,
+    bytes32 r,
+    bytes32 s
+  ) external {
+    bytes32 digest = _getCastApprovalTypedDataHash(caster, support, actionInfo, reason);
+    address signer = ecrecover(digest, v, r, s);
+    if (signer == address(0) || signer != caster) revert InvalidSignature();
+    _castApproval(signer, actionInfo, support, reason);
+  }
+
+  /// @notice How tokenholders add their support of the dapproval of an action with a reason.
   /// @dev Use `""` for `reason` if there is no reason.
   /// @param actionInfo Data required to create an action.
   /// @param support The tokenholder's support of the approval of the action.
@@ -216,27 +235,22 @@ abstract contract TokenholderCaster {
   ///   2 = Abstain, but this is not currently supported.
   /// @param reason The reason given for the approval by the tokenholder.
   function castDisapproval(ActionInfo calldata actionInfo, uint8 support, string calldata reason) external {
-    Action memory action = LLAMA_CORE.getAction(actionInfo.id);
+    _castDisapproval(msg.sender, actionInfo, support, reason);
+  }
 
-    actionInfo.strategy.checkIfDisapprovalEnabled(actionInfo, msg.sender, ROLE); // Reverts if not allowed.
-    if (!actionInfo.strategy.isActionApproved(actionInfo)) revert ActionNotApproved();
-    if (actionInfo.strategy.isActionExpired(actionInfo)) revert ActionExpired();
-    if (casts[actionInfo.id].castDisapproval[msg.sender]) revert AlreadyCastDisapproval();
-    if (
-      block.timestamp
-        > action.minExecutionTime
-          - (ILlamaRelativeStrategyBase(address(actionInfo.strategy)).queuingPeriod() * ONE_THIRD_IN_BPS)
-            / ONE_HUNDRED_IN_BPS
-    ) revert CastingPeriodOver();
-
-    uint256 balance = _getPastVotes(msg.sender, action.creationTime - 1);
-    _preCastAssertions(balance, support);
-
-    if (support == 0) casts[actionInfo.id].disapprovalsAgainst += LlamaUtils.toUint96(balance);
-    else if (support == 1) casts[actionInfo.id].disapprovalsFor += LlamaUtils.toUint96(balance);
-    else if (support == 2) casts[actionInfo.id].disapprovalsAbstain += LlamaUtils.toUint96(balance);
-    casts[actionInfo.id].castDisapproval[msg.sender] = true;
-    emit DisapprovalCast(actionInfo.id, msg.sender, ROLE, support, balance, reason);
+  function castDisapprovalBySig(
+    address caster,
+    uint8 support,
+    ActionInfo calldata actionInfo,
+    string calldata reason,
+    uint8 v,
+    bytes32 r,
+    bytes32 s
+  ) external {
+    bytes32 digest = _getCastDisapprovalTypedDataHash(caster, support, actionInfo, reason);
+    address signer = ecrecover(digest, v, r, s);
+    if (signer == address(0) || signer != caster) revert InvalidSignature();
+    _castDisapproval(signer, actionInfo, support, reason);
   }
 
   /// @notice Submits cast approvals to the `LlamaCore` contract.
@@ -307,6 +321,57 @@ abstract contract TokenholderCaster {
     emit DisapprovalsSubmitted(actionInfo.id, disapprovalsFor, disapprovalsAgainst, disapprovalsAbstain);
   }
 
+  function _castApproval(address caster, ActionInfo calldata actionInfo, uint8 support, string calldata reason)
+    internal
+  {
+    Action memory action = LLAMA_CORE.getAction(actionInfo.id);
+
+    actionInfo.strategy.checkIfApprovalEnabled(actionInfo, caster, ROLE); // Reverts if not allowed.
+    if (LLAMA_CORE.getActionState(actionInfo) != uint8(ActionState.Active)) revert ActionNotActive();
+    if (casts[actionInfo.id].castApproval[caster]) revert AlreadyCastApproval();
+    if (
+      block.timestamp
+        > action.creationTime
+          + (ILlamaRelativeStrategyBase(address(actionInfo.strategy)).approvalPeriod() * TWO_THIRDS_IN_BPS)
+            / ONE_HUNDRED_IN_BPS
+    ) revert CastingPeriodOver();
+
+    uint256 balance = _getPastVotes(caster, action.creationTime - 1);
+    _preCastAssertions(balance, support);
+
+    if (support == 0) casts[actionInfo.id].approvalsAgainst += LlamaUtils.toUint96(balance);
+    else if (support == 1) casts[actionInfo.id].approvalsFor += LlamaUtils.toUint96(balance);
+    else if (support == 2) casts[actionInfo.id].approvalsAbstain += LlamaUtils.toUint96(balance);
+    casts[actionInfo.id].castApproval[caster] = true;
+    emit ApprovalCast(actionInfo.id, caster, ROLE, support, balance, reason);
+  }
+
+  function _castDisapproval(address caster, ActionInfo calldata actionInfo, uint8 support, string calldata reason)
+    internal
+  {
+    Action memory action = LLAMA_CORE.getAction(actionInfo.id);
+
+    actionInfo.strategy.checkIfDisapprovalEnabled(actionInfo, caster, ROLE); // Reverts if not allowed.
+    if (!actionInfo.strategy.isActionApproved(actionInfo)) revert ActionNotApproved();
+    if (actionInfo.strategy.isActionExpired(actionInfo)) revert ActionExpired();
+    if (casts[actionInfo.id].castDisapproval[caster]) revert AlreadyCastDisapproval();
+    if (
+      block.timestamp
+        > action.minExecutionTime
+          - (ILlamaRelativeStrategyBase(address(actionInfo.strategy)).queuingPeriod() * ONE_THIRD_IN_BPS)
+            / ONE_HUNDRED_IN_BPS
+    ) revert CastingPeriodOver();
+
+    uint256 balance = _getPastVotes(caster, action.creationTime - 1);
+    _preCastAssertions(balance, support);
+
+    if (support == 0) casts[actionInfo.id].disapprovalsAgainst += LlamaUtils.toUint96(balance);
+    else if (support == 1) casts[actionInfo.id].disapprovalsFor += LlamaUtils.toUint96(balance);
+    else if (support == 2) casts[actionInfo.id].disapprovalsAbstain += LlamaUtils.toUint96(balance);
+    casts[actionInfo.id].castDisapproval[caster] = true;
+    emit DisapprovalCast(actionInfo.id, caster, ROLE, support, balance, reason);
+  }
+
   function _preCastAssertions(uint256 balance, uint8 support) internal view {
     if (support > 2) revert InvalidSupport(support);
 
@@ -319,7 +384,93 @@ abstract contract TokenholderCaster {
     if (balance == 0) revert InsufficientBalance(balance);
   }
 
+  /// @notice Increments the caller's nonce for the given `selector`. This is useful for revoking
+  /// signatures that have not been used yet.
+  /// @param selector The function selector to increment the nonce for.
+  function incrementNonce(bytes4 selector) external {
+    // Safety: Can never overflow a uint256 by incrementing.
+    nonces[msg.sender][selector] = LlamaUtils.uncheckedIncrement(nonces[msg.sender][selector]);
+  }
+
   function _getPastVotes(address account, uint256 timestamp) internal view virtual returns (uint256) {}
   function _getPastTotalSupply(uint256 timestamp) internal view virtual returns (uint256) {}
   function _getClockMode() internal view virtual returns (string memory) {}
+
+  /// @dev Returns the current nonce for a given tokenholder and selector, and increments it. Used to prevent
+  /// replay attacks.
+  function _useNonce(address tokenholder, bytes4 selector) internal returns (uint256 nonce) {
+    nonce = nonces[tokenholder][selector];
+    nonces[tokenholder][selector] = LlamaUtils.uncheckedIncrement(nonce);
+  }
+
+  // -------- EIP-712 Getters --------
+
+  /// @dev Returns the EIP-712 domain separator.
+  function _getDomainHash() internal view returns (bytes32) {
+    return keccak256(
+      abi.encode(
+        EIP712_DOMAIN_TYPEHASH, keccak256(bytes(LLAMA_CORE.name())), keccak256(bytes("1")), block.chainid, address(this)
+      )
+    );
+  }
+
+  /// @dev Returns the hash of the ABI-encoded EIP-712 message for the `CastApproval` domain, which can be used to
+  /// recover the signer.
+  function _getCastApprovalTypedDataHash(
+    address tokenholder,
+    uint8 support,
+    ActionInfo calldata actionInfo,
+    string calldata reason
+  ) internal returns (bytes32) {
+    bytes32 castApprovalHash = keccak256(
+      abi.encode(
+        CAST_APPROVAL_BY_SIG_TYPEHASH,
+        tokenholder,
+        support,
+        _getActionInfoHash(actionInfo),
+        keccak256(bytes(reason)),
+        _useNonce(tokenholder, msg.sig)
+      )
+    );
+
+    return keccak256(abi.encodePacked("\x19\x01", _getDomainHash(), castApprovalHash));
+  }
+
+  /// @dev Returns the hash of the ABI-encoded EIP-712 message for the `CastDisapproval` domain, which can be used to
+  /// recover the signer.
+  function _getCastDisapprovalTypedDataHash(
+    address tokenholder,
+    uint8 role,
+    ActionInfo calldata actionInfo,
+    string calldata reason
+  ) internal returns (bytes32) {
+    bytes32 castDisapprovalHash = keccak256(
+      abi.encode(
+        CAST_DISAPPROVAL_BY_SIG_TYPEHASH,
+        tokenholder,
+        role,
+        _getActionInfoHash(actionInfo),
+        keccak256(bytes(reason)),
+        _useNonce(tokenholder, msg.sig)
+      )
+    );
+
+    return keccak256(abi.encodePacked("\x19\x01", _getDomainHash(), castDisapprovalHash));
+  }
+
+  /// @dev Returns the hash of `actionInfo`.
+  function _getActionInfoHash(ActionInfo calldata actionInfo) internal pure returns (bytes32) {
+    return keccak256(
+      abi.encode(
+        ACTION_INFO_TYPEHASH,
+        actionInfo.id,
+        actionInfo.creator,
+        actionInfo.creatorRole,
+        address(actionInfo.strategy),
+        actionInfo.target,
+        actionInfo.value,
+        keccak256(actionInfo.data)
+      )
+    );
+  }
 }
