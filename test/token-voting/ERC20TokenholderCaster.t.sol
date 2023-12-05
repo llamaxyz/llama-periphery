@@ -41,17 +41,13 @@ contract ERC20TokenholderCasterTest is PeripheryTestSetup {
     uint256 id, address indexed policyholder, uint8 indexed role, uint8 indexed support, uint256 quantity, string reason
   );
 
-  event ApprovalsSubmitted(
-    uint256 id, uint96 indexed quantityFor, uint96 indexed quantityAgainst, uint96 indexed quantityAbstain
-  );
+  event ApprovalsSubmitted(uint256 id, uint96 quantityFor, uint96 quantityAgainst, uint96 quantityAbstain);
 
   event DisapprovalCast(
     uint256 id, address indexed policyholder, uint8 indexed role, uint8 indexed support, uint256 quantity, string reason
   );
 
-  event DisapprovalsSubmitted(
-    uint256 id, uint96 indexed quantityFor, uint96 indexed quantityAgainst, uint96 indexed quantityAbstain
-  );
+  event DisapprovalsSubmitted(uint256 id, uint96 quantityFor, uint96 quantityAgainst, uint96 quantityAbstain);
 
   // =========================
   // ======== Helpers ========
