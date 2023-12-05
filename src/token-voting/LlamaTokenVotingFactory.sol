@@ -2,21 +2,18 @@
 pragma solidity ^0.8.23;
 
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
-import {ILlamaPolicy} from "src/interfaces/ILlamaPolicy.sol";
 import {ILlamaExecutor} from "src/interfaces/ILlamaExecutor.sol";
-import {RoleDescription} from "src/lib/UDVTs.sol";
 import {ERC20TokenholderActionCreator} from "src/token-voting/ERC20TokenholderActionCreator.sol";
 import {ERC20TokenholderCaster} from "src/token-voting/ERC20TokenholderCaster.sol";
 import {ERC20Votes} from "@openzeppelin/token/ERC20/extensions/ERC20Votes.sol";
 import {ERC721TokenholderActionCreator} from "src/token-voting/ERC721TokenholderActionCreator.sol";
 import {ERC721TokenholderCaster} from "src/token-voting/ERC721TokenholderCaster.sol";
 import {ERC721Votes} from "@openzeppelin/token/ERC721/extensions/ERC721Votes.sol";
-import {LlamaBaseScript} from "src/llama-scripts/LlamaBaseScript.sol";
 
 /// @title LlamaTokenVotingFactory
 /// @author Llama (devsdosomething@llama.xyz)
 /// @notice This contract lets llama instances deploy a token voting module in a single llama action.
-contract LlamaTokenVotingFactory is LlamaBaseScript {
+contract LlamaTokenVotingFactory {
   error NoModulesDeployed();
 
   event ERC20TokenholderActionCreatorCreated(address actionCreator, address indexed token);
