@@ -12,9 +12,9 @@ import {ILlamaRelativeStrategyBase} from "src/interfaces/ILlamaRelativeStrategyB
 /// @author Llama (devsdosomething@llama.xyz)
 /// @notice This contract lets holders of a given governance token cast approvals and disapprovals
 /// on created actions.
-/// @dev This contract can be deployed by anyone, but to actually be able to cast on an action it
-/// will need to hold the appropriate Policy from the specified `LlamaCore` instance. This contract
-/// does not verify that it holds the correct policy when voting, and relies on `LlamaCore` to
+/// @dev This contract is deployed by `LlamaTokenVotingFactory`. Anyone can deploy this contract using the factory, but
+/// it must hold a Policy from the specified `LlamaCore` instance to actually be able to cast on an action. This
+/// contract does not verify that it holds the correct policy when voting and relies on `LlamaCore` to
 /// verify that during submission.
 abstract contract TokenholderCaster {
   // =========================
