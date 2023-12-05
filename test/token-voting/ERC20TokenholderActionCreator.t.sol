@@ -265,6 +265,7 @@ contract SetActionThreshold is ERC20TokenholderActionCreatorTest {
   }
 
   function test_RevertsIf_CalledByNotLlamaExecutor(address notLlamaExecutor) public {
+    vm.assume(notLlamaExecutor != address(EXECUTOR));
     uint256 threshold = 500_000e18;
     mockErc20Votes.mint(address(this), 1_000_000e18); // we use mockErc20Votes because IVotesToken is an interface
     // without the `mint` function
