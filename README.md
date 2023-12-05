@@ -10,6 +10,10 @@ This repository contains supporting modules for operating Llama instances.
 For the core contracts, see the [Llama](https://github.com/llamaxyz/llama)
 repository.
 
+## Modules
+
+- **Token Voting:** smart contract policies that allow `ERC20Votes` or `ERC721Votes` tokenholders to create actions enforced by delegated token thresholds or collectively approve or disapprove an action through token voting.
+
 ## Prerequisites
 
 [Foundry](https://github.com/foundry-rs/foundry) must be installed.
