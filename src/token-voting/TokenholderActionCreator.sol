@@ -215,9 +215,8 @@ abstract contract TokenholderActionCreator {
     uint256 balance = _getPastVotes(tokenHolder, block.timestamp - 1);
     if (balance < creationThreshold) revert InsufficientBalance(balance);
 
-    actionCreators[actionId] = tokenHolder;
-
     actionId = LLAMA_CORE.createAction(role, strategy, target, value, data, description);
+    actionCreators[actionId] = tokenHolder;
     emit ActionCreated(actionId, tokenHolder, role, strategy, target, value, data, description);
   }
 

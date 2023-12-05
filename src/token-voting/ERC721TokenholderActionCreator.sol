@@ -18,7 +18,6 @@ contract ERC721TokenholderActionCreator is TokenholderActionCreator {
   {
     TOKEN = token;
     if (!TOKEN.supportsInterface(type(IERC721).interfaceId)) revert InvalidTokenAddress();
-
     uint256 totalSupply = TOKEN.getPastTotalSupply(block.timestamp - 1);
     if (totalSupply == 0) revert InvalidTokenAddress();
     if (_creationThreshold > totalSupply) revert InvalidCreationThreshold();
