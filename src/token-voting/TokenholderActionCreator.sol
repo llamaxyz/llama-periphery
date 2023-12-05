@@ -10,10 +10,10 @@ import {LlamaUtils} from "src/lib/LlamaUtils.sol";
 /// @author Llama (devsdosomething@llama.xyz)
 /// @notice This contract lets holders of a given governance token create actions if they have
 /// sufficient token balance.
-/// @dev This contract can be deployed by anyone, but to actually be able to create an action it
-/// will need to hold a Policy from the specified `LlamaCore` instance. That policy encodes what
-/// actions this contract is allowed to create, and attempting to create an action that is not
-/// allowed by the policy will result in a revert.
+/// @dev This contract is deployed by `LlamaTokenVotingFactory`. Anyone can deploy this contract using the factory, but
+/// it must hold a Policy from the specified `LlamaCore` instance to actually be able to create an action. The
+/// instance's policy encodes what actions this contract is allowed to create, and attempting to create an action that
+/// is not allowed by the policy will result in a revert.
 abstract contract TokenholderActionCreator {
   /// @notice The core contract for this Llama instance.
   ILlamaCore public immutable LLAMA_CORE;
