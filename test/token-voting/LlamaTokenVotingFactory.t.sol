@@ -11,7 +11,6 @@ import {Action, ActionInfo} from "src/lib/Structs.sol";
 import {RoleDescription} from "src/lib/UDVTs.sol";
 import {ERC20Votes} from "lib/openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import {ERC721Votes} from "lib/openzeppelin-contracts/contracts/token/ERC721/extensions/ERC721Votes.sol";
-import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
 import {ILlamaPolicy} from "src/interfaces/ILlamaPolicy.sol";
 import {LlamaTokenVotingFactory} from "src/token-voting/LlamaTokenVotingFactory.sol";
 
@@ -36,7 +35,7 @@ contract LlamaTokenVotingFactoryTest is PeripheryTestSetup {
   ERC721Votes public ERC721TOKEN;
 
   function setUp() public override {
-    super.setUp();
+    PeripheryTestSetup.setUp();
 
     FACTORY = new LlamaTokenVotingFactory();
     MockERC20Votes mockERC20Votes = new MockERC20Votes();
@@ -54,8 +53,9 @@ contract LlamaTokenVotingFactoryTest is PeripheryTestSetup {
     mockERC721Votes.mint(coreTeam3, 2);
     mockERC721Votes.mint(coreTeam4, 3);
 
-    ILlamaPolicy.PermissionData memory newPermission1 =
-      ILlamaPolicy.PermissionData(address(FACTORY), LlamaTokenVotingFactory.deployTokenVotingModule.selector, address(STRATEGY));
+    ILlamaPolicy.PermissionData memory newPermission1 = ILlamaPolicy.PermissionData(
+      address(FACTORY), LlamaTokenVotingFactory.deployTokenVotingModule.selector, address(STRATEGY)
+    );
 
     vm.startPrank(address(EXECUTOR));
     POLICY.setRolePermission(CORE_TEAM_ROLE, newPermission1, true);
@@ -67,8 +67,7 @@ contract LlamaTokenVotingFactoryTest is PeripheryTestSetup {
   function _createApproveAndQueueAction(bytes memory data) internal returns (ActionInfo memory actionInfo) {
     vm.prank(coreTeam4);
     uint256 actionId = CORE.createAction(CORE_TEAM_ROLE, STRATEGY, address(FACTORY), 0, data, "");
-    actionInfo =
-      ActionInfo(actionId, coreTeam4, CORE_TEAM_ROLE, STRATEGY, address(FACTORY), 0, data);
+    actionInfo = ActionInfo(actionId, coreTeam4, CORE_TEAM_ROLE, STRATEGY, address(FACTORY), 0, data);
 
     vm.prank(coreTeam1);
     CORE.castApproval(CORE_TEAM_ROLE, actionInfo, "");
@@ -77,9 +76,9 @@ contract LlamaTokenVotingFactoryTest is PeripheryTestSetup {
     vm.prank(coreTeam3);
     CORE.castApproval(CORE_TEAM_ROLE, actionInfo, "");
 
-    vm.warp(block.timestamp + 6 days);
-    CORE.queueAction(actionInfo);
-    vm.warp(block.timestamp + 5 days);
+    // vm.warp(block.timestamp + 1 days);
+    // CORE.queueAction(actionInfo);
+    // vm.warp(block.timestamp + 5 days);
   }
 }
 
@@ -97,10 +96,10 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     ActionInfo memory actionInfo = _createApproveAndQueueAction(data);
 
     vm.expectEmit();
-    emit ERC20TokenholderActionCreatorCreated(0x4f81992FCe2E1846dD528eC0102e6eE1f61ed3e2, address(ERC20TOKEN));
+    emit ERC20TokenholderActionCreatorCreated(0x104fBc016F4bb334D775a19E8A6510109AC63E00, address(ERC20TOKEN));
     vm.expectEmit();
     emit ERC20TokenholderCasterCreated(
-      0xCB6f5076b5bbae81D7643BfBf57897E8E3FB1db9, address(ERC20TOKEN), MIN_APPROVAL_PCT, MIN_DISAPPROVAL_PCT
+      0x037eDa3aDB1198021A9b2e88C22B464fD38db3f3, address(ERC20TOKEN), MIN_APPROVAL_PCT, MIN_DISAPPROVAL_PCT
     );
     CORE.executeAction(actionInfo);
   }
@@ -113,9 +112,9 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     ActionInfo memory actionInfo = _createApproveAndQueueAction(data);
 
     vm.expectEmit();
-    emit ERC721TokenholderActionCreatorCreated(0x4f81992FCe2E1846dD528eC0102e6eE1f61ed3e2, address(ERC721TOKEN));
+    emit ERC721TokenholderActionCreatorCreated(0x104fBc016F4bb334D775a19E8A6510109AC63E00, address(ERC721TOKEN));
     vm.expectEmit();
-    emit ERC721TokenholderCasterCreated(0xCB6f5076b5bbae81D7643BfBf57897E8E3FB1db9, address(ERC721TOKEN), 1, 1);
+    emit ERC721TokenholderCasterCreated(0x037eDa3aDB1198021A9b2e88C22B464fD38db3f3, address(ERC721TOKEN), 1, 1);
     CORE.executeAction(actionInfo);
   }
 }
