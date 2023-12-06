@@ -18,7 +18,7 @@ import {LlamaUtils} from "src/lib/LlamaUtils.sol";
 /// is not allowed by the policy will result in a revert.
 abstract contract TokenholderActionCreator is Initializable {
   /// @notice The core contract for this Llama instance.
-  ILlamaCore public immutable LLAMA_CORE;
+  ILlamaCore public llamaCore;
 
   /// @dev EIP-712 actionInfo typehash.
   bytes32 internal constant ACTION_INFO_TYPEHASH = keccak256(
@@ -96,14 +96,15 @@ abstract contract TokenholderActionCreator is Initializable {
   /// @dev Thrown when an address other than the `LlamaExecutor` tries to call a function.
   error OnlyLlamaExecutor();
 
-  /// @param llamaCore The `LlamaCore` contract for this Llama instance.
+  /// @dev This will be called by the `initialize` of the inheriting contract.
+  /// @param _llamaCore The `LlamaCore` contract for this Llama instance.
   /// @param _creationThreshold The default number of tokens required to create an action. This must
   /// be in the same decimals as the token. For example, if the token has 18 decimals and you want a
   /// creation threshold of 1000 tokens, pass in 1000e18.
-  constructor(ILlamaCore llamaCore, uint256 _creationThreshold) {
-    if (llamaCore.actionsCount() < 0) revert InvalidLlamaCoreAddress();
+  function __initializeTokenholderActionCreatorMinimalProxy(ILlamaCore _llamaCore, uint256 _creationThreshold) internal {
+    if (_llamaCore.actionsCount() < 0) revert InvalidLlamaCoreAddress();
 
-    LLAMA_CORE = llamaCore;
+    llamaCore = _llamaCore;
     _setActionThreshold(_creationThreshold);
   }
 
@@ -186,7 +187,7 @@ abstract contract TokenholderActionCreator is Initializable {
   /// @param _creationThreshold The number of tokens required to create an action.
   /// @dev This must be in the same decimals as the token.
   function setActionThreshold(uint256 _creationThreshold) external {
-    if (msg.sender != address(LLAMA_CORE.executor())) revert OnlyLlamaExecutor();
+    if (msg.sender != address(llamaCore.executor())) revert OnlyLlamaExecutor();
     if (_creationThreshold > _getPastTotalSupply(block.timestamp - 1)) revert InvalidCreationThreshold();
     _setActionThreshold(_creationThreshold);
   }
@@ -217,7 +218,7 @@ abstract contract TokenholderActionCreator is Initializable {
     uint256 balance = _getPastVotes(tokenHolder, block.timestamp - 1);
     if (balance < creationThreshold) revert InsufficientBalance(balance);
 
-    actionId = LLAMA_CORE.createAction(role, strategy, target, value, data, description);
+    actionId = llamaCore.createAction(role, strategy, target, value, data, description);
     actionCreators[actionId] = tokenHolder;
     emit ActionCreated(actionId, tokenHolder, role, strategy, target, value, data, description);
   }
@@ -229,7 +230,7 @@ abstract contract TokenholderActionCreator is Initializable {
 
   function _cancelAction(address creator, ActionInfo calldata actionInfo) internal {
     if (creator != actionCreators[actionInfo.id]) revert OnlyActionCreator();
-    LLAMA_CORE.cancelAction(actionInfo);
+    llamaCore.cancelAction(actionInfo);
     emit ActionCanceled(actionInfo.id, creator);
   }
 
@@ -250,7 +251,7 @@ abstract contract TokenholderActionCreator is Initializable {
   function _getDomainHash() internal view returns (bytes32) {
     return keccak256(
       abi.encode(
-        EIP712_DOMAIN_TYPEHASH, keccak256(bytes(LLAMA_CORE.name())), keccak256(bytes("1")), block.chainid, address(this)
+        EIP712_DOMAIN_TYPEHASH, keccak256(bytes(llamaCore.name())), keccak256(bytes("1")), block.chainid, address(this)
       )
     );
   }
@@ -299,8 +300,8 @@ abstract contract TokenholderActionCreator is Initializable {
 
     return keccak256(abi.encodePacked("\x19\x01", _getDomainHash(), cancelActionHash));
   }
-  /// @dev Returns the hash of `actionInfo`.
 
+  /// @dev Returns the hash of `actionInfo`.
   function _getActionInfoHash(ActionInfo calldata actionInfo) internal pure returns (bytes32) {
     return keccak256(
       abi.encode(
