@@ -188,7 +188,7 @@ abstract contract TokenholderCaster is Initializable {
   /// @param _role The role used by this contract to cast approvals and disapprovals.
   /// @param _minApprovalPct The minimum % of approvals required to submit approvals to `LlamaCore`.
   /// @param _minDisapprovalPct The minimum % of disapprovals required to submit disapprovals to `LlamaCore`.
-  function __initializeTokenholderActionCreatorMinimalProxy(
+  function __initializeTokenholderCasterMinimalProxy(
     ILlamaCore _llamaCore,
     uint8 _role,
     uint256 _minApprovalPct,
