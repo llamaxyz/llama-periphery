@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
+import {Initializable} from "@openzeppelin/proxy/utils/Initializable.sol";
+
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
 import {ActionState} from "src/lib/Enums.sol";
@@ -16,7 +18,7 @@ import {ILlamaRelativeStrategyBase} from "src/interfaces/ILlamaRelativeStrategyB
 /// it must hold a Policy from the specified `LlamaCore` instance to actually be able to cast on an action. This
 /// contract does not verify that it holds the correct policy when voting and relies on `LlamaCore` to
 /// verify that during submission.
-abstract contract TokenholderCaster {
+abstract contract TokenholderCaster is Initializable {
   // =========================
   // ======== Structs ========
   // =========================

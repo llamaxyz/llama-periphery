@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
+import {Initializable} from "@openzeppelin/proxy/utils/Initializable.sol";
+
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
 import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
 import {Action, ActionInfo} from "src/lib/Structs.sol";
@@ -14,7 +16,7 @@ import {LlamaUtils} from "src/lib/LlamaUtils.sol";
 /// it must hold a Policy from the specified `LlamaCore` instance to actually be able to create an action. The
 /// instance's policy encodes what actions this contract is allowed to create, and attempting to create an action that
 /// is not allowed by the policy will result in a revert.
-abstract contract TokenholderActionCreator {
+abstract contract TokenholderActionCreator is Initializable {
   /// @notice The core contract for this Llama instance.
   ILlamaCore public immutable LLAMA_CORE;
 
