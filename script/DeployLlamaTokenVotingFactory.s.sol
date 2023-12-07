@@ -21,7 +21,9 @@ contract DeployLlamaFactory is Script {
   LlamaTokenVotingFactory tokenVotingFactory;
 
   function run() public {
-    DeployUtils.print(string.concat("Deploying Llama token voting factory to chain:", vm.toString(block.chainid)));
+    DeployUtils.print(
+      string.concat("Deploying Llama token voting factory and logic contracts to chain:", vm.toString(block.chainid))
+    );
 
     vm.broadcast();
     erc20TokenholderActionCreatorLogic = new ERC20TokenholderActionCreator();
