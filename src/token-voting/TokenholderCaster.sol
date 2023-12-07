@@ -448,7 +448,7 @@ abstract contract TokenholderCaster is Initializable {
   /// recover the signer.
   function _getCastDisapprovalTypedDataHash(
     address tokenholder,
-    uint8 role,
+    uint8 support,
     ActionInfo calldata actionInfo,
     string calldata reason
   ) internal returns (bytes32) {
@@ -456,7 +456,7 @@ abstract contract TokenholderCaster is Initializable {
       abi.encode(
         CAST_DISAPPROVAL_BY_SIG_TYPEHASH,
         tokenholder,
-        role,
+        support,
         _getActionInfoHash(actionInfo),
         keccak256(bytes(reason)),
         _useNonce(tokenholder, msg.sig)
