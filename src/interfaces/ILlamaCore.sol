@@ -20,6 +20,8 @@ import {
 /// @author Llama (devsdosomething@llama.xyz)
 /// @notice This is the interface for LlamaCore.
 interface ILlamaCore {
+  error InvalidSignature();
+
   error PolicyholderDoesNotHavePermission();
 
   function actionGuard(address target, bytes4 selector) external view returns (address guard);

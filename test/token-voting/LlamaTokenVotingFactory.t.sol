@@ -118,4 +118,3 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     CORE.executeAction(actionInfo);
   }
 }
-
