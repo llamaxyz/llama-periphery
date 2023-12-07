@@ -4,6 +4,7 @@ pragma solidity ^0.8.23;
 import {Test, console2} from "forge-std/Test.sol";
 
 import {MockERC20Votes} from "test/mock/MockERC20Votes.sol";
+import {LlamaTokenVotingTestSetup} from "test/token-voting/LlamaTokenVotingTestSetup.sol";
 
 import {Action, ActionInfo, PermissionData} from "src/lib/Structs.sol";
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
@@ -14,9 +15,8 @@ import {RoleDescription} from "src/lib/UDVTs.sol";
 import {ERC20Votes} from "lib/openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import {ERC20TokenholderCaster} from "src/token-voting/ERC20TokenholderCaster.sol";
 import {TokenholderCaster} from "src/token-voting/TokenholderCaster.sol";
-import {PeripheryTestSetup} from "test/PeripheryTestSetup.sol";
 
-contract ERC20TokenholderCasterTest is PeripheryTestSetup {
+contract ERC20TokenholderCasterTest is LlamaTokenVotingTestSetup {
   uint256 constant DEFAULT_APPROVAL_THRESHOLD = 1000;
   uint16 constant ONE_HUNDRED_IN_BPS = 10_000;
   uint256 constant ONE_THIRD_IN_BPS = 3333;

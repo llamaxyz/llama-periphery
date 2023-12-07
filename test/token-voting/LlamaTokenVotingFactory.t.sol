@@ -5,7 +5,7 @@ import {Test, console2} from "forge-std/Test.sol";
 
 import {MockERC20Votes} from "test/mock/MockERC20Votes.sol";
 import {MockERC721Votes} from "test/mock/MockERC721Votes.sol";
-import {PeripheryTestSetup} from "test/PeripheryTestSetup.sol";
+import {LlamaTokenVotingTestSetup} from "test/token-voting/LlamaTokenVotingTestSetup.sol";
 
 import {Action, ActionInfo} from "src/lib/Structs.sol";
 import {RoleDescription} from "src/lib/UDVTs.sol";
@@ -14,7 +14,7 @@ import {ERC721Votes} from "lib/openzeppelin-contracts/contracts/token/ERC721/ext
 import {ILlamaPolicy} from "src/interfaces/ILlamaPolicy.sol";
 import {LlamaTokenVotingFactory} from "src/token-voting/LlamaTokenVotingFactory.sol";
 
-contract LlamaTokenVotingFactoryTest is PeripheryTestSetup {
+contract LlamaTokenVotingFactoryTest is LlamaTokenVotingTestSetup {
   event ERC20TokenholderActionCreatorCreated(address actionCreator, address indexed token);
   event ERC721TokenholderActionCreatorCreated(address actionCreator, address indexed token);
   event ERC20TokenholderCasterCreated(
@@ -118,4 +118,3 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     CORE.executeAction(actionInfo);
   }
 }
-

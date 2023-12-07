@@ -5,7 +5,7 @@ import {Test, console2} from "forge-std/Test.sol";
 
 import {ERC721Votes} from "lib/openzeppelin-contracts/contracts/token/ERC721/extensions/ERC721Votes.sol";
 import {MockERC721Votes} from "test/mock/MockERC721Votes.sol";
-import {PeripheryTestSetup} from "test/PeripheryTestSetup.sol";
+import {LlamaTokenVotingTestSetup} from "test/token-voting/LlamaTokenVotingTestSetup.sol";
 
 import {Action, ActionInfo} from "src/lib/Structs.sol";
 import {RoleDescription} from "src/lib/UDVTs.sol";
@@ -15,7 +15,7 @@ import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
 import {ERC721TokenholderActionCreator} from "src/token-voting/ERC721TokenholderActionCreator.sol";
 import {TokenholderActionCreator} from "src/token-voting/TokenholderActionCreator.sol";
 
-contract ERC721TokenholderActionCreatorTest is PeripheryTestSetup {
+contract ERC721TokenholderActionCreatorTest is LlamaTokenVotingTestSetup {
   event ActionCreated(
     uint256 id,
     address indexed creator,

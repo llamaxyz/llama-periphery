@@ -10,7 +10,7 @@ import {ERC721TokenholderActionCreator} from "src/token-voting/ERC721Tokenholder
 import {ERC721TokenholderCaster} from "src/token-voting/ERC721TokenholderCaster.sol";
 import {LlamaTokenVotingFactory} from "src/token-voting/LlamaTokenVotingFactory.sol";
 
-contract DeployLlamaFactory is Script {
+contract DeployLlamaTokenVotingFactory is Script {
   // Logic contracts.
   ERC20TokenholderActionCreator erc20TokenholderActionCreatorLogic;
   ERC20TokenholderCaster erc20TokenholderCasterLogic;
