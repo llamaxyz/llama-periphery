@@ -35,7 +35,8 @@ contract ERC20TokenholderCasterTest is PeripheryTestSetup {
 
   ILlamaStrategy tokenVotingStrategy;
 
-  address tokenHolder1 = makeAddr("tokenholder-1");
+  address tokenHolder1;
+  uint256 tokenHolder1PrivateKey;
   address tokenHolder2 = makeAddr("tokenholder-2");
   address tokenHolder3 = makeAddr("tokenholder-3");
 
@@ -110,6 +111,9 @@ contract ERC20TokenholderCasterTest is PeripheryTestSetup {
 
   function setUp() public virtual override {
     PeripheryTestSetup.setUp();
+
+    (tokenHolder1, tokenHolder1PrivateKey) = makeAddrAndKey("tokenholder-1");
+
     vm.deal(address(this), 1 ether);
     vm.deal(address(msg.sender), 1 ether);
     vm.deal(address(EXECUTOR), 1 ether);
@@ -128,15 +132,12 @@ contract ERC20TokenholderCasterTest is PeripheryTestSetup {
     mockErc20Votes.mint(tokenHolder1, DEFAULT_APPROVAL_THRESHOLD / 2);
     mockErc20Votes.mint(tokenHolder2, DEFAULT_APPROVAL_THRESHOLD / 2);
     mockErc20Votes.mint(tokenHolder3, DEFAULT_APPROVAL_THRESHOLD / 2);
-    mockErc20Votes.mint(address(tokenHolder), 1000);
     vm.prank(tokenHolder1);
     mockErc20Votes.delegate(tokenHolder1);
     vm.prank(tokenHolder2);
     mockErc20Votes.delegate(tokenHolder2);
     vm.prank(tokenHolder3);
     mockErc20Votes.delegate(tokenHolder3);
-    vm.prank(tokenHolder);
-    mockErc20Votes.delegate(tokenHolder);
 
     vm.warp(block.timestamp + 1);
     vm.roll(block.number + 1);
@@ -570,7 +571,7 @@ contract CastApprovalBySig is ERC20TokenholderCasterTest, LlamaCoreSigUtils {
       actionInfo: _actionInfo,
       support: 1,
       reason: "",
-      tokenHolder: tokenHolder,
+      tokenHolder: tokenHolder1,
       nonce: 0
     });
     bytes32 digest = getCastApprovalBySigTypedDataHash(castApproval);
@@ -578,30 +579,30 @@ contract CastApprovalBySig is ERC20TokenholderCasterTest, LlamaCoreSigUtils {
   }
 
   function castApprovalBySig(ActionInfo memory _actionInfo, uint8 support, uint8 v, bytes32 r, bytes32 s) internal {
-    caster.castApprovalBySig(tokenHolder, support, _actionInfo, "", v, r, s);
+    caster.castApprovalBySig(tokenHolder1, support, _actionInfo, "", v, r, s);
   }
 
   function test_CastsApprovalBySig() public {
-    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolderPrivateKey);
+    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
 
     vm.expectEmit();
     emit ApprovalCast(
-      actionInfo.id, tokenHolder, CASTER_ROLE, 1, token.getPastVotes(tokenHolder, block.timestamp - 1), ""
+      actionInfo.id, tokenHolder1, CASTER_ROLE, 1, token.getPastVotes(tokenHolder1, block.timestamp - 1), ""
     );
 
     castApprovalBySig(actionInfo, 1, v, r, s);
   }
 
   function test_CheckNonceIncrements() public {
-    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolderPrivateKey);
+    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
 
-    assertEq(caster.nonces(tokenHolder, TokenholderCaster.castApprovalBySig.selector), 0);
+    assertEq(caster.nonces(tokenHolder1, TokenholderCaster.castApprovalBySig.selector), 0);
     castApprovalBySig(actionInfo, 1, v, r, s);
-    assertEq(caster.nonces(tokenHolder, TokenholderCaster.castApprovalBySig.selector), 1);
+    assertEq(caster.nonces(tokenHolder1, TokenholderCaster.castApprovalBySig.selector), 1);
   }
 
   function test_OperationCannotBeReplayed() public {
-    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolderPrivateKey);
+    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
     castApprovalBySig(actionInfo, 1, v, r, s);
     // Invalid Signature error since the recovered signer address during the second call is not the same as token holder
     // since nonce has increased.
@@ -619,7 +620,7 @@ contract CastApprovalBySig is ERC20TokenholderCasterTest, LlamaCoreSigUtils {
   }
 
   function test_RevertIf_SignerIsZeroAddress() public {
-    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolderPrivateKey);
+    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
     // Invalid Signature error since the recovered signer address is zero address due to invalid signature values
     // (v,r,s).
     vm.expectRevert(ILlamaCore.InvalidSignature.selector);
@@ -627,9 +628,9 @@ contract CastApprovalBySig is ERC20TokenholderCasterTest, LlamaCoreSigUtils {
   }
 
   function test_RevertIf_TokenHolderIncrementsNonce() public {
-    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolderPrivateKey);
+    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
 
-    vm.prank(tokenHolder);
+    vm.prank(tokenHolder1);
     caster.incrementNonce(ILlamaCore.castApprovalBySig.selector);
 
     // Invalid Signature error since the recovered signer address during the call is not the same as token holder
@@ -670,7 +671,7 @@ contract CastDisapprovalBySig is ERC20TokenholderCasterTest, LlamaCoreSigUtils {
       actionInfo: _actionInfo,
       support: 1,
       reason: "",
-      tokenHolder: tokenHolder,
+      tokenHolder: tokenHolder1,
       nonce: 0
     });
     bytes32 digest = getCastDisapprovalBySigTypedDataHash(castDisapproval);
@@ -678,15 +679,15 @@ contract CastDisapprovalBySig is ERC20TokenholderCasterTest, LlamaCoreSigUtils {
   }
 
   function castDisapprovalBySig(ActionInfo memory _actionInfo, uint8 v, bytes32 r, bytes32 s) internal {
-    caster.castDisapprovalBySig(tokenHolder, 1, _actionInfo, "", v, r, s);
+    caster.castDisapprovalBySig(tokenHolder1, 1, _actionInfo, "", v, r, s);
   }
 
   function test_CastsDisapprovalBySig() public {
-    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolderPrivateKey);
+    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
 
     vm.expectEmit();
     emit DisapprovalCast(
-      actionInfo.id, tokenHolder, CASTER_ROLE, 1, token.getPastVotes(tokenHolder, token.clock() - 1), ""
+      actionInfo.id, tokenHolder1, CASTER_ROLE, 1, token.getPastVotes(tokenHolder1, token.clock() - 1), ""
     );
 
     castDisapprovalBySig(actionInfo, v, r, s);
@@ -696,15 +697,15 @@ contract CastDisapprovalBySig is ERC20TokenholderCasterTest, LlamaCoreSigUtils {
   }
 
   function test_CheckNonceIncrements() public {
-    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolderPrivateKey);
+    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
 
-    assertEq(caster.nonces(tokenHolder, ILlamaCore.castDisapprovalBySig.selector), 0);
+    assertEq(caster.nonces(tokenHolder1, ILlamaCore.castDisapprovalBySig.selector), 0);
     castDisapprovalBySig(actionInfo, v, r, s);
-    assertEq(caster.nonces(tokenHolder, ILlamaCore.castDisapprovalBySig.selector), 1);
+    assertEq(caster.nonces(tokenHolder1, ILlamaCore.castDisapprovalBySig.selector), 1);
   }
 
   function test_OperationCannotBeReplayed() public {
-    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolderPrivateKey);
+    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
     castDisapprovalBySig(actionInfo, v, r, s);
     // Invalid Signature error since the recovered signer address during the second call is not the same as token holder
     // since nonce has increased.
@@ -722,7 +723,7 @@ contract CastDisapprovalBySig is ERC20TokenholderCasterTest, LlamaCoreSigUtils {
   }
 
   function test_RevertIf_SignerIsZeroAddress() public {
-    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolderPrivateKey);
+    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
     // Invalid Signature error since the recovered signer address is zero address due to invalid signature values
     // (v,r,s).
     vm.expectRevert(ILlamaCore.InvalidSignature.selector);
@@ -730,9 +731,9 @@ contract CastDisapprovalBySig is ERC20TokenholderCasterTest, LlamaCoreSigUtils {
   }
 
   function test_RevertIf_PolicyholderIncrementsNonce() public {
-    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolderPrivateKey);
+    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
 
-    vm.prank(tokenHolder);
+    vm.prank(tokenHolder1);
     caster.incrementNonce(ILlamaCore.castDisapprovalBySig.selector);
 
     // Invalid Signature error since the recovered signer address during the second call is not the same as policyholder
@@ -742,12 +743,12 @@ contract CastDisapprovalBySig is ERC20TokenholderCasterTest, LlamaCoreSigUtils {
   }
 
   function test_FailsIfDisapproved() public {
-    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolderPrivateKey);
+    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
 
     // First disapproval.
     vm.expectEmit();
     emit DisapprovalCast(
-      actionInfo.id, tokenHolder, CASTER_ROLE, 1, token.getPastVotes(tokenHolder, token.clock() - 1), ""
+      actionInfo.id, tokenHolder1, CASTER_ROLE, 1, token.getPastVotes(tokenHolder1, token.clock() - 1), ""
     );
     castDisapprovalBySig(actionInfo, v, r, s);
     // assertEq(CORE.getAction(actionInfo.id).totalDisapprovals, 1);
