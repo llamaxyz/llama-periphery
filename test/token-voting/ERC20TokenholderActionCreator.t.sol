@@ -356,51 +356,62 @@ contract CreateActionBySig is ERC20TokenholderActionCreatorTest, LlamaCoreSigUti
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(tokenHolderPrivateKey);
     bytes memory data = abi.encodeCall(POLICY.initializeRole, (RoleDescription.wrap("Test Role")));
 
-    // vm.expectEmit();
-    // emit ActionCreated(0, tokenHolder, CORE_TEAM_ROLE, STRATEGY, address(POLICY), 0, data, "");
+    uint256 actionCount = CORE.actionsCount();
+
+    vm.expectEmit();
+    emit ActionCreated(actionCount, tokenHolder, actionCreatorRole, STRATEGY, address(POLICY), 0, data, "");
 
     uint256 actionId = createActionBySig(v, r, s);
     Action memory action = CORE.getAction(actionId);
 
-    // assertEq(actionId, 0);
-    // assertEq(CORE.actionsCount(), 1);
+    assertEq(actionId, actionCount);
+    assertEq(CORE.actionsCount() - 1, actionCount);
     assertEq(action.creationTime, block.timestamp);
   }
 
-  // function test_CreatesActionBySigWithDescription() public {
-  //   (uint8 v, bytes32 r, bytes32 s) =
-  //     createOffchainSignatureWithDescription(tokenHolderPrivateKey, "# Action 0 \n This is my action.");
-  //   bytes memory data = abi.encodeCall(POLICY.initializeRole, (RoleDescription.wrap("Test Role")));
+  function test_CreatesActionBySigWithDescription() public {
+    (uint8 v, bytes32 r, bytes32 s) =
+      createOffchainSignatureWithDescription(tokenHolderPrivateKey, "# Action 0 \n This is my action.");
+    bytes memory data = abi.encodeCall(POLICY.initializeRole, (RoleDescription.wrap("Test Role")));
 
-  //   vm.expectEmit();
-  //   emit ActionCreated(
-  //     0, tokenHolder, CORE_TEAM_ROLE, STRATEGY, address(POLICY), 0, data, "# Action 0 \n This is my action."
-  //   );
+    uint256 actionCount = CORE.actionsCount();
 
-  //   uint256 actionId = actionCreator.createActionBySig(
-  //     coreTeam1,
-  //     CORE_TEAM_ROLE,
-  //     STRATEGY,
-  //     address(POLICY),
-  //     0,
-  //     abi.encodeCall(POLICY.initializeRole, (RoleDescription.wrap("Test Role"))),
-  //     "# Action 0 \n This is my action.",
-  //     v,
-  //     r,
-  //     s
-  //   );
-  //   Action memory action = CORE.getAction(actionId);
+    vm.expectEmit();
+    emit ActionCreated(
+      actionCount,
+      tokenHolder,
+      actionCreatorRole,
+      STRATEGY,
+      address(POLICY),
+      0,
+      data,
+      "# Action 0 \n This is my action."
+    );
 
-  //   // assertEq(actionId, 0);
-  //   // assertEq(CORE.actionsCount(), 1);
-  //   assertEq(action.creationTime, block.timestamp);
-  // }
+    uint256 actionId = actionCreator.createActionBySig(
+      tokenHolder,
+      actionCreatorRole,
+      STRATEGY,
+      address(POLICY),
+      0,
+      abi.encodeCall(POLICY.initializeRole, (RoleDescription.wrap("Test Role"))),
+      "# Action 0 \n This is my action.",
+      v,
+      r,
+      s
+    );
+    Action memory action = CORE.getAction(actionId);
+
+    assertEq(actionId, actionCount);
+    assertEq(CORE.actionsCount() - 1, actionCount);
+    assertEq(action.creationTime, block.timestamp);
+  }
 
   function test_CheckNonceIncrements() public {
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(tokenHolderPrivateKey);
-    assertEq(actionCreator.nonces(coreTeam1, ILlamaCore.createActionBySig.selector), 0);
+    assertEq(actionCreator.nonces(tokenHolder, ILlamaCore.createActionBySig.selector), 0);
     createActionBySig(v, r, s);
-    assertEq(actionCreator.nonces(coreTeam1, ILlamaCore.createActionBySig.selector), 1);
+    assertEq(actionCreator.nonces(tokenHolder, ILlamaCore.createActionBySig.selector), 1);
   }
 
   function test_OperationCannotBeReplayed() public {
@@ -432,7 +443,7 @@ contract CreateActionBySig is ERC20TokenholderActionCreatorTest, LlamaCoreSigUti
   function test_RevertIf_PolicyholderIncrementsNonce() public {
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(tokenHolderPrivateKey);
 
-    vm.prank(coreTeam1);
+    vm.prank(tokenHolder);
     actionCreator.incrementNonce(ILlamaCore.createActionBySig.selector);
 
     // Invalid Signature error since the recovered signer address during the call is not the same as policyholder
