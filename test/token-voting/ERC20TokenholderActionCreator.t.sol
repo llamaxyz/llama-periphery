@@ -142,7 +142,7 @@ contract TokenHolderCreateAction is ERC20TokenholderActionCreatorTest {
       // voting action creator
     POLICY.initializeRole(RoleDescription.wrap("Token Voting Action Creator Role"));
     uint8 actionCreatorRole = 2;
-    POLICY.setRoleHolder(actionCreatorRole, coreTeam1, DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION);
+    POLICY.setRoleHolder(actionCreatorRole, address(actionCreator), DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION);
     POLICY.setRolePermission(
       actionCreatorRole,
       ILlamaPolicy.PermissionData(address(POLICY), POLICY.setRoleHolder.selector, address(STRATEGY)),
@@ -199,7 +199,7 @@ contract CancelAction is ERC20TokenholderActionCreatorTest {
     vm.startPrank(address(EXECUTOR)); // init role, assign policy, and assign permission to setRoleHolder to the token
       // voting action creator
     POLICY.initializeRole(RoleDescription.wrap("Token Voting Action Creator Role"));
-    POLICY.setRoleHolder(actionCreatorRole, coreTeam1, DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION);
+    POLICY.setRoleHolder(actionCreatorRole, address(actionCreator), DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION);
     POLICY.setRolePermission(
       actionCreatorRole,
       ILlamaPolicy.PermissionData(address(POLICY), POLICY.setRoleHolder.selector, address(STRATEGY)),
@@ -213,7 +213,7 @@ contract CancelAction is ERC20TokenholderActionCreatorTest {
     vm.prank(tokenHolder1);
     actionId = actionCreator.createAction(actionCreatorRole, STRATEGY, address(POLICY), 0, data, "");
 
-    actionInfo = ActionInfo(actionId, coreTeam1, actionCreatorRole, STRATEGY, address(POLICY), 0, data);
+    actionInfo = ActionInfo(actionId, address(actionCreator), actionCreatorRole, STRATEGY, address(POLICY), 0, data);
   }
 
   function test_PassesIf_CallerIsActionCreator() public {
