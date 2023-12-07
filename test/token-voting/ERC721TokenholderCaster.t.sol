@@ -121,7 +121,7 @@ contract ERC721TokenholderCasterTest is PeripheryTestSetup {
     vm.prank(address(EXECUTOR));
     POLICY.initializeRole(RoleDescription.wrap("Token Voting Caster Role")); // initializes role 2
     vm.prank(address(EXECUTOR));
-    POLICY.initializeRole(RoleDescription.wrap("Made Up Role")); // initializes role 2
+    POLICY.initializeRole(RoleDescription.wrap("Made Up Role")); // initializes role 3
 
     mockErc721Votes.mint(tokenHolder1, 0);
     mockErc721Votes.mint(tokenHolder2, 1);
