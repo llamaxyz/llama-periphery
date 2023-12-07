@@ -39,7 +39,7 @@ contract ERC721TokenholderActionCreatorTest is LlamaTokenVotingTestSetup {
   address notATokenHolder = makeAddr("notATokenHolder");
 
   function setUp() public virtual override {
-    PeripheryTestSetup.setUp();
+    LlamaTokenVotingTestSetup.setUp();
     vm.deal(address(this), 1 ether);
     vm.deal(address(msg.sender), 1 ether);
 

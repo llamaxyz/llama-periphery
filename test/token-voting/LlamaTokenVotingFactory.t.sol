@@ -35,7 +35,7 @@ contract LlamaTokenVotingFactoryTest is LlamaTokenVotingTestSetup {
   ERC721Votes public ERC721TOKEN;
 
   function setUp() public override {
-    PeripheryTestSetup.setUp();
+    LlamaTokenVotingTestSetup.setUp();
 
     FACTORY = new LlamaTokenVotingFactory();
     MockERC20Votes mockERC20Votes = new MockERC20Votes();

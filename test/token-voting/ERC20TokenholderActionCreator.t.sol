@@ -5,7 +5,7 @@ import {Test, console2} from "forge-std/Test.sol";
 
 import {ERC20Votes} from "lib/openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import {MockERC20Votes} from "test/mock/MockERC20Votes.sol";
-import {PeripheryTestSetup} from "test/PeripheryTestSetup.sol";
+import {LlamaTokenVotingTestSetup} from "test/token-voting/LlamaTokenVotingTestSetup.sol";
 
 import {Action, ActionInfo} from "src/lib/Structs.sol";
 import {RoleDescription} from "src/lib/UDVTs.sol";
@@ -15,7 +15,7 @@ import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
 import {ERC20TokenholderActionCreator} from "src/token-voting/ERC20TokenholderActionCreator.sol";
 import {TokenholderActionCreator} from "src/token-voting/TokenholderActionCreator.sol";
 
-contract ERC20TokenholderActionCreatorTest is PeripheryTestSetup {
+contract ERC20TokenholderActionCreatorTest is LlamaTokenVotingTestSetup {
   event ActionCreated(
     uint256 id,
     address indexed creator,
@@ -39,7 +39,7 @@ contract ERC20TokenholderActionCreatorTest is PeripheryTestSetup {
   address notATokenHolder = makeAddr("notATokenHolder");
 
   function setUp() public virtual override {
-    PeripheryTestSetup.setUp();
+    LlamaTokenVotingTestSetup.setUp();
     vm.deal(address(this), 1 ether);
     vm.deal(address(msg.sender), 1 ether);
 
