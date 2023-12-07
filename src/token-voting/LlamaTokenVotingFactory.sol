@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
+import {Clones} from "@openzeppelin/proxy/Clones.sol";
+
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
 import {ILlamaExecutor} from "src/interfaces/ILlamaExecutor.sol";
 import {ERC20TokenholderActionCreator} from "src/token-voting/ERC20TokenholderActionCreator.sol";
@@ -24,6 +26,31 @@ contract LlamaTokenVotingFactory {
   event ERC721TokenholderCasterCreated(
     address caster, address indexed token, uint256 minApprovalPct, uint256 minDisapprovalPct
   );
+
+  /// @notice The ERC20 Tokenholder Action Creator (logic) contract.
+  ERC20TokenholderActionCreator public immutable ERC20_TOKENHOLDER_ACTION_CREATOR_LOGIC;
+
+  /// @notice The ERC20 Tokenholder Caster (logic) contract.
+  ERC20TokenholderCaster public immutable ERC20_TOKENHOLDER_CASTER_LOGIC;
+
+  /// @notice The ERC721 Tokenholder Action Creator (logic) contract.
+  ERC721TokenholderActionCreator public immutable ERC721_TOKENHOLDER_ACTION_CREATOR_LOGIC;
+
+  /// @notice The ERC721 Tokenholder Caster (logic) contract.
+  ERC721TokenholderCaster public immutable ERC721_TOKENHOLDER_CASTER_LOGIC;
+
+  /// @dev Set the logic contracts used to deploy Token Voting modules.
+  constructor(
+    ERC20TokenholderActionCreator erc20TokenholderActionCreatorLogic,
+    ERC20TokenholderCaster erc20TokenholderCasterLogic,
+    ERC721TokenholderActionCreator erc721TokenholderActionCreatorLogic,
+    ERC721TokenholderCaster erc721TokenholderCasterLogic
+  ) {
+    ERC20_TOKENHOLDER_ACTION_CREATOR_LOGIC = erc20TokenholderActionCreatorLogic;
+    ERC20_TOKENHOLDER_CASTER_LOGIC = erc20TokenholderCasterLogic;
+    ERC721_TOKENHOLDER_ACTION_CREATOR_LOGIC = erc721TokenholderActionCreatorLogic;
+    ERC721_TOKENHOLDER_CASTER_LOGIC = erc721TokenholderCasterLogic;
+  }
 
   ///@notice Deploys a token voting module in a single function so it can be deployed in a single llama action.
   ///@dev This method CAN NOT be used in tandem with `delegateCallDeployTokenVotingModuleWithRoles`. You must use one or
@@ -62,7 +89,12 @@ contract LlamaTokenVotingFactory {
     internal
     returns (ERC20TokenholderActionCreator actionCreator)
   {
-    actionCreator = new ERC20TokenholderActionCreator(token, llamaCore, creationThreshold);
+    actionCreator = ERC20TokenholderActionCreator(
+      Clones.cloneDeterministic(
+        address(ERC20_TOKENHOLDER_ACTION_CREATOR_LOGIC), keccak256(abi.encodePacked(address(token), msg.sender))
+      )
+    );
+    actionCreator.initialize(token, llamaCore, creationThreshold);
     emit ERC20TokenholderActionCreatorCreated(address(actionCreator), address(token));
   }
 
@@ -70,7 +102,12 @@ contract LlamaTokenVotingFactory {
     internal
     returns (ERC721TokenholderActionCreator actionCreator)
   {
-    actionCreator = new ERC721TokenholderActionCreator(token, llamaCore, creationThreshold);
+    actionCreator = ERC721TokenholderActionCreator(
+      Clones.cloneDeterministic(
+        address(ERC721_TOKENHOLDER_ACTION_CREATOR_LOGIC), keccak256(abi.encodePacked(address(token), msg.sender))
+      )
+    );
+    actionCreator.initialize(token, llamaCore, creationThreshold);
     emit ERC721TokenholderActionCreatorCreated(address(actionCreator), address(token));
   }
 
@@ -81,7 +118,12 @@ contract LlamaTokenVotingFactory {
     uint256 minApprovalPct,
     uint256 minDisapprovalPct
   ) internal returns (ERC20TokenholderCaster caster) {
-    caster = new ERC20TokenholderCaster(token, llamaCore, role, minApprovalPct, minDisapprovalPct);
+    caster = ERC20TokenholderCaster(
+      Clones.cloneDeterministic(
+        address(ERC20_TOKENHOLDER_CASTER_LOGIC), keccak256(abi.encodePacked(address(token), msg.sender))
+      )
+    );
+    caster.initialize(token, llamaCore, role, minApprovalPct, minDisapprovalPct);
     emit ERC20TokenholderCasterCreated(address(caster), address(token), minApprovalPct, minDisapprovalPct);
   }
 
@@ -92,7 +134,12 @@ contract LlamaTokenVotingFactory {
     uint256 minApprovalPct,
     uint256 minDisapprovalPct
   ) internal returns (ERC721TokenholderCaster caster) {
-    caster = new ERC721TokenholderCaster(token, llamaCore, role, minApprovalPct, minDisapprovalPct);
+    caster = ERC721TokenholderCaster(
+      Clones.cloneDeterministic(
+        address(ERC721_TOKENHOLDER_CASTER_LOGIC), keccak256(abi.encodePacked(address(token), msg.sender))
+      )
+    );
+    caster.initialize(token, llamaCore, role, minApprovalPct, minDisapprovalPct);
     emit ERC721TokenholderCasterCreated(address(caster), address(token), minApprovalPct, minDisapprovalPct);
   }
 }

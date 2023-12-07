@@ -50,7 +50,12 @@ contract DeployLlamaFactory is Script {
     );
 
     vm.broadcast();
-    tokenVotingFactory = new LlamaTokenVotingFactory();
+    tokenVotingFactory = new LlamaTokenVotingFactory(
+      erc20TokenholderActionCreatorLogic,
+      erc20TokenholderCasterLogic,
+      erc721TokenholderActionCreatorLogic,
+      erc721TokenholderCasterLogic
+    );
     DeployUtils.print(string.concat("  LlamaTokenVotingFactory: ", vm.toString(address(tokenVotingFactory))));
   }
 }
