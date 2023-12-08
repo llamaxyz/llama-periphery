@@ -214,9 +214,9 @@ contract CreateActionBySig is ERC20TokenholderActionCreatorTest {
     LlamaCoreSigUtils.CreateActionBySig memory _createAction = LlamaCoreSigUtils.CreateActionBySig({
       role: erc20TokenholderActionCreatorRole,
       strategy: address(STRATEGY),
-      target: address(POLICY),
+      target: address(mockProtocol),
       value: 0,
-      data: abi.encodeCall(POLICY.initializeRole, (RoleDescription.wrap("Test Role"))),
+      data: abi.encodeCall(mockProtocol.pause, (true)),
       description: description,
       tokenHolder: tokenHolder1,
       nonce: 0
@@ -230,9 +230,9 @@ contract CreateActionBySig is ERC20TokenholderActionCreatorTest {
       tokenHolder1,
       erc20TokenholderActionCreatorRole,
       STRATEGY,
-      address(POLICY),
+      address(mockProtocol),
       0,
-      abi.encodeCall(POLICY.initializeRole, (RoleDescription.wrap("Test Role"))),
+      abi.encodeCall(mockProtocol.pause, (true)),
       "",
       v,
       r,
@@ -242,13 +242,13 @@ contract CreateActionBySig is ERC20TokenholderActionCreatorTest {
 
   function test_CreatesActionBySig() public {
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(tokenHolder1PrivateKey);
-    bytes memory data = abi.encodeCall(POLICY.initializeRole, (RoleDescription.wrap("Test Role")));
+    bytes memory data = abi.encodeCall(mockProtocol.pause, (true));
 
     uint256 actionCount = CORE.actionsCount();
 
     vm.expectEmit();
     emit ActionCreated(
-      actionCount, tokenHolder1, erc20TokenholderActionCreatorRole, STRATEGY, address(POLICY), 0, data, ""
+      actionCount, tokenHolder1, erc20TokenholderActionCreatorRole, STRATEGY, address(mockProtocol), 0, data, ""
     );
 
     uint256 actionId = createActionBySig(v, r, s);
@@ -262,7 +262,7 @@ contract CreateActionBySig is ERC20TokenholderActionCreatorTest {
   function test_CreatesActionBySigWithDescription() public {
     (uint8 v, bytes32 r, bytes32 s) =
       createOffchainSignatureWithDescription(tokenHolder1PrivateKey, "# Action 0 \n This is my action.");
-    bytes memory data = abi.encodeCall(POLICY.initializeRole, (RoleDescription.wrap("Test Role")));
+    bytes memory data = abi.encodeCall(mockProtocol.pause, (true));
 
     uint256 actionCount = CORE.actionsCount();
 
@@ -272,7 +272,7 @@ contract CreateActionBySig is ERC20TokenholderActionCreatorTest {
       tokenHolder1,
       erc20TokenholderActionCreatorRole,
       STRATEGY,
-      address(POLICY),
+      address(mockProtocol),
       0,
       data,
       "# Action 0 \n This is my action."
@@ -282,9 +282,9 @@ contract CreateActionBySig is ERC20TokenholderActionCreatorTest {
       tokenHolder1,
       erc20TokenholderActionCreatorRole,
       STRATEGY,
-      address(POLICY),
+      address(mockProtocol),
       0,
-      abi.encodeCall(POLICY.initializeRole, (RoleDescription.wrap("Test Role"))),
+      abi.encodeCall(mockProtocol.pause, (true)),
       "# Action 0 \n This is my action.",
       v,
       r,
