@@ -9,6 +9,10 @@ import {LlamaTokenVotingTestSetup} from "test/token-voting/LlamaTokenVotingTestS
 
 import {ActionInfo} from "src/lib/Structs.sol";
 import {ILlamaPolicy} from "src/interfaces/ILlamaPolicy.sol";
+import {ERC20TokenholderActionCreator} from "src/token-voting/ERC20TokenholderActionCreator.sol";
+import {ERC20TokenholderCaster} from "src/token-voting/ERC20TokenholderCaster.sol";
+import {ERC721TokenholderActionCreator} from "src/token-voting/ERC721TokenholderActionCreator.sol";
+import {ERC721TokenholderCaster} from "src/token-voting/ERC721TokenholderCaster.sol";
 import {LlamaTokenVotingFactory} from "src/token-voting/LlamaTokenVotingFactory.sol";
 
 contract LlamaTokenVotingFactoryTest is LlamaTokenVotingTestSetup {
@@ -20,6 +24,7 @@ contract LlamaTokenVotingFactoryTest is LlamaTokenVotingTestSetup {
   event ERC721TokenholderCasterCreated(
     address caster, address indexed token, uint256 minApprovalPct, uint256 minDisapprovalPct
   );
+  event ActionThresholdSet(uint256 newThreshold);
 
   function setUp() public override {
     LlamaTokenVotingTestSetup.setUp();
@@ -85,25 +90,39 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     ActionInfo memory actionInfo = _setPermissionCreateApproveAndQueueAction(data);
 
     // Compute addresses of ERC20 Token Voting Module
-    address erc20TokenholderActionCreator = Clones.predictDeterministicAddress(
-      address(erc20TokenholderActionCreatorLogic),
-      keccak256(abi.encodePacked(address(erc20VotesToken), address(EXECUTOR))), // salt
-      address(tokenVotingFactory) // deployer
+    ERC20TokenholderActionCreator erc20TokenholderActionCreator = ERC20TokenholderActionCreator(
+      Clones.predictDeterministicAddress(
+        address(erc20TokenholderActionCreatorLogic),
+        keccak256(abi.encodePacked(address(erc20VotesToken), address(EXECUTOR))), // salt
+        address(tokenVotingFactory) // deployer
+      )
     );
-    address erc20TokenholderCaster = Clones.predictDeterministicAddress(
-      address(erc20TokenholderCasterLogic),
-      keccak256(abi.encodePacked(address(erc20VotesToken), address(EXECUTOR))), // salt
-      address(tokenVotingFactory) // deployer
+    ERC20TokenholderCaster erc20TokenholderCaster = ERC20TokenholderCaster(
+      Clones.predictDeterministicAddress(
+        address(erc20TokenholderCasterLogic),
+        keccak256(abi.encodePacked(address(erc20VotesToken), address(EXECUTOR))), // salt
+        address(tokenVotingFactory) // deployer
+      )
     );
 
-    // Expect events to be emitted on call to `deployTokenVotingModule`.
+    // Execute call to `deployTokenVotingModule`.
     vm.expectEmit();
-    emit ERC20TokenholderActionCreatorCreated(erc20TokenholderActionCreator, address(erc20VotesToken));
+    emit ActionThresholdSet(ERC20_CREATION_THRESHOLD);
+    vm.expectEmit();
+    emit ERC20TokenholderActionCreatorCreated(address(erc20TokenholderActionCreator), address(erc20VotesToken));
     vm.expectEmit();
     emit ERC20TokenholderCasterCreated(
-      erc20TokenholderCaster, address(erc20VotesToken), ERC20_MIN_APPROVAL_PCT, ERC20_MIN_DISAPPROVAL_PCT
+      address(erc20TokenholderCaster), address(erc20VotesToken), ERC20_MIN_APPROVAL_PCT, ERC20_MIN_DISAPPROVAL_PCT
     );
     CORE.executeAction(actionInfo);
+
+    assertEq(address(erc20TokenholderActionCreator.token()), address(erc20VotesToken));
+    assertEq(address(erc20TokenholderActionCreator.llamaCore()), address(CORE));
+    assertEq(erc20TokenholderActionCreator.creationThreshold(), ERC20_CREATION_THRESHOLD);
+    assertEq(address(erc20TokenholderCaster.token()), address(erc20VotesToken));
+    assertEq(address(erc20TokenholderCaster.llamaCore()), address(CORE));
+    assertEq(erc20TokenholderCaster.minApprovalPct(), ERC20_MIN_APPROVAL_PCT);
+    assertEq(erc20TokenholderCaster.minDisapprovalPct(), ERC20_MIN_DISAPPROVAL_PCT);
   }
 
   function test_CanDeployERC721TokenVotingModule() public {
@@ -119,24 +138,38 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     ActionInfo memory actionInfo = _setPermissionCreateApproveAndQueueAction(data);
 
     // Compute addresses of ERC721 Token Voting Module
-    address erc721TokenholderActionCreator = Clones.predictDeterministicAddress(
-      address(erc721TokenholderActionCreatorLogic),
-      keccak256(abi.encodePacked(address(erc721VotesToken), address(EXECUTOR))), // salt
-      address(tokenVotingFactory) // deployer
+    ERC721TokenholderActionCreator erc721TokenholderActionCreator = ERC721TokenholderActionCreator(
+      Clones.predictDeterministicAddress(
+        address(erc721TokenholderActionCreatorLogic),
+        keccak256(abi.encodePacked(address(erc721VotesToken), address(EXECUTOR))), // salt
+        address(tokenVotingFactory) // deployer
+      )
     );
-    address erc721TokenholderCaster = Clones.predictDeterministicAddress(
-      address(erc721TokenholderCasterLogic),
-      keccak256(abi.encodePacked(address(erc721VotesToken), address(EXECUTOR))), // salt
-      address(tokenVotingFactory) // deployer
+    ERC721TokenholderCaster erc721TokenholderCaster = ERC721TokenholderCaster(
+      Clones.predictDeterministicAddress(
+        address(erc721TokenholderCasterLogic),
+        keccak256(abi.encodePacked(address(erc721VotesToken), address(EXECUTOR))), // salt
+        address(tokenVotingFactory) // deployer
+      )
     );
 
-    // Expect events to be emitted on call to `deployTokenVotingModule`.
+    // Execute call to `deployTokenVotingModule`.
     vm.expectEmit();
-    emit ERC721TokenholderActionCreatorCreated(erc721TokenholderActionCreator, address(erc721VotesToken));
+    emit ActionThresholdSet(ERC721_CREATION_THRESHOLD);
+    vm.expectEmit();
+    emit ERC721TokenholderActionCreatorCreated(address(erc721TokenholderActionCreator), address(erc721VotesToken));
     vm.expectEmit();
     emit ERC721TokenholderCasterCreated(
-      erc721TokenholderCaster, address(erc721VotesToken), ERC721_MIN_APPROVAL_PCT, ERC721_MIN_DISAPPROVAL_PCT
+      address(erc721TokenholderCaster), address(erc721VotesToken), ERC721_MIN_APPROVAL_PCT, ERC721_MIN_DISAPPROVAL_PCT
     );
     CORE.executeAction(actionInfo);
+
+    assertEq(address(erc721TokenholderActionCreator.token()), address(erc721VotesToken));
+    assertEq(address(erc721TokenholderActionCreator.llamaCore()), address(CORE));
+    assertEq(erc721TokenholderActionCreator.creationThreshold(), ERC721_CREATION_THRESHOLD);
+    assertEq(address(erc721TokenholderCaster.token()), address(erc721VotesToken));
+    assertEq(address(erc721TokenholderCaster.llamaCore()), address(CORE));
+    assertEq(erc721TokenholderCaster.minApprovalPct(), ERC721_MIN_APPROVAL_PCT);
+    assertEq(erc721TokenholderCaster.minDisapprovalPct(), ERC721_MIN_DISAPPROVAL_PCT);
   }
 }
