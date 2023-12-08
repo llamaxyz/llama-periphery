@@ -51,4 +51,9 @@ contract LlamaPeripheryTestSetup is Test {
   function setUp() public virtual {
     vm.createSelectFork(MAINNET_RPC_URL, 18_707_845);
   }
+
+  function mineBlock() internal {
+    vm.roll(block.number + 1);
+    vm.warp(block.timestamp + 1);
+  }
 }
