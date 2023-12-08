@@ -343,73 +343,56 @@ contract CreateActionBySig is ERC20TokenholderActionCreatorTest {
   }
 }
 
-// contract CancelAction is ERC20TokenholderActionCreatorTest {
-//   uint8 erc20TokenholderActionCreatorRole = 2;
-//   bytes data = abi.encodeCall(
-//     POLICY.setRoleHolder, (erc20TokenholderActionCreatorRole, address(0xdeadbeef), DEFAULT_ROLE_QTY,
-// DEFAULT_ROLE_EXPIRATION)
-//   );
-//   uint256 threshold = 500_000e18;
-//   uint256 actionId;
-//   ERC20TokenholderActionCreator erc20TokenholderActionCreator;
-//   ActionInfo actionInfo;
+contract CancelAction is ERC20TokenholderActionCreatorTest {
+  uint256 actionId;
+  ActionInfo actionInfo;
 
-//   function setUp() public virtual override {
-//     ERC20TokenholderActionCreatorTest.setUp();
-//     erc20VotesToken.mint(tokenHolder1, threshold); // we use erc20VotesToken because IVotesToken is an
-//     // interface without the `delegate` function
-//     vm.prank(tokenHolder1);
-//     erc20VotesToken.delegate(tokenHolder1); // we use erc20VotesToken because IVotesToken is an interface without
-//     // the `delegate` function
+  function setUp() public virtual override {
+    ERC20TokenholderActionCreatorTest.setUp();
 
-//     vm.roll(block.number + 1);
-//     vm.warp(block.timestamp + 1);
+    // Assigns Policy to TokenholderActionCreator.
+    _initRoleSetRoleHolderSetRolePermissionToTokenholderActionCreator();
 
-//     erc20TokenholderActionCreator = new ERC20TokenholderActionCreator(erc20VotesToken, CORE, threshold);
+    // Mint tokens to tokenholder so that they can create action.
+    erc20VotesToken.mint(tokenHolder1, ERC20_CREATION_THRESHOLD);
+    vm.prank(tokenHolder1);
+    erc20VotesToken.delegate(tokenHolder1);
 
-//     vm.startPrank(address(EXECUTOR)); // init role, assign policy, and assign permission to setRoleHolder to the
-//       // erc20VotesToken
-//       // voting action creator
-//     POLICY.initializeRole(RoleDescription.wrap("Token Voting Action Creator Role"));
-//     POLICY.setRoleHolder(
-//       erc20TokenholderActionCreatorRole, address(erc20TokenholderActionCreator), DEFAULT_ROLE_QTY,
-// DEFAULT_ROLE_EXPIRATION
-//     );
-//     POLICY.setRolePermission(
-//       erc20TokenholderActionCreatorRole,
-//       ILlamaPolicy.PermissionData(address(POLICY), POLICY.setRoleHolder.selector, address(STRATEGY)),
-//       true
-//     );
-//     vm.stopPrank();
+    // Mine block so that the ERC20 supply will be available when doing a past timestamp check at createAction.
+    mineBlock();
 
-//     vm.roll(block.number + 1);
-//     vm.warp(block.timestamp + 1);
+    bytes memory data = abi.encodeCall(mockProtocol.pause, (true));
 
-//     vm.prank(tokenHolder1);
-//     actionId = erc20TokenholderActionCreator.createAction(erc20TokenholderActionCreatorRole, STRATEGY,
-// address(POLICY),
-// 0, data, "");
+    vm.prank(tokenHolder1);
+    actionId = erc20TokenholderActionCreator.createAction(
+      erc20TokenholderActionCreatorRole, STRATEGY, address(mockProtocol), 0, data, ""
+    );
 
-//     actionInfo =
-//       ActionInfo(actionId, address(erc20TokenholderActionCreator), erc20TokenholderActionCreatorRole, STRATEGY,
-// address(POLICY), 0,
-// data);
-//   }
+    actionInfo = ActionInfo(
+      actionId,
+      address(erc20TokenholderActionCreator),
+      erc20TokenholderActionCreatorRole,
+      STRATEGY,
+      address(mockProtocol),
+      0,
+      data
+    );
+  }
 
-//   function test_PassesIf_CallerIsActionCreator() public {
-//     vm.expectEmit();
-//     emit ActionCanceled(actionId, tokenHolder1);
-//     vm.prank(tokenHolder1);
-//     erc20TokenholderActionCreator.cancelAction(actionInfo);
-//   }
+  function test_PassesIf_CallerIsActionCreator() public {
+    vm.expectEmit();
+    emit ActionCanceled(actionId, tokenHolder1);
+    vm.prank(tokenHolder1);
+    erc20TokenholderActionCreator.cancelAction(actionInfo);
+  }
 
-//   function test_RevertsIf_CallerIsNotActionCreator(address notCreator) public {
-//     vm.assume(notCreator != tokenHolder1);
-//     vm.expectRevert(TokenholderActionCreator.OnlyActionCreator.selector);
-//     vm.prank(notCreator);
-//     erc20TokenholderActionCreator.cancelAction(actionInfo);
-//   }
-// }
+  function test_RevertsIf_CallerIsNotActionCreator(address notCreator) public {
+    vm.assume(notCreator != tokenHolder1);
+    vm.expectRevert(TokenholderActionCreator.OnlyActionCreator.selector);
+    vm.prank(notCreator);
+    erc20TokenholderActionCreator.cancelAction(actionInfo);
+  }
+}
 
 // contract SetActionThreshold is ERC20TokenholderActionCreatorTest {
 //   function test_SetsCreationThreshold() public {
