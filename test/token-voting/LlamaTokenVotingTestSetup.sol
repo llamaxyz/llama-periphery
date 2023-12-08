@@ -79,7 +79,7 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
   function _deployERC20TokenVotingModule() internal returns (ERC20TokenholderActionCreator, ERC20TokenholderCaster) {
     vm.prank(address(EXECUTOR));
     (address erc20TokenholderActionCreator, address erc20TokenholderCaster) = tokenVotingFactory.deployTokenVotingModule(
-      address(erc20VotesToken), true, ERC20_CREATION_THRESHOLD, ERC20_MIN_APPROVAL_PCT, ERC20_MIN_DISAPPROVAL_PCT
+      address(erc20VotesToken), true, 0, 0, ERC20_CREATION_THRESHOLD, ERC20_MIN_APPROVAL_PCT, ERC20_MIN_DISAPPROVAL_PCT
     );
     return
       (ERC20TokenholderActionCreator(erc20TokenholderActionCreator), ERC20TokenholderCaster(erc20TokenholderCaster));
@@ -89,7 +89,13 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
     vm.prank(address(EXECUTOR));
     (address erc721TokenholderActionCreator, address erc721TokenholderCaster) = tokenVotingFactory
       .deployTokenVotingModule(
-      address(erc721VotesToken), false, ERC721_CREATION_THRESHOLD, ERC721_MIN_APPROVAL_PCT, ERC721_MIN_DISAPPROVAL_PCT
+      address(erc721VotesToken),
+      false,
+      0,
+      0,
+      ERC721_CREATION_THRESHOLD,
+      ERC721_MIN_APPROVAL_PCT,
+      ERC721_MIN_DISAPPROVAL_PCT
     );
     return
       (ERC721TokenholderActionCreator(erc721TokenholderActionCreator), ERC721TokenholderCaster(erc721TokenholderCaster));
