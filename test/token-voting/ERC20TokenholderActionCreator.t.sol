@@ -507,49 +507,33 @@ contract CancelActionBySig is ERC20TokenholderActionCreatorTest {
   }
 }
 
-// contract SetActionThreshold is ERC20TokenholderActionCreatorTest {
-//   function test_SetsCreationThreshold() public {
-//     uint256 threshold = 500_000e18;
-//     erc20VotesToken.mint(address(this), 1_000_000e18); // we use erc20VotesToken because IVotesToken is an interface
-//     // without the `mint` function
+contract SetActionThreshold is ERC20TokenholderActionCreatorTest {
+  function testFuzz_SetsCreationThreshold(uint256 threshold) public {
+    threshold = bound(threshold, 0, erc20VotesToken.getPastTotalSupply(block.timestamp - 1));
 
-//     vm.warp(block.timestamp + 1);
+    assertEq(erc20TokenholderActionCreator.creationThreshold(), ERC20_CREATION_THRESHOLD);
 
-//     ERC20TokenholderActionCreator erc20TokenholderActionCreator =
-//       new ERC20TokenholderActionCreator(erc20VotesToken, CORE, 1_000_000e18);
+    vm.expectEmit();
+    emit ActionThresholdSet(threshold);
+    vm.prank(address(EXECUTOR));
+    erc20TokenholderActionCreator.setActionThreshold(threshold);
 
-//     assertEq(erc20TokenholderActionCreator.creationThreshold(), 1_000_000e18);
+    assertEq(erc20TokenholderActionCreator.creationThreshold(), threshold);
+  }
 
-//     vm.expectEmit();
-//     emit ActionThresholdSet(threshold);
-//     vm.prank(address(EXECUTOR));
-//     erc20TokenholderActionCreator.setActionThreshold(threshold);
-//   }
+  function testFuzz_RevertsIf_CreationThresholdExceedsTotalSupply(uint256 threshold) public {
+    vm.assume(threshold > erc20VotesToken.getPastTotalSupply(block.timestamp - 1));
 
-//   function test_RevertsIf_CreationThresholdExceedsTotalSupply() public {
-//     uint256 threshold = 1_000_000e18;
-//     erc20VotesToken.mint(address(this), 500_000e18); // we use erc20VotesToken because IVotesToken is an interface
-//     // without the `mint` function
+    vm.expectRevert(TokenholderActionCreator.InvalidCreationThreshold.selector);
+    vm.prank(address(EXECUTOR));
+    erc20TokenholderActionCreator.setActionThreshold(threshold);
+  }
 
-//     ERC20TokenholderActionCreator erc20TokenholderActionCreator =
-//       new ERC20TokenholderActionCreator(erc20VotesToken, CORE, 500_000e18);
+  function testFuzz_RevertsIf_CalledByNotLlamaExecutor(address notLlamaExecutor) public {
+    vm.assume(notLlamaExecutor != address(EXECUTOR));
 
-//     vm.expectRevert(TokenholderActionCreator.InvalidCreationThreshold.selector);
-//     vm.prank(address(EXECUTOR));
-//     erc20TokenholderActionCreator.setActionThreshold(threshold);
-//   }
-
-//   function test_RevertsIf_CalledByNotLlamaExecutor(address notLlamaExecutor) public {
-//     vm.assume(notLlamaExecutor != address(EXECUTOR));
-//     uint256 threshold = 500_000e18;
-//     erc20VotesToken.mint(address(this), 1_000_000e18); // we use erc20VotesToken because IVotesToken is an interface
-//     // without the `mint` function
-
-//     ERC20TokenholderActionCreator erc20TokenholderActionCreator =
-//       new ERC20TokenholderActionCreator(erc20VotesToken, CORE, 1_000_000e18);
-
-//     vm.expectRevert(TokenholderActionCreator.OnlyLlamaExecutor.selector);
-//     vm.prank(notLlamaExecutor);
-//     erc20TokenholderActionCreator.setActionThreshold(threshold);
-//   }
-// }
+    vm.expectRevert(TokenholderActionCreator.OnlyLlamaExecutor.selector);
+    vm.prank(notLlamaExecutor);
+    erc20TokenholderActionCreator.setActionThreshold(ERC20_CREATION_THRESHOLD);
+  }
+}
