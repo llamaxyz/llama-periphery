@@ -34,9 +34,6 @@ contract LlamaPeripheryTestSetup is Test {
   address coreTeam4 = 0x6b45E38c87bfCa15ee90AAe2AFe3CFC58cE08F75;
   address coreTeam5 = 0xbdfcE43E5D2C7AA8599290d940c9932B8dBC94Ca;
 
-  address tokenHolder;
-  uint256 tokenHolderPrivateKey;
-
   // Function selectors used in tests.
   bytes4 public constant SET_ROLE_HOLDER_SELECTOR = 0x2524842c; // pause(bool)
 
@@ -53,7 +50,6 @@ contract LlamaPeripheryTestSetup is Test {
 
   function setUp() public virtual {
     vm.createSelectFork(MAINNET_RPC_URL, 18_707_845);
-    (tokenHolder, tokenHolderPrivateKey) = makeAddrAndKey("tokenHolder");
   }
 
   function mineBlock() internal {

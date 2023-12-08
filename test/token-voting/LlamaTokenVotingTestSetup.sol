@@ -25,6 +25,10 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
   MockERC20Votes public erc20VotesToken;
   MockERC721Votes public erc721VotesToken;
 
+  // Token holders.
+  address tokenHolder;
+  uint256 tokenHolderPrivateKey;
+
   function setUp() public virtual override {
     LlamaPeripheryTestSetup.setUp();
 
@@ -47,5 +51,8 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
 
     // Mine block so that the ERC20 and ERC721 supply will be available when doing a past timestamp check at initialize.
     mineBlock();
+
+    // Setting up tokenholder addresses and private keys.
+    (tokenHolder, tokenHolderPrivateKey) = makeAddrAndKey("tokenHolder");
   }
 }
