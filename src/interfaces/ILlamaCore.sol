@@ -6,6 +6,7 @@ pragma solidity ^0.8.23;
 
 import {ILlamaPolicy} from "src/interfaces/ILlamaPolicy.sol";
 import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
+import {ActionState} from "src/lib/Enums.sol";
 import {
   Action,
   ActionInfo,
@@ -20,7 +21,13 @@ import {
 /// @author Llama (devsdosomething@llama.xyz)
 /// @notice This is the interface for LlamaCore.
 interface ILlamaCore {
+  error InvalidSignature();
+
   error PolicyholderDoesNotHavePermission();
+
+  /// @dev The action is not in the expected state.
+  /// @param current The current state of the action.
+  error InvalidActionState(ActionState current);
 
   function actionGuard(address target, bytes4 selector) external view returns (address guard);
 

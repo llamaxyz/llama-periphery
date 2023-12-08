@@ -5,7 +5,9 @@ import {Test, console2} from "forge-std/Test.sol";
 
 import {MockERC20Votes} from "test/mock/MockERC20Votes.sol";
 import {LlamaTokenVotingTestSetup} from "test/token-voting/LlamaTokenVotingTestSetup.sol";
+import {LlamaCoreSigUtils} from "test/utils/LlamaCoreSigUtils.sol";
 
+import {ActionState} from "src/lib/Enums.sol";
 import {Action, ActionInfo, PermissionData} from "src/lib/Structs.sol";
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
 import {ILlamaPolicy} from "src/interfaces/ILlamaPolicy.sol";
@@ -33,7 +35,8 @@ contract ERC20TokenholderCasterTest is LlamaTokenVotingTestSetup {
 
   ILlamaStrategy tokenVotingStrategy;
 
-  address tokenHolder1 = makeAddr("tokenholder-1");
+  address tokenHolder1;
+  uint256 tokenHolder1PrivateKey;
   address tokenHolder2 = makeAddr("tokenholder-2");
   address tokenHolder3 = makeAddr("tokenholder-3");
 
@@ -107,7 +110,14 @@ contract ERC20TokenholderCasterTest is LlamaTokenVotingTestSetup {
   }
 
   function setUp() public virtual override {
+<<<<<<< HEAD
     LlamaTokenVotingTestSetup.setUp();
+=======
+    PeripheryTestSetup.setUp();
+
+    (tokenHolder1, tokenHolder1PrivateKey) = makeAddrAndKey("tokenholder-1");
+
+>>>>>>> main
     vm.deal(address(this), 1 ether);
     vm.deal(address(msg.sender), 1 ether);
     vm.deal(address(EXECUTOR), 1 ether);
@@ -121,7 +131,7 @@ contract ERC20TokenholderCasterTest is LlamaTokenVotingTestSetup {
     vm.prank(address(EXECUTOR));
     POLICY.initializeRole(RoleDescription.wrap("Token Voting Caster Role")); // initializes role 2
     vm.prank(address(EXECUTOR));
-    POLICY.initializeRole(RoleDescription.wrap("Made Up Role")); // initializes role 2
+    POLICY.initializeRole(RoleDescription.wrap("Made Up Role")); // initializes role 3
 
     mockErc20Votes.mint(tokenHolder1, DEFAULT_APPROVAL_THRESHOLD / 2);
     mockErc20Votes.mint(tokenHolder2, DEFAULT_APPROVAL_THRESHOLD / 2);
@@ -538,5 +548,228 @@ contract SubmitDisapprovals is ERC20TokenholderCasterTest {
     vm.expectEmit();
     emit DisapprovalsSubmitted(actionInfo.id, 1500, 0, 0);
     caster.submitDisapprovals(actionInfo);
+  }
+}
+
+contract CastApprovalBySig is ERC20TokenholderCasterTest, LlamaCoreSigUtils {
+  function setUp() public virtual override {
+    ERC20TokenholderCasterTest.setUp();
+
+    // Setting Mock Protocol Core's EIP-712 Domain Hash
+    setDomainHash(
+      LlamaCoreSigUtils.EIP712Domain({
+        name: CORE.name(),
+        version: "1",
+        chainId: block.chainid,
+        verifyingContract: address(caster)
+      })
+    );
+  }
+
+  function createOffchainSignature(ActionInfo memory _actionInfo, uint256 privateKey)
+    internal
+    view
+    returns (uint8 v, bytes32 r, bytes32 s)
+  {
+    LlamaCoreSigUtils.CastApprovalBySig memory castApproval = LlamaCoreSigUtils.CastApprovalBySig({
+      actionInfo: _actionInfo,
+      support: 1,
+      reason: "",
+      tokenHolder: tokenHolder1,
+      nonce: 0
+    });
+    bytes32 digest = getCastApprovalBySigTypedDataHash(castApproval);
+    (v, r, s) = vm.sign(privateKey, digest);
+  }
+
+  function castApprovalBySig(ActionInfo memory _actionInfo, uint8 support, uint8 v, bytes32 r, bytes32 s) internal {
+    caster.castApprovalBySig(tokenHolder1, support, _actionInfo, "", v, r, s);
+  }
+
+  function test_CastsApprovalBySig() public {
+    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
+
+    vm.expectEmit();
+    emit ApprovalCast(
+      actionInfo.id, tokenHolder1, CASTER_ROLE, 1, token.getPastVotes(tokenHolder1, block.timestamp - 1), ""
+    );
+
+    castApprovalBySig(actionInfo, 1, v, r, s);
+  }
+
+  function test_CheckNonceIncrements() public {
+    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
+
+    assertEq(caster.nonces(tokenHolder1, TokenholderCaster.castApprovalBySig.selector), 0);
+    castApprovalBySig(actionInfo, 1, v, r, s);
+    assertEq(caster.nonces(tokenHolder1, TokenholderCaster.castApprovalBySig.selector), 1);
+  }
+
+  function test_OperationCannotBeReplayed() public {
+    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
+    castApprovalBySig(actionInfo, 1, v, r, s);
+    // Invalid Signature error since the recovered signer address during the second call is not the same as token holder
+    // since nonce has increased.
+    vm.expectRevert(TokenholderCaster.InvalidSignature.selector);
+    castApprovalBySig(actionInfo, 1, v, r, s);
+  }
+
+  function test_RevertIf_SignerIsNotTokenHolder() public {
+    (, uint256 randomSignerPrivateKey) = makeAddrAndKey("randomSigner");
+    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, randomSignerPrivateKey);
+    // Invalid Signature error since the recovered signer address is not the same as the token holder passed in as
+    // parameter.
+    vm.expectRevert(ILlamaCore.InvalidSignature.selector);
+    castApprovalBySig(actionInfo, 1, v, r, s);
+  }
+
+  function test_RevertIf_SignerIsZeroAddress() public {
+    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
+    // Invalid Signature error since the recovered signer address is zero address due to invalid signature values
+    // (v,r,s).
+    vm.expectRevert(ILlamaCore.InvalidSignature.selector);
+    castApprovalBySig(actionInfo, 1, (v + 1), r, s);
+  }
+
+  function test_RevertIf_TokenHolderIncrementsNonce() public {
+    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
+
+    vm.prank(tokenHolder1);
+    caster.incrementNonce(ILlamaCore.castApprovalBySig.selector);
+
+    // Invalid Signature error since the recovered signer address during the call is not the same as token holder
+    // since nonce has increased.
+    vm.expectRevert(ILlamaCore.InvalidSignature.selector);
+    castApprovalBySig(actionInfo, 1, v, r, s);
+  }
+}
+
+contract CastDisapprovalBySig is ERC20TokenholderCasterTest, LlamaCoreSigUtils {
+  function setUp() public virtual override {
+    ERC20TokenholderCasterTest.setUp();
+
+    castApprovalsFor();
+
+    vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
+
+    vm.prank(tokenHolder1);
+    caster.submitApprovals(actionInfo);
+
+    // Setting Mock Protocol Core's EIP-712 Domain Hash
+    setDomainHash(
+      LlamaCoreSigUtils.EIP712Domain({
+        name: CORE.name(),
+        version: "1",
+        chainId: block.chainid,
+        verifyingContract: address(caster)
+      })
+    );
+  }
+
+  function createOffchainSignature(ActionInfo memory _actionInfo, uint256 privateKey)
+    internal
+    view
+    returns (uint8 v, bytes32 r, bytes32 s)
+  {
+    LlamaCoreSigUtils.CastDisapprovalBySig memory castDisapproval = LlamaCoreSigUtils.CastDisapprovalBySig({
+      actionInfo: _actionInfo,
+      support: 1,
+      reason: "",
+      tokenHolder: tokenHolder1,
+      nonce: 0
+    });
+    bytes32 digest = getCastDisapprovalBySigTypedDataHash(castDisapproval);
+    (v, r, s) = vm.sign(privateKey, digest);
+  }
+
+  function castDisapprovalBySig(ActionInfo memory _actionInfo, uint8 v, bytes32 r, bytes32 s) internal {
+    caster.castDisapprovalBySig(tokenHolder1, 1, _actionInfo, "", v, r, s);
+  }
+
+  function test_CastsDisapprovalBySig() public {
+    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
+
+    vm.expectEmit();
+    emit DisapprovalCast(
+      actionInfo.id, tokenHolder1, CASTER_ROLE, 1, token.getPastVotes(tokenHolder1, token.clock() - 1), ""
+    );
+
+    castDisapprovalBySig(actionInfo, v, r, s);
+
+    // assertEq(CORE.getAction(0).totalDisapprovals, 1);
+    // assertEq(CORE.disapprovals(0, disapproverDrake), true);
+  }
+
+  function test_CheckNonceIncrements() public {
+    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
+
+    assertEq(caster.nonces(tokenHolder1, ILlamaCore.castDisapprovalBySig.selector), 0);
+    castDisapprovalBySig(actionInfo, v, r, s);
+    assertEq(caster.nonces(tokenHolder1, ILlamaCore.castDisapprovalBySig.selector), 1);
+  }
+
+  function test_OperationCannotBeReplayed() public {
+    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
+    castDisapprovalBySig(actionInfo, v, r, s);
+    // Invalid Signature error since the recovered signer address during the second call is not the same as token holder
+    // since nonce has increased.
+    vm.expectRevert(ILlamaCore.InvalidSignature.selector);
+    castDisapprovalBySig(actionInfo, v, r, s);
+  }
+
+  function test_RevertIf_SignerIsNotPolicyHolder() public {
+    (, uint256 randomSignerPrivateKey) = makeAddrAndKey("randomSigner");
+    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, randomSignerPrivateKey);
+    // Invalid Signature error since the recovered signer address during the second call is not the same as token holder
+    // since nonce has increased.
+    vm.expectRevert(ILlamaCore.InvalidSignature.selector);
+    castDisapprovalBySig(actionInfo, v, r, s);
+  }
+
+  function test_RevertIf_SignerIsZeroAddress() public {
+    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
+    // Invalid Signature error since the recovered signer address is zero address due to invalid signature values
+    // (v,r,s).
+    vm.expectRevert(ILlamaCore.InvalidSignature.selector);
+    castDisapprovalBySig(actionInfo, (v + 1), r, s);
+  }
+
+  function test_RevertIf_PolicyholderIncrementsNonce() public {
+    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
+
+    vm.prank(tokenHolder1);
+    caster.incrementNonce(ILlamaCore.castDisapprovalBySig.selector);
+
+    // Invalid Signature error since the recovered signer address during the second call is not the same as policyholder
+    // since nonce has increased.
+    vm.expectRevert(ILlamaCore.InvalidSignature.selector);
+    castDisapprovalBySig(actionInfo, v, r, s);
+  }
+
+  function test_FailsIfDisapproved() public {
+    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
+
+    // First disapproval.
+    vm.expectEmit();
+    emit DisapprovalCast(
+      actionInfo.id, tokenHolder1, CASTER_ROLE, 1, token.getPastVotes(tokenHolder1, token.clock() - 1), ""
+    );
+    castDisapprovalBySig(actionInfo, v, r, s);
+    // assertEq(CORE.getAction(actionInfo.id).totalDisapprovals, 1);
+
+    // Second disapproval.
+    vm.prank(tokenHolder2);
+    caster.castDisapproval(actionInfo, 1, "");
+
+    vm.warp(block.timestamp + 1 + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
+
+    caster.submitDisapprovals(actionInfo);
+
+    // Assertions.
+    ActionState state = ActionState(CORE.getActionState(actionInfo));
+    assertEq(uint8(state), uint8(ActionState.Failed));
+
+    vm.expectRevert(abi.encodeWithSelector(ILlamaCore.InvalidActionState.selector, ActionState.Failed));
+    CORE.executeAction(actionInfo);
   }
 }

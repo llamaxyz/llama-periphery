@@ -6,12 +6,14 @@ import {Test, console2} from "forge-std/Test.sol";
 import {ERC20Votes} from "lib/openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import {MockERC20Votes} from "test/mock/MockERC20Votes.sol";
 import {LlamaTokenVotingTestSetup} from "test/token-voting/LlamaTokenVotingTestSetup.sol";
+import {LlamaCoreSigUtils} from "test/utils/LlamaCoreSigUtils.sol";
 
-import {Action, ActionInfo} from "src/lib/Structs.sol";
-import {RoleDescription} from "src/lib/UDVTs.sol";
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
 import {ILlamaPolicy} from "src/interfaces/ILlamaPolicy.sol";
 import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
+import {ActionState} from "src/lib/Enums.sol";
+import {Action, ActionInfo} from "src/lib/Structs.sol";
+import {RoleDescription} from "src/lib/UDVTs.sol";
 import {ERC20TokenholderActionCreator} from "src/token-voting/ERC20TokenholderActionCreator.sol";
 import {TokenholderActionCreator} from "src/token-voting/TokenholderActionCreator.sol";
 
@@ -57,7 +59,7 @@ contract Constructor is ERC20TokenholderActionCreatorTest {
 
   function test_RevertsIf_InvalidTokenAddress() public {
     vm.expectRevert(); // will EvmError: Revert vecause totalSupply fn does not exist
-    new ERC20TokenholderActionCreator(ERC20Votes(makeAddr("invalid-token")), ILlamaCore(address(CORE)), uint256(0));
+    new ERC20TokenholderActionCreator(ERC20Votes(makeAddr("invalid-token")), CORE, uint256(0));
   }
 
   function test_RevertsIf_CreationThresholdExceedsTotalSupply() public {
@@ -67,7 +69,7 @@ contract Constructor is ERC20TokenholderActionCreatorTest {
     vm.warp(block.timestamp + 1);
 
     vm.expectRevert(TokenholderActionCreator.InvalidCreationThreshold.selector);
-    new ERC20TokenholderActionCreator(token, ILlamaCore(address(CORE)), 17_000_000_000_000_000_000_000_000);
+    new ERC20TokenholderActionCreator(token, CORE, 17_000_000_000_000_000_000_000_000);
   }
 
   function test_ProperlySetsConstructorArguments() public {
@@ -77,8 +79,7 @@ contract Constructor is ERC20TokenholderActionCreatorTest {
 
     vm.warp(block.timestamp + 1);
 
-    ERC20TokenholderActionCreator actionCreator =
-      new ERC20TokenholderActionCreator(token, ILlamaCore(address(CORE)), threshold);
+    ERC20TokenholderActionCreator actionCreator = new ERC20TokenholderActionCreator(token, CORE, threshold);
     assertEq(address(actionCreator.TOKEN()), address(token));
     assertEq(address(actionCreator.LLAMA_CORE()), address(CORE));
     assertEq(actionCreator.creationThreshold(), threshold);
@@ -97,8 +98,7 @@ contract TokenHolderCreateAction is ERC20TokenholderActionCreatorTest {
 
     vm.warp(block.timestamp + 1);
 
-    ERC20TokenholderActionCreator actionCreator =
-      new ERC20TokenholderActionCreator(token, ILlamaCore(address(CORE)), threshold);
+    ERC20TokenholderActionCreator actionCreator = new ERC20TokenholderActionCreator(token, CORE, threshold);
 
     vm.prank(notATokenHolder);
     vm.expectRevert(abi.encodeWithSelector(TokenholderActionCreator.InsufficientBalance.selector, 0));
@@ -114,8 +114,7 @@ contract TokenHolderCreateAction is ERC20TokenholderActionCreatorTest {
 
     vm.warp(block.timestamp + 1);
 
-    ERC20TokenholderActionCreator actionCreator =
-      new ERC20TokenholderActionCreator(token, ILlamaCore(address(CORE)), threshold);
+    ERC20TokenholderActionCreator actionCreator = new ERC20TokenholderActionCreator(token, CORE, threshold);
     vm.roll(block.number + 1);
     vm.warp(block.timestamp + 1);
 
@@ -136,8 +135,7 @@ contract TokenHolderCreateAction is ERC20TokenholderActionCreatorTest {
     vm.roll(block.number + 1);
     vm.warp(block.timestamp + 1);
 
-    ERC20TokenholderActionCreator actionCreator =
-      new ERC20TokenholderActionCreator(token, ILlamaCore(address(CORE)), threshold);
+    ERC20TokenholderActionCreator actionCreator = new ERC20TokenholderActionCreator(token, CORE, threshold);
 
     vm.startPrank(address(EXECUTOR)); // init role, assign policy, and assign permission to setRoleHolder to the token
       // voting action creator
@@ -195,7 +193,7 @@ contract CancelAction is ERC20TokenholderActionCreatorTest {
     vm.roll(block.number + 1);
     vm.warp(block.timestamp + 1);
 
-    actionCreator = new ERC20TokenholderActionCreator(token, ILlamaCore(address(CORE)), threshold);
+    actionCreator = new ERC20TokenholderActionCreator(token, CORE, threshold);
 
     vm.startPrank(address(EXECUTOR)); // init role, assign policy, and assign permission to setRoleHolder to the token
       // voting action creator
@@ -240,8 +238,7 @@ contract SetActionThreshold is ERC20TokenholderActionCreatorTest {
 
     vm.warp(block.timestamp + 1);
 
-    ERC20TokenholderActionCreator actionCreator =
-      new ERC20TokenholderActionCreator(token, ILlamaCore(address(CORE)), 1_000_000e18);
+    ERC20TokenholderActionCreator actionCreator = new ERC20TokenholderActionCreator(token, CORE, 1_000_000e18);
 
     assertEq(actionCreator.creationThreshold(), 1_000_000e18);
 
@@ -256,8 +253,7 @@ contract SetActionThreshold is ERC20TokenholderActionCreatorTest {
     mockErc20Votes.mint(address(this), 500_000e18); // we use mockErc20Votes because IVotesToken is an interface
     // without the `mint` function
 
-    ERC20TokenholderActionCreator actionCreator =
-      new ERC20TokenholderActionCreator(token, ILlamaCore(address(CORE)), 500_000e18);
+    ERC20TokenholderActionCreator actionCreator = new ERC20TokenholderActionCreator(token, CORE, 500_000e18);
 
     vm.expectRevert(TokenholderActionCreator.InvalidCreationThreshold.selector);
     vm.prank(address(EXECUTOR));
@@ -270,11 +266,319 @@ contract SetActionThreshold is ERC20TokenholderActionCreatorTest {
     mockErc20Votes.mint(address(this), 1_000_000e18); // we use mockErc20Votes because IVotesToken is an interface
     // without the `mint` function
 
-    ERC20TokenholderActionCreator actionCreator =
-      new ERC20TokenholderActionCreator(token, ILlamaCore(address(CORE)), 1_000_000e18);
+    ERC20TokenholderActionCreator actionCreator = new ERC20TokenholderActionCreator(token, CORE, 1_000_000e18);
 
     vm.expectRevert(TokenholderActionCreator.OnlyLlamaExecutor.selector);
     vm.prank(notLlamaExecutor);
     actionCreator.setActionThreshold(threshold);
+  }
+}
+
+contract CreateActionBySig is ERC20TokenholderActionCreatorTest, LlamaCoreSigUtils {
+  ERC20TokenholderActionCreator actionCreator;
+  uint8 actionCreatorRole;
+
+  function setUp() public virtual override {
+    ERC20TokenholderActionCreatorTest.setUp();
+    mockErc20Votes.mint(tokenHolder, 1000); // we use mockErc20Votes because IVotesToken is an
+      // interface without the `delegate` function
+    vm.prank(tokenHolder);
+    mockErc20Votes.delegate(tokenHolder); // we use mockErc20Votes because IVotesToken is an interface without
+      // the `delegate` function
+
+    actionCreator = new ERC20TokenholderActionCreator(token, CORE, 1000);
+
+    // Setting Mock Protocol Core's EIP-712 Domain Hash
+    setDomainHash(
+      LlamaCoreSigUtils.EIP712Domain({
+        name: CORE.name(),
+        version: "1",
+        chainId: block.chainid,
+        verifyingContract: address(actionCreator)
+      })
+    );
+
+    vm.startPrank(address(EXECUTOR)); // init role, assign policy, and assign permission to setRoleHolder to the token
+      // voting action creator
+    POLICY.initializeRole(RoleDescription.wrap("Token Voting Action Creator Role"));
+    actionCreatorRole = 2;
+    POLICY.setRoleHolder(actionCreatorRole, address(actionCreator), DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION);
+    POLICY.setRolePermission(
+      actionCreatorRole,
+      ILlamaPolicy.PermissionData(address(POLICY), POLICY.initializeRole.selector, address(STRATEGY)),
+      true
+    );
+    vm.stopPrank();
+
+    vm.roll(block.number + 1);
+    vm.warp(block.timestamp + 1);
+  }
+
+  function createOffchainSignature(uint256 privateKey) internal view returns (uint8 v, bytes32 r, bytes32 s) {
+    (v, r, s) = createOffchainSignatureWithDescription(privateKey, "");
+  }
+
+  function createOffchainSignatureWithDescription(uint256 privateKey, string memory description)
+    internal
+    view
+    returns (uint8 v, bytes32 r, bytes32 s)
+  {
+    LlamaCoreSigUtils.CreateActionBySig memory _createAction = LlamaCoreSigUtils.CreateActionBySig({
+      role: actionCreatorRole,
+      strategy: address(STRATEGY),
+      target: address(POLICY),
+      value: 0,
+      data: abi.encodeCall(POLICY.initializeRole, (RoleDescription.wrap("Test Role"))),
+      description: description,
+      tokenHolder: tokenHolder,
+      nonce: 0
+    });
+    bytes32 digest = getCreateActionBySigTypedDataHash(_createAction);
+    (v, r, s) = vm.sign(privateKey, digest);
+  }
+
+  function createActionBySig(uint8 v, bytes32 r, bytes32 s) internal returns (uint256 actionId) {
+    actionId = actionCreator.createActionBySig(
+      tokenHolder,
+      actionCreatorRole,
+      STRATEGY,
+      address(POLICY),
+      0,
+      abi.encodeCall(POLICY.initializeRole, (RoleDescription.wrap("Test Role"))),
+      "",
+      v,
+      r,
+      s
+    );
+  }
+
+  function test_CreatesActionBySig() public {
+    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(tokenHolderPrivateKey);
+    bytes memory data = abi.encodeCall(POLICY.initializeRole, (RoleDescription.wrap("Test Role")));
+
+    uint256 actionCount = CORE.actionsCount();
+
+    vm.expectEmit();
+    emit ActionCreated(actionCount, tokenHolder, actionCreatorRole, STRATEGY, address(POLICY), 0, data, "");
+
+    uint256 actionId = createActionBySig(v, r, s);
+    Action memory action = CORE.getAction(actionId);
+
+    assertEq(actionId, actionCount);
+    assertEq(CORE.actionsCount() - 1, actionCount);
+    assertEq(action.creationTime, block.timestamp);
+  }
+
+  function test_CreatesActionBySigWithDescription() public {
+    (uint8 v, bytes32 r, bytes32 s) =
+      createOffchainSignatureWithDescription(tokenHolderPrivateKey, "# Action 0 \n This is my action.");
+    bytes memory data = abi.encodeCall(POLICY.initializeRole, (RoleDescription.wrap("Test Role")));
+
+    uint256 actionCount = CORE.actionsCount();
+
+    vm.expectEmit();
+    emit ActionCreated(
+      actionCount,
+      tokenHolder,
+      actionCreatorRole,
+      STRATEGY,
+      address(POLICY),
+      0,
+      data,
+      "# Action 0 \n This is my action."
+    );
+
+    uint256 actionId = actionCreator.createActionBySig(
+      tokenHolder,
+      actionCreatorRole,
+      STRATEGY,
+      address(POLICY),
+      0,
+      abi.encodeCall(POLICY.initializeRole, (RoleDescription.wrap("Test Role"))),
+      "# Action 0 \n This is my action.",
+      v,
+      r,
+      s
+    );
+    Action memory action = CORE.getAction(actionId);
+
+    assertEq(actionId, actionCount);
+    assertEq(CORE.actionsCount() - 1, actionCount);
+    assertEq(action.creationTime, block.timestamp);
+  }
+
+  function test_CheckNonceIncrements() public {
+    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(tokenHolderPrivateKey);
+    assertEq(actionCreator.nonces(tokenHolder, ILlamaCore.createActionBySig.selector), 0);
+    createActionBySig(v, r, s);
+    assertEq(actionCreator.nonces(tokenHolder, ILlamaCore.createActionBySig.selector), 1);
+  }
+
+  function test_OperationCannotBeReplayed() public {
+    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(tokenHolderPrivateKey);
+    createActionBySig(v, r, s);
+    // Invalid Signature error since the recovered signer address during the second call is not the same as
+    // policyholder since nonce has increased.
+    vm.expectRevert(ILlamaCore.InvalidSignature.selector);
+    createActionBySig(v, r, s);
+  }
+
+  function test_RevertIf_SignerIsNotPolicyHolder() public {
+    (, uint256 randomSignerPrivateKey) = makeAddrAndKey("randomSigner");
+    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(randomSignerPrivateKey);
+    // Invalid Signature error since the recovered signer address is not the same as the policyholder passed in as
+    // parameter.
+    vm.expectRevert(ILlamaCore.InvalidSignature.selector);
+    createActionBySig(v, r, s);
+  }
+
+  function test_RevertIf_SignerIsZeroAddress() public {
+    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(tokenHolderPrivateKey);
+    // Invalid Signature error since the recovered signer address is zero address due to invalid signature values
+    // (v,r,s).
+    vm.expectRevert(ILlamaCore.InvalidSignature.selector);
+    createActionBySig((v + 1), r, s);
+  }
+
+  function test_RevertIf_PolicyholderIncrementsNonce() public {
+    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(tokenHolderPrivateKey);
+
+    vm.prank(tokenHolder);
+    actionCreator.incrementNonce(ILlamaCore.createActionBySig.selector);
+
+    // Invalid Signature error since the recovered signer address during the call is not the same as policyholder
+    // since nonce has increased.
+    vm.expectRevert(ILlamaCore.InvalidSignature.selector);
+    createActionBySig(v, r, s);
+  }
+}
+
+contract CancelActionBySig is ERC20TokenholderActionCreatorTest, LlamaCoreSigUtils {
+  bytes data = abi.encodeCall(POLICY.initializeRole, (RoleDescription.wrap("Test Role")));
+  uint256 actionId;
+  ERC20TokenholderActionCreator actionCreator;
+  ActionInfo actionInfo;
+  uint8 actionCreatorRole;
+
+  function setUp() public virtual override {
+    ERC20TokenholderActionCreatorTest.setUp();
+    mockErc20Votes.mint(address(tokenHolder), 1000); // we use mockErc20Votes because IVotesToken is an
+      // interface without the `delegate` function
+    vm.prank(tokenHolder);
+    mockErc20Votes.delegate(tokenHolder); // we use mockErc20Votes because IVotesToken is an interface without
+      // the `delegate` function
+
+    actionCreator = new ERC20TokenholderActionCreator(token, ILlamaCore(address(CORE)), 1000);
+
+    setDomainHash(
+      LlamaCoreSigUtils.EIP712Domain({
+        name: CORE.name(),
+        version: "1",
+        chainId: block.chainid,
+        verifyingContract: address(actionCreator)
+      })
+    );
+
+    vm.startPrank(address(EXECUTOR)); // init role, assign policy, and assign permission to setRoleHolder to the token
+      // voting action creator
+    POLICY.initializeRole(RoleDescription.wrap("Token Voting Action Creator Role"));
+    actionCreatorRole = 2;
+    POLICY.setRoleHolder(actionCreatorRole, address(actionCreator), DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION);
+    POLICY.setRolePermission(
+      actionCreatorRole,
+      ILlamaPolicy.PermissionData(address(POLICY), POLICY.initializeRole.selector, address(STRATEGY)),
+      true
+    );
+    vm.stopPrank();
+
+    vm.roll(block.number + 1);
+    vm.warp(block.timestamp + 1);
+
+    vm.expectEmit();
+    emit ActionCreated(CORE.actionsCount(), tokenHolder, actionCreatorRole, STRATEGY, address(POLICY), 0, data, "");
+    vm.prank(tokenHolder);
+    actionId = actionCreator.createAction(actionCreatorRole, STRATEGY, address(POLICY), 0, data, "");
+
+    actionInfo = ActionInfo(actionId, address(actionCreator), actionCreatorRole, STRATEGY, address(POLICY), 0, data);
+
+    vm.roll(block.number + 1);
+    vm.warp(block.timestamp + 1);
+  }
+
+  function createOffchainSignature(ActionInfo memory _actionInfo, uint256 privateKey)
+    internal
+    view
+    returns (uint8 v, bytes32 r, bytes32 s)
+  {
+    LlamaCoreSigUtils.CancelActionBySig memory cancelAction = LlamaCoreSigUtils.CancelActionBySig({
+      tokenHolder: tokenHolder,
+      actionInfo: _actionInfo,
+      nonce: actionCreator.nonces(tokenHolder, ILlamaCore.cancelActionBySig.selector)
+    });
+    bytes32 digest = getCancelActionBySigTypedDataHash(cancelAction);
+    (v, r, s) = vm.sign(privateKey, digest);
+  }
+
+  function cancelActionBySig(ActionInfo memory _actionInfo, uint8 v, bytes32 r, bytes32 s) internal {
+    actionCreator.cancelActionBySig(tokenHolder, _actionInfo, v, r, s);
+  }
+
+  function test_CancelActionBySig() public {
+    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolderPrivateKey);
+
+    // vm.expectEmit();
+    // emit ActionCanceled(actionInfo.id, tokenHolder);
+
+    cancelActionBySig(actionInfo, v, r, s);
+
+    uint256 state = uint256(CORE.getActionState(actionInfo));
+    uint256 canceled = uint256(ActionState.Canceled);
+    assertEq(state, canceled);
+  }
+
+  function test_CheckNonceIncrements() public {
+    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolderPrivateKey);
+
+    assertEq(actionCreator.nonces(tokenHolder, ILlamaCore.cancelActionBySig.selector), 0);
+    cancelActionBySig(actionInfo, v, r, s);
+    assertEq(actionCreator.nonces(tokenHolder, ILlamaCore.cancelActionBySig.selector), 1);
+  }
+
+  function test_OperationCannotBeReplayed() public {
+    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolderPrivateKey);
+    cancelActionBySig(actionInfo, v, r, s);
+    // Invalid Signature error since the recovered signer address during the second call is not the same as policyholder
+    // since nonce has increased.
+    vm.expectRevert(ILlamaCore.InvalidSignature.selector);
+    cancelActionBySig(actionInfo, v, r, s);
+  }
+
+  function test_RevertIf_SignerIsNotTokenHolder() public {
+    (, uint256 randomSignerPrivateKey) = makeAddrAndKey("randomSigner");
+    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, randomSignerPrivateKey);
+    // Invalid Signature error since the recovered signer address is not the same as the policyholder passed in as
+    // parameter.
+    vm.expectRevert(ILlamaCore.InvalidSignature.selector);
+    cancelActionBySig(actionInfo, v, r, s);
+  }
+
+  function test_RevertIf_SignerIsZeroAddress() public {
+    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolderPrivateKey);
+    // Invalid Signature error since the recovered signer address is zero address due to invalid signature values
+    // (v,r,s).
+    vm.expectRevert(ILlamaCore.InvalidSignature.selector);
+    cancelActionBySig(actionInfo, (v + 1), r, s);
+  }
+
+  function test_RevertIf_PolicyholderIncrementsNonce() public {
+    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolderPrivateKey);
+
+    vm.prank(tokenHolder);
+    actionCreator.incrementNonce(ILlamaCore.cancelActionBySig.selector);
+
+    // Invalid Signature error since the recovered signer address during the call is not the same as policyholder
+    // since nonce has increased.
+    vm.expectRevert(ILlamaCore.InvalidSignature.selector);
+    cancelActionBySig(actionInfo, v, r, s);
   }
 }
