@@ -10,7 +10,7 @@ import {LlamaUtils} from "src/lib/LlamaUtils.sol";
 import {Action, ActionInfo} from "src/lib/Structs.sol";
 import {ILlamaRelativeStrategyBase} from "src/interfaces/ILlamaRelativeStrategyBase.sol";
 
-/// @title TokenholderCaster
+/// @title TokenHolderCaster
 /// @author Llama (devsdosomething@llama.xyz)
 /// @notice This contract lets holders of a given governance token cast votes and vetos
 /// on created actions.
@@ -18,7 +18,7 @@ import {ILlamaRelativeStrategyBase} from "src/interfaces/ILlamaRelativeStrategyB
 /// it must hold a Policy from the specified `LlamaCore` instance to actually be able to cast on an action. This
 /// contract does not verify that it holds the correct policy when voting and relies on `LlamaCore` to
 /// verify that during submission.
-abstract contract TokenholderCaster is Initializable {
+abstract contract TokenHolderCaster is Initializable {
   // =========================
   // ======== Structs ========
   // =========================
@@ -35,8 +35,8 @@ abstract contract TokenholderCaster is Initializable {
     uint96 vetosAgainst; // Number of vetos casted against this action. This does not exist in
       // `LlamaCore`.
     bool vetoSubmitted; // True if the vetos have been submitted to `LlamaCore`, false otherwise.
-    mapping(address tokenholder => bool) castVote; // True if tokenholder casted vote, false otherwise.
-    mapping(address tokenholder => bool) castVeto; // True if tokenholder casted veto, false otherwise.
+    mapping(address tokenHolder => bool) castVote; // True if tokenHolder casted vote, false otherwise.
+    mapping(address tokenHolder => bool) castVeto; // True if tokenHolder casted veto, false otherwise.
   }
 
   // ========================
@@ -91,7 +91,7 @@ abstract contract TokenholderCaster is Initializable {
   /// @dev Thrown when an invalid `llamaCore` address is passed to the constructor.
   error InvalidLlamaCoreAddress();
 
-  /// @dev The recovered signer does not match the expected tokenholder.
+  /// @dev The recovered signer does not match the expected tokenHolder.
   error InvalidSignature();
 
   /// @dev Thrown when an invalid `token` address is passed to the constructor.
@@ -112,11 +112,11 @@ abstract contract TokenholderCaster is Initializable {
 
   /// @dev Emitted when an vote is cast.
   /// @dev This is almost the same as the `ApprovalCast` event from `LlamaCore`, with the addition of the support field.
-  /// The two events will be nearly identical, with the `tokenholder` being the main difference. This version will emit
-  /// the address of the tokenholder that casted, while the `LlamaCore` version will emit the address of this contract
-  /// as the action creator. Additionally, there is no `role` emitted here as all tokenholders are eligible to vote.
+  /// The two events will be nearly identical, with the `tokenHolder` being the main difference. This version will emit
+  /// the address of the tokenHolder that casted, while the `LlamaCore` version will emit the address of this contract
+  /// as the action creator. Additionally, there is no `role` emitted here as all tokenHolders are eligible to vote.
   event VoteCast(
-    uint256 id, address indexed tokenholder, uint8 indexed role, uint8 indexed support, uint256 quantity, string reason
+    uint256 id, address indexed tokenHolder, uint8 indexed role, uint8 indexed support, uint256 quantity, string reason
   );
 
   /// @dev Emitted when cast votes are submitted to the `LlamaCore` contract.
@@ -124,11 +124,11 @@ abstract contract TokenholderCaster is Initializable {
 
   /// @dev Emitted when a veto is cast.
   /// @dev This is the same as the `DisapprovalCast` event from `LlamaCore`. The two events will be
-  /// nearly identical, with the `tokenholder` being the only difference. This version will emit
-  /// the address of the tokenholder that casted, while the `LlamaCore` version will emit the
+  /// nearly identical, with the `tokenHolder` being the only difference. This version will emit
+  /// the address of the tokenHolder that casted, while the `LlamaCore` version will emit the
   /// address of this contract as the action creator.
   event VetoCast(
-    uint256 id, address indexed tokenholder, uint8 indexed role, uint8 indexed support, uint256 quantity, string reason
+    uint256 id, address indexed tokenHolder, uint8 indexed role, uint8 indexed support, uint256 quantity, string reason
   );
 
   /// @dev Emitted when cast votes are submitted to the `LlamaCore` contract.
@@ -178,17 +178,17 @@ abstract contract TokenholderCaster is Initializable {
   /// @notice Mapping from action ID to the status of existing casts.
   mapping(uint256 actionId => CastData) public casts;
 
-  /// @notice Mapping of tokenholders to function selectors to current nonces for EIP-712 signatures.
-  /// @dev This is used to prevent replay attacks by incrementing the nonce for each operation (`createAction`,
-  /// `cancelAction`, `castVote` and `castVeto`) signed by the tokenholders.
-  mapping(address tokenholders => mapping(bytes4 selector => uint256 currentNonce)) public nonces;
+  /// @notice Mapping of tokenHolders to function selectors to current nonces for EIP-712 signatures.
+  /// @dev This is used to prevent replay attacks by incrementing the nonce for each operation (`castVote` and
+  /// `castVeto`) signed by the tokenHolders.
+  mapping(address tokenHolders => mapping(bytes4 selector => uint256 currentNonce)) public nonces;
 
   /// @dev This will be called by the `initialize` of the inheriting contract.
   /// @param _llamaCore The `LlamaCore` contract for this Llama instance.
   /// @param _role The role used by this contract to cast votes and vetos.
   /// @param _voteQuorum The minimum % of votes required to submit votes to `LlamaCore`.
   /// @param _minVetoQuorum The minimum % of vetos required to submit vetos to `LlamaCore`.
-  function __initializeTokenholderCasterMinimalProxy(
+  function __initializeTokenHolderCasterMinimalProxy(
     ILlamaCore _llamaCore,
     uint8 _role,
     uint256 _voteQuorum,
@@ -205,14 +205,14 @@ abstract contract TokenholderCaster is Initializable {
     minVetoQuorum = _minVetoQuorum;
   }
 
-  /// @notice How tokenholders add their support of an action with a vote and a reason.
+  /// @notice How tokenHolders add their support of an action with a vote and a reason.
   /// @dev Use `""` for `reason` if there is no reason.
   /// @param actionInfo Data required to create an action.
-  /// @param support The tokenholder's support of the vote of the action.
+  /// @param support The tokenHolder's support of the vote of the action.
   ///   0 = Against
   ///   1 = For
   ///   2 = Abstain, but this is not currently supported.
-  /// @param reason The reason given for the vote by the tokenholder.
+  /// @param reason The reason given for the vote by the tokenHolder.
   function castVote(ActionInfo calldata actionInfo, uint8 support, string calldata reason) external {
     _castVote(msg.sender, actionInfo, support, reason);
   }
@@ -232,14 +232,14 @@ abstract contract TokenholderCaster is Initializable {
     _castVote(signer, actionInfo, support, reason);
   }
 
-  /// @notice How tokenholders add their support of the veto of an action with a reason.
+  /// @notice How tokenHolders add their support of the veto of an action with a reason.
   /// @dev Use `""` for `reason` if there is no reason.
   /// @param actionInfo Data required to create an action.
-  /// @param support The tokenholder's support of the veto of the action.
+  /// @param support The tokenHolder's support of the veto of the action.
   ///   0 = Against
   ///   1 = For
   ///   2 = Abstain, but this is not currently supported.
-  /// @param reason The reason given for the veto by the tokenholder.
+  /// @param reason The reason given for the veto by the tokenHolder.
   function castVeto(ActionInfo calldata actionInfo, uint8 support, string calldata reason) external {
     _castVeto(msg.sender, actionInfo, support, reason);
   }
@@ -398,11 +398,11 @@ abstract contract TokenholderCaster is Initializable {
   function _getPastTotalSupply(uint256 timestamp) internal view virtual returns (uint256) {}
   function _getClockMode() internal view virtual returns (string memory) {}
 
-  /// @dev Returns the current nonce for a given tokenholder and selector, and increments it. Used to prevent
+  /// @dev Returns the current nonce for a given tokenHolder and selector, and increments it. Used to prevent
   /// replay attacks.
-  function _useNonce(address tokenholder, bytes4 selector) internal returns (uint256 nonce) {
-    nonce = nonces[tokenholder][selector];
-    nonces[tokenholder][selector] = LlamaUtils.uncheckedIncrement(nonce);
+  function _useNonce(address tokenHolder, bytes4 selector) internal returns (uint256 nonce) {
+    nonce = nonces[tokenHolder][selector];
+    nonces[tokenHolder][selector] = LlamaUtils.uncheckedIncrement(nonce);
   }
 
   // -------- EIP-712 Getters --------
@@ -419,7 +419,7 @@ abstract contract TokenholderCaster is Initializable {
   /// @dev Returns the hash of the ABI-encoded EIP-712 message for the `castVote` domain, which can be used to
   /// recover the signer.
   function _getCastVoteTypedDataHash(
-    address tokenholder,
+    address tokenHolder,
     uint8 support,
     ActionInfo calldata actionInfo,
     string calldata reason
@@ -427,11 +427,11 @@ abstract contract TokenholderCaster is Initializable {
     bytes32 castVoteHash = keccak256(
       abi.encode(
         CAST_VOTE_BY_SIG_TYPEHASH,
-        tokenholder,
+        tokenHolder,
         support,
         _getActionInfoHash(actionInfo),
         keccak256(bytes(reason)),
-        _useNonce(tokenholder, msg.sig)
+        _useNonce(tokenHolder, msg.sig)
       )
     );
 
@@ -441,7 +441,7 @@ abstract contract TokenholderCaster is Initializable {
   /// @dev Returns the hash of the ABI-encoded EIP-712 message for the `CastVeto` domain, which can be used to
   /// recover the signer.
   function _getCastVetoTypedDataHash(
-    address tokenholder,
+    address tokenHolder,
     uint8 support,
     ActionInfo calldata actionInfo,
     string calldata reason
@@ -449,11 +449,11 @@ abstract contract TokenholderCaster is Initializable {
     bytes32 castVetoHash = keccak256(
       abi.encode(
         CAST_VETO_BY_SIG_TYPEHASH,
-        tokenholder,
+        tokenHolder,
         support,
         _getActionInfoHash(actionInfo),
         keccak256(bytes(reason)),
-        _useNonce(tokenholder, msg.sig)
+        _useNonce(tokenHolder, msg.sig)
       )
     );
 

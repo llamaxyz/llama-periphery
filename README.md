@@ -12,7 +12,7 @@ repository.
 
 ## Modules
 
-- **Token Voting:** smart contract policies that allow `ERC20Votes` or `ERC721Votes` tokenholders to create actions enforced by delegated token thresholds or collectively approve or disapprove an action through token voting.
+- **Token Voting:** smart contract policies that allow `ERC20Votes` or `ERC721Votes` tokenHolders to create actions enforced by delegated token thresholds or collectively approve or disapprove an action through token voting.
 
 ## Prerequisites
 

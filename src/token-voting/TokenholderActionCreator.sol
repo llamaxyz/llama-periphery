@@ -8,7 +8,7 @@ import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
 import {Action, ActionInfo} from "src/lib/Structs.sol";
 import {LlamaUtils} from "src/lib/LlamaUtils.sol";
 
-/// @title TokenholderActionCreator
+/// @title TokenHolderActionCreator
 /// @author Llama (devsdosomething@llama.xyz)
 /// @notice This contract lets holders of a given governance token create actions if they have
 /// sufficient token balance.
@@ -16,7 +16,7 @@ import {LlamaUtils} from "src/lib/LlamaUtils.sol";
 /// it must hold a Policy from the specified `LlamaCore` instance to actually be able to create an action. The
 /// instance's policy encodes what actions this contract is allowed to create, and attempting to create an action that
 /// is not allowed by the policy will result in a revert.
-abstract contract TokenholderActionCreator is Initializable {
+abstract contract TokenHolderActionCreator is Initializable {
   /// @notice The core contract for this Llama instance.
   ILlamaCore public llamaCore;
 
@@ -39,12 +39,12 @@ abstract contract TokenholderActionCreator is Initializable {
   bytes32 internal constant EIP712_DOMAIN_TYPEHASH =
     keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
 
-  /// @notice The address of the tokenholder that created the action.
+  /// @notice The address of the tokenHolder that created the action.
   mapping(uint256 => address) public actionCreators;
 
   /// @notice Mapping of token holder to function selectors to current nonces for EIP-712 signatures.
   /// @dev This is used to prevent replay attacks by incrementing the nonce for each operation (`createAction`,
-  /// `cancelAction`, `castApproval` and `castDisapproval`) signed by the token holder.
+  /// `cancelAction`) signed by the token holder.
   mapping(address tokenHolder => mapping(bytes4 selector => uint256 currentNonce)) public nonces;
 
   /// @notice The default number of tokens required to create an action.
@@ -56,7 +56,7 @@ abstract contract TokenholderActionCreator is Initializable {
   /// @dev Emitted when an action is created.
   /// @dev This is the same as the `ActionCreated` event from `LlamaCore`. The two events will be
   /// nearly identical, with the `creator` being the only difference. This version will emit the
-  /// address of the tokenholder that created the action, while the `LlamaCore` version will emit
+  /// address of the tokenHolder that created the action, while the `LlamaCore` version will emit
   /// the address of this contract as the action creator.
   event ActionCreated(
     uint256 id,
@@ -101,7 +101,7 @@ abstract contract TokenholderActionCreator is Initializable {
   /// @param _creationThreshold The default number of tokens required to create an action. This must
   /// be in the same decimals as the token. For example, if the token has 18 decimals and you want a
   /// creation threshold of 1000 tokens, pass in 1000e18.
-  function __initializeTokenholderActionCreatorMinimalProxy(ILlamaCore _llamaCore, uint256 _creationThreshold) internal {
+  function __initializeTokenHolderActionCreatorMinimalProxy(ILlamaCore _llamaCore, uint256 _creationThreshold) internal {
     if (_llamaCore.actionsCount() < 0) revert InvalidLlamaCoreAddress();
 
     llamaCore = _llamaCore;

@@ -2,14 +2,14 @@
 pragma solidity ^0.8.23;
 
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
-import {TokenholderActionCreator} from "src/token-voting/TokenholderActionCreator.sol";
+import {TokenHolderActionCreator} from "src/token-voting/TokenHolderActionCreator.sol";
 import {ERC20Votes} from "@openzeppelin/token/ERC20/extensions/ERC20Votes.sol";
 
-/// @title ERC20TokenholderActionCreator
+/// @title ERC20TokenHolderActionCreator
 /// @author Llama (devsdosomething@llama.xyz)
 /// @notice This contract lets holders of a specified `ERC20Votes` token create actions on a llama instance if their
 /// token balance is greater than or equal to the creation threshold.
-contract ERC20TokenholderActionCreator is TokenholderActionCreator {
+contract ERC20TokenHolderActionCreator is TokenHolderActionCreator {
   ERC20Votes public token;
 
   /// @dev This contract is deployed as a minimal proxy from the factory's `deployTokenVotingModule` function. The
@@ -18,7 +18,7 @@ contract ERC20TokenholderActionCreator is TokenholderActionCreator {
     _disableInitializers();
   }
 
-  /// @notice Initializes a new `ERC20TokenholderActionCreator` clone.
+  /// @notice Initializes a new `ERC20TokenHolderActionCreator` clone.
   /// @dev This function is called by the `deployTokenVotingModule` function in the `LlamaTokenVotingFactory` contract.
   /// The `initializer` modifier ensures that this function can be invoked at most once.
   /// @param _token The ERC20 token to be used for voting.
@@ -27,7 +27,7 @@ contract ERC20TokenholderActionCreator is TokenholderActionCreator {
   /// be in the same decimals as the token. For example, if the token has 18 decimals and you want a
   /// creation threshold of 1000 tokens, pass in 1000e18.
   function initialize(ERC20Votes _token, ILlamaCore _llamaCore, uint256 _creationThreshold) external initializer {
-    __initializeTokenholderActionCreatorMinimalProxy(_llamaCore, _creationThreshold);
+    __initializeTokenHolderActionCreatorMinimalProxy(_llamaCore, _creationThreshold);
     token = _token;
     uint256 totalSupply = token.totalSupply();
     if (totalSupply == 0) revert InvalidTokenAddress();
