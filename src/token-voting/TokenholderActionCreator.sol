@@ -27,9 +27,13 @@ abstract contract TokenholderActionCreator is Initializable {
   /// @dev This role is expected to have the permissions to create appropriate actions.
   uint8 public role;
 
-  /// @dev EIP-712 actionInfo typehash.
-  bytes32 internal constant ACTION_INFO_TYPEHASH = keccak256(
-    "ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
+  /// @dev EIP-712 base typehash.
+  bytes32 internal constant EIP712_DOMAIN_TYPEHASH =
+    keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
+
+  /// @dev EIP-712 createAction typehash.
+  bytes32 internal constant CREATE_ACTION_TYPEHASH = keccak256(
+    "CreateAction(address tokenHolder,address strategy,address target,uint256 value,bytes data,string description,uint256 nonce)"
   );
 
   /// @dev EIP-712 cancelAction typehash.
@@ -37,14 +41,10 @@ abstract contract TokenholderActionCreator is Initializable {
     "CancelAction(address tokenHolder,ActionInfo actionInfo,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
   );
 
-  /// @dev EIP-712 createAction typehash.
-  bytes32 internal constant CREATE_ACTION_TYPEHASH = keccak256(
-    "CreateAction(address tokenHolder,uint8 role,address strategy,address target,uint256 value,bytes data,string description,uint256 nonce)"
+  /// @dev EIP-712 actionInfo typehash.
+  bytes32 internal constant ACTION_INFO_TYPEHASH = keccak256(
+    "ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
   );
-
-  /// @dev EIP-712 base typehash.
-  bytes32 internal constant EIP712_DOMAIN_TYPEHASH =
-    keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
 
   /// @notice The address of the tokenholder that created the action.
   mapping(uint256 => address) public actionCreators;
@@ -283,7 +283,6 @@ abstract contract TokenholderActionCreator is Initializable {
       abi.encode(
         CREATE_ACTION_TYPEHASH,
         tokenHolder,
-        role,
         address(strategy),
         target,
         value,

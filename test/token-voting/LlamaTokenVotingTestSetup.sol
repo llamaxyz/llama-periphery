@@ -32,15 +32,14 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
   uint256 public constant ERC721_MIN_APPROVAL_PCT = 1;
   uint256 public constant ERC721_MIN_DISAPPROVAL_PCT = 1;
 
-  // Token Voting Role Descriptions.
-  RoleDescription public constant TOKEN_VOTING_ACTION_CREATOR_ROLE_DESC =
-    RoleDescription.wrap("Token Voting Action Creator Role");
-  RoleDescription public constant TOKEN_VOTING_CASTER_ROLE_DESC = RoleDescription.wrap("Token Voting Caster Role");
-  RoleDescription public constant MADE_UP_ROLE_DESC = RoleDescription.wrap("Made Up Role");
-
   // Votes Tokens
   MockERC20Votes public erc20VotesToken;
   MockERC721Votes public erc721VotesToken;
+
+  // Token Voting Roles
+  uint8 tokenVotingActionCreatorRole;
+  uint8 tokenVotingCasterRole;
+  uint8 madeUpRole;
 
   // Token holders.
   address tokenHolder0;
@@ -70,33 +69,71 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
     (tokenHolder2, tokenHolder2PrivateKey) = makeAddrAndKey("tokenHolder2");
     (tokenHolder3, tokenHolder3PrivateKey) = makeAddrAndKey("tokenHolder3");
     (notTokenHolder, notTokenHolderPrivateKey) = makeAddrAndKey("notTokenHolder");
+
+    // Initialize required roles.
+    vm.startPrank(address(EXECUTOR));
+    POLICY.initializeRole(RoleDescription.wrap("Token Voting Action Creator Role"));
+    tokenVotingActionCreatorRole = POLICY.numRoles();
+    POLICY.initializeRole(RoleDescription.wrap("Token Voting Caster Role"));
+    tokenVotingCasterRole = POLICY.numRoles();
+    POLICY.initializeRole(RoleDescription.wrap("Made Up Role"));
+    madeUpRole = POLICY.numRoles();
+    vm.stopPrank();
   }
 
   // =========================
   // ======== Helpers ========
   // =========================
 
-  function _deployERC20TokenVotingModule() internal returns (ERC20TokenholderActionCreator, ERC20TokenholderCaster) {
-    vm.prank(address(EXECUTOR));
+  function _deployERC20TokenVotingModuleAndSetRole()
+    internal
+    returns (ERC20TokenholderActionCreator, ERC20TokenholderCaster)
+  {
+    vm.startPrank(address(EXECUTOR));
+    // Deploy Token Voting Module
     (address erc20TokenholderActionCreator, address erc20TokenholderCaster) = tokenVotingFactory.deployTokenVotingModule(
-      address(erc20VotesToken), true, 0, 0, ERC20_CREATION_THRESHOLD, ERC20_MIN_APPROVAL_PCT, ERC20_MIN_DISAPPROVAL_PCT
+      address(erc20VotesToken),
+      true,
+      tokenVotingActionCreatorRole,
+      tokenVotingCasterRole,
+      ERC20_CREATION_THRESHOLD,
+      ERC20_MIN_APPROVAL_PCT,
+      ERC20_MIN_DISAPPROVAL_PCT
     );
+    // Assign roles to Token Voting Modules
+    POLICY.setRoleHolder(
+      tokenVotingActionCreatorRole, erc20TokenholderActionCreator, DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION
+    );
+    POLICY.setRoleHolder(tokenVotingCasterRole, erc20TokenholderCaster, DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION);
+    vm.stopPrank();
+
     return
       (ERC20TokenholderActionCreator(erc20TokenholderActionCreator), ERC20TokenholderCaster(erc20TokenholderCaster));
   }
 
-  function _deployERC721TokenVotingModule() internal returns (ERC721TokenholderActionCreator, ERC721TokenholderCaster) {
-    vm.prank(address(EXECUTOR));
+  function _deployERC721TokenVotingModuleAndSetRole()
+    internal
+    returns (ERC721TokenholderActionCreator, ERC721TokenholderCaster)
+  {
+    vm.startPrank(address(EXECUTOR));
+    // Deploy Token Voting Module
     (address erc721TokenholderActionCreator, address erc721TokenholderCaster) = tokenVotingFactory
       .deployTokenVotingModule(
       address(erc721VotesToken),
       false,
-      0,
-      0,
+      tokenVotingActionCreatorRole,
+      tokenVotingCasterRole,
       ERC721_CREATION_THRESHOLD,
       ERC721_MIN_APPROVAL_PCT,
       ERC721_MIN_DISAPPROVAL_PCT
     );
+    // Assign roles to Token Voting Modules
+    POLICY.setRoleHolder(
+      tokenVotingActionCreatorRole, erc721TokenholderActionCreator, DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION
+    );
+    POLICY.setRoleHolder(tokenVotingCasterRole, erc721TokenholderCaster, DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION);
+    vm.stopPrank();
+
     return
       (ERC721TokenholderActionCreator(erc721TokenholderActionCreator), ERC721TokenholderCaster(erc721TokenholderCaster));
   }
