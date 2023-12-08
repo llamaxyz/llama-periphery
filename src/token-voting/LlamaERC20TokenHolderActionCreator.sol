@@ -2,14 +2,14 @@
 pragma solidity ^0.8.23;
 
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
-import {TokenholderCaster} from "src/token-voting/TokenholderCaster.sol";
+import {LlamaTokenHolderActionCreator} from "src/token-voting/LlamaTokenHolderActionCreator.sol";
 import {ERC20Votes} from "@openzeppelin/token/ERC20/extensions/ERC20Votes.sol";
 
-/// @title ERC20TokenholderCaster
+/// @title LlamaERC20TokenHolderActionCreator
 /// @author Llama (devsdosomething@llama.xyz)
-/// @notice This contract lets holders of a given governance ERC20Votes token cast approvals and disapprovals
-/// on created actions.
-contract ERC20TokenholderCaster is TokenholderCaster {
+/// @notice This contract lets holders of a specified `ERC20Votes` token create actions on a llama instance if their
+/// token balance is greater than or equal to the creation threshold.
+contract LlamaERC20TokenHolderActionCreator is LlamaTokenHolderActionCreator {
   ERC20Votes public token;
 
   /// @dev This contract is deployed as a minimal proxy from the factory's `deployTokenVotingModule` function. The
@@ -18,25 +18,20 @@ contract ERC20TokenholderCaster is TokenholderCaster {
     _disableInitializers();
   }
 
-  /// @notice Initializes a new `ERC20TokenholderCaster` clone.
+  /// @notice Initializes a new `LlamaERC20TokenHolderActionCreator` clone.
   /// @dev This function is called by the `deployTokenVotingModule` function in the `LlamaTokenVotingFactory` contract.
   /// The `initializer` modifier ensures that this function can be invoked at most once.
   /// @param _token The ERC20 token to be used for voting.
   /// @param _llamaCore The `LlamaCore` contract for this Llama instance.
-  /// @param _role The role used by this contract to cast approvals and disapprovals.
-  /// @param _minApprovalPct The minimum % of approvals required to submit approvals to `LlamaCore`.
-  /// @param _minDisapprovalPct The minimum % of disapprovals required to submit disapprovals to `LlamaCore`.
-  function initialize(
-    ERC20Votes _token,
-    ILlamaCore _llamaCore,
-    uint8 _role,
-    uint256 _minApprovalPct,
-    uint256 _minDisapprovalPct
-  ) external initializer {
-    __initializeTokenholderCasterMinimalProxy(_llamaCore, _role, _minApprovalPct, _minDisapprovalPct);
+  /// @param _creationThreshold The default number of tokens required to create an action. This must
+  /// be in the same decimals as the token. For example, if the token has 18 decimals and you want a
+  /// creation threshold of 1000 tokens, pass in 1000e18.
+  function initialize(ERC20Votes _token, ILlamaCore _llamaCore, uint256 _creationThreshold) external initializer {
+    __initializeLlamaTokenHolderActionCreatorMinimalProxy(_llamaCore, _creationThreshold);
     token = _token;
     uint256 totalSupply = token.totalSupply();
     if (totalSupply == 0) revert InvalidTokenAddress();
+    if (_creationThreshold > totalSupply) revert InvalidCreationThreshold();
   }
 
   function _getPastVotes(address account, uint256 timestamp) internal view virtual override returns (uint256) {
