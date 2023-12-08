@@ -20,6 +20,13 @@ abstract contract TokenholderActionCreator is Initializable {
   /// @notice The core contract for this Llama instance.
   ILlamaCore public llamaCore;
 
+  /// @notice The default number of tokens required to create an action.
+  uint256 public creationThreshold;
+
+  /// @notice The role used by this contract to cast approvals and disapprovals.
+  /// @dev This role is expected to have the permissions to create appropriate actions.
+  uint8 public role;
+
   /// @dev EIP-712 actionInfo typehash.
   bytes32 internal constant ACTION_INFO_TYPEHASH = keccak256(
     "ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
@@ -46,9 +53,6 @@ abstract contract TokenholderActionCreator is Initializable {
   /// @dev This is used to prevent replay attacks by incrementing the nonce for each operation (`createAction`,
   /// `cancelAction`, `castApproval` and `castDisapproval`) signed by the token holder.
   mapping(address tokenHolder => mapping(bytes4 selector => uint256 currentNonce)) public nonces;
-
-  /// @notice The default number of tokens required to create an action.
-  uint256 public creationThreshold;
 
   /// @dev Emitted when an action is canceled.
   event ActionCanceled(uint256 id, address indexed creator);
@@ -96,21 +100,30 @@ abstract contract TokenholderActionCreator is Initializable {
   /// @dev Thrown when an address other than the `LlamaExecutor` tries to call a function.
   error OnlyLlamaExecutor();
 
+  /// @dev Thrown when an invalid `role` is passed to the constructor.
+  error RoleNotInitialized(uint8 role);
+
   /// @dev This will be called by the `initialize` of the inheriting contract.
   /// @param _llamaCore The `LlamaCore` contract for this Llama instance.
+  /// @param _role The role used by this contract to cast approvals and disapprovals.
   /// @param _creationThreshold The default number of tokens required to create an action. This must
   /// be in the same decimals as the token. For example, if the token has 18 decimals and you want a
   /// creation threshold of 1000 tokens, pass in 1000e18.
-  function __initializeTokenholderActionCreatorMinimalProxy(ILlamaCore _llamaCore, uint256 _creationThreshold) internal {
+  function __initializeTokenholderActionCreatorMinimalProxy(
+    ILlamaCore _llamaCore,
+    uint8 _role,
+    uint256 _creationThreshold
+  ) internal {
     if (_llamaCore.actionsCount() < 0) revert InvalidLlamaCoreAddress();
+    if (_role > _llamaCore.policy().numRoles()) revert RoleNotInitialized(_role);
 
     llamaCore = _llamaCore;
+    role = _role;
     _setActionThreshold(_creationThreshold);
   }
 
   /// @notice Creates an action.
   /// @dev Use `""` for `description` if there is no description.
-  /// @param role The role that will be used to determine the permission ID of the policyholder.
   /// @param strategy The strategy contract that will determine how the action is executed.
   /// @param target The contract called when the action is executed.
   /// @param value The value in wei to be sent when the action is executed.
@@ -118,21 +131,19 @@ abstract contract TokenholderActionCreator is Initializable {
   /// @param description A human readable description of the action and the changes it will enact.
   /// @return actionId Action ID of the newly created action.
   function createAction(
-    uint8 role,
     ILlamaStrategy strategy,
     address target,
     uint256 value,
     bytes calldata data,
     string memory description
   ) external returns (uint256 actionId) {
-    return _createAction(msg.sender, role, strategy, target, value, data, description);
+    return _createAction(msg.sender, strategy, target, value, data, description);
   }
 
   /// @notice Creates an action via an off-chain signature. The creator needs to hold a policy with the permission ID
   /// of the provided `(target, selector, strategy)`.
   /// @dev Use `""` for `description` if there is no description.
   /// @param tokenHolder The tokenHolder that signed the message.
-  /// @param role The role that will be used to determine the permission ID of the tokenHolder.
   /// @param strategy The strategy contract that will determine how the action is executed.
   /// @param target The contract called when the action is executed.
   /// @param value The value in wei to be sent when the action is executed.
@@ -144,7 +155,6 @@ abstract contract TokenholderActionCreator is Initializable {
   /// @return actionId Action ID of the newly created action.
   function createActionBySig(
     address tokenHolder,
-    uint8 role,
     ILlamaStrategy strategy,
     address target,
     uint256 value,
@@ -154,10 +164,10 @@ abstract contract TokenholderActionCreator is Initializable {
     bytes32 r,
     bytes32 s
   ) external returns (uint256 actionId) {
-    bytes32 digest = _getCreateActionTypedDataHash(tokenHolder, role, strategy, target, value, data, description);
+    bytes32 digest = _getCreateActionTypedDataHash(tokenHolder, strategy, target, value, data, description);
     address signer = ecrecover(digest, v, r, s);
     if (signer == address(0) || signer != tokenHolder) revert InvalidSignature();
-    actionId = _createAction(signer, role, strategy, target, value, data, description);
+    actionId = _createAction(signer, strategy, target, value, data, description);
   }
 
   /// @notice Cancels an action.
@@ -202,7 +212,6 @@ abstract contract TokenholderActionCreator is Initializable {
 
   function _createAction(
     address tokenHolder,
-    uint8 role,
     ILlamaStrategy strategy,
     address target,
     uint256 value,
@@ -260,7 +269,6 @@ abstract contract TokenholderActionCreator is Initializable {
   /// recover the signer.
   function _getCreateActionTypedDataHash(
     address tokenHolder,
-    uint8 role,
     ILlamaStrategy strategy,
     address target,
     uint256 value,
