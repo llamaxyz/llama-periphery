@@ -10,6 +10,7 @@ import {LlamaPeripheryTestSetup} from "test/LlamaPeripheryTestSetup.sol";
 
 import {DeployLlamaTokenVotingFactory} from "script/DeployLlamaTokenVotingFactory.s.sol";
 
+import {RoleDescription} from "src/lib/UDVTs.sol";
 import {ERC20TokenholderActionCreator} from "src/token-voting/ERC20TokenholderActionCreator.sol";
 import {ERC20TokenholderCaster} from "src/token-voting/ERC20TokenholderCaster.sol";
 import {ERC721TokenholderActionCreator} from "src/token-voting/ERC721TokenholderActionCreator.sol";
@@ -25,6 +26,11 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
   uint256 public constant ERC721_CREATION_THRESHOLD = 1;
   uint256 public constant ERC721_MIN_APPROVAL_PCT = 1;
   uint256 public constant ERC721_MIN_DISAPPROVAL_PCT = 1;
+
+  // Token Voting Role Descriptions.
+  RoleDescription public constant TOKEN_VOTING_ACTION_CREATOR_ROLE_DESC =
+    RoleDescription.wrap("Token Voting Action Creator Role");
+  RoleDescription public constant TOKEN_VOTING_CASTER_ROLE_DESC = RoleDescription.wrap("Token Voting Caster Role");
 
   // Votes Tokens
   MockERC20Votes public erc20VotesToken;
