@@ -28,6 +28,14 @@ contract LlamaTokenVotingFactoryTest is LlamaTokenVotingTestSetup {
 
   function setUp() public override {
     LlamaTokenVotingTestSetup.setUp();
+
+    // Mint tokens to tokenholders so that there is an existing supply.
+    erc20VotesToken.mint(tokenHolder0, ERC20_CREATION_THRESHOLD);
+    erc721VotesToken.mint(tokenHolder0, 0);
+
+    // Mine block so that the ERC20 and ERC721 supply will be available when doing a past timestamp check at initialize
+    // during deployment.
+    mineBlock();
   }
 }
 

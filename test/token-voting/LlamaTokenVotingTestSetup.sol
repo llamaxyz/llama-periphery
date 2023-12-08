@@ -31,6 +31,8 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
   MockERC721Votes public erc721VotesToken;
 
   // Token holders.
+  address tokenHolder0;
+  uint256 tokenHolder0PrivateKey;
   address tokenHolder1;
   uint256 tokenHolder1PrivateKey;
   address tokenHolder2;
@@ -51,22 +53,11 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
     erc721VotesToken = new MockERC721Votes();
 
     // Setting up tokenholder addresses and private keys.
+    (tokenHolder0, tokenHolder0PrivateKey) = makeAddrAndKey("tokenHolder0");
     (tokenHolder1, tokenHolder1PrivateKey) = makeAddrAndKey("tokenHolder1");
     (tokenHolder2, tokenHolder2PrivateKey) = makeAddrAndKey("tokenHolder2");
     (tokenHolder3, tokenHolder3PrivateKey) = makeAddrAndKey("tokenHolder3");
     (notTokenHolder, notTokenHolderPrivateKey) = makeAddrAndKey("notTokenHolder");
-
-    // Mint tokens to core team members.
-    erc20VotesToken.mint(tokenHolder1, ERC20_CREATION_THRESHOLD);
-    erc20VotesToken.mint(tokenHolder2, ERC20_CREATION_THRESHOLD);
-    erc20VotesToken.mint(tokenHolder3, ERC20_CREATION_THRESHOLD);
-    erc721VotesToken.mint(tokenHolder1, 0);
-    erc721VotesToken.mint(tokenHolder2, 1);
-    erc721VotesToken.mint(tokenHolder3, 2);
-
-    // Mine block so that the ERC20 and ERC721 supply will be available when doing a past timestamp check at initialize
-    // during deployment.
-    mineBlock();
   }
 
   // =========================
