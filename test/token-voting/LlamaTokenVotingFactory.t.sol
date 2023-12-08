@@ -29,28 +29,6 @@ contract LlamaTokenVotingFactoryTest is LlamaTokenVotingTestSetup {
   function setUp() public override {
     LlamaTokenVotingTestSetup.setUp();
   }
-
-  function _setPermissionCreateApproveAndQueueAction(bytes memory data) internal returns (ActionInfo memory actionInfo) {
-    // Assign `deployTokenVotingModule` permission to the `CORE_TEAM_ROLE` role.
-    ILlamaPolicy.PermissionData memory deployTokenVotingPermission = ILlamaPolicy.PermissionData(
-      address(tokenVotingFactory), LlamaTokenVotingFactory.deployTokenVotingModule.selector, address(STRATEGY)
-    );
-
-    vm.prank(address(EXECUTOR));
-    POLICY.setRolePermission(CORE_TEAM_ROLE, deployTokenVotingPermission, true);
-
-    // Create an action and queue it to deploy the token voting module.
-    vm.prank(coreTeam4);
-    uint256 actionId = CORE.createAction(CORE_TEAM_ROLE, STRATEGY, address(tokenVotingFactory), 0, data, "");
-    actionInfo = ActionInfo(actionId, coreTeam4, CORE_TEAM_ROLE, STRATEGY, address(tokenVotingFactory), 0, data);
-
-    vm.prank(coreTeam1);
-    CORE.castApproval(CORE_TEAM_ROLE, actionInfo, "");
-    vm.prank(coreTeam2);
-    CORE.castApproval(CORE_TEAM_ROLE, actionInfo, "");
-    vm.prank(coreTeam3);
-    CORE.castApproval(CORE_TEAM_ROLE, actionInfo, "");
-  }
 }
 
 contract Constructor is LlamaTokenVotingFactoryTest {
@@ -77,6 +55,28 @@ contract Constructor is LlamaTokenVotingFactoryTest {
 }
 
 contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
+  function _setPermissionCreateApproveAndQueueAction(bytes memory data) internal returns (ActionInfo memory actionInfo) {
+    // Assign `deployTokenVotingModule` permission to the `CORE_TEAM_ROLE` role.
+    ILlamaPolicy.PermissionData memory deployTokenVotingPermission = ILlamaPolicy.PermissionData(
+      address(tokenVotingFactory), LlamaTokenVotingFactory.deployTokenVotingModule.selector, address(STRATEGY)
+    );
+
+    vm.prank(address(EXECUTOR));
+    POLICY.setRolePermission(CORE_TEAM_ROLE, deployTokenVotingPermission, true);
+
+    // Create an action and queue it to deploy the token voting module.
+    vm.prank(coreTeam4);
+    uint256 actionId = CORE.createAction(CORE_TEAM_ROLE, STRATEGY, address(tokenVotingFactory), 0, data, "");
+    actionInfo = ActionInfo(actionId, coreTeam4, CORE_TEAM_ROLE, STRATEGY, address(tokenVotingFactory), 0, data);
+
+    vm.prank(coreTeam1);
+    CORE.castApproval(CORE_TEAM_ROLE, actionInfo, "");
+    vm.prank(coreTeam2);
+    CORE.castApproval(CORE_TEAM_ROLE, actionInfo, "");
+    vm.prank(coreTeam3);
+    CORE.castApproval(CORE_TEAM_ROLE, actionInfo, "");
+  }
+
   function test_CanDeployERC20TokenVotingModule() public {
     // Set up action to call `deployTokenVotingModule` with the ERC20 token.
     bytes memory data = abi.encodeWithSelector(
