@@ -45,7 +45,7 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
     erc721VotesToken.mint(coreTeam3, 2);
     erc721VotesToken.mint(coreTeam4, 3);
 
-    // Mine block so that the ERC20 and ERC721 supply will be available when doing a past timestamp check.
+    // Mine block so that the ERC20 and ERC721 supply will be available when doing a past timestamp check at initialize.
     mineBlock();
   }
 }
