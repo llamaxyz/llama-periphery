@@ -77,16 +77,16 @@ abstract contract TokenholderCaster is Initializable {
   error ForDoesNotSurpassAgainst(uint256 votes, uint256 vetos);
 
   /// @dev Thrown when a user tries to submit votes but there are not enough votes.
-  error InsufficientVotes(uint256 votes, uint256 threshold);
+  error InsufficientVotes(uint256 votes, uint256 quorum);
 
   /// @dev Thrown when a user tries to cast but does not have enough tokens.
   error InsufficientBalance(uint256 balance);
 
-  /// @dev Thrown when an invalid `votesThreshold` is passed to the constructor.
-  error InvalidMinVotesPct(uint256 votesThreshold);
+  /// @dev Thrown when an invalid `votesQuorum` is passed to the constructor.
+  error InvalidVotesQuorum(uint256 votesQuorum);
 
-  /// @dev Thrown when an invalid `vetoThreshold` is passed to the constructor.
-  error InvalidMinVetoPct(uint256 vetoThreshold);
+  /// @dev Thrown when an invalid `vetoQuorum` is passed to the constructor.
+  error InvalidMinVetoQuorum(uint256 vetoQuorum);
 
   /// @dev Thrown when an invalid `llamaCore` address is passed to the constructor.
   error InvalidLlamaCoreAddress();
@@ -147,13 +147,13 @@ abstract contract TokenholderCaster is Initializable {
   ILlamaCore public llamaCore;
 
   /// @notice The minimum % of votes required to submit votes to `LlamaCore`.
-  uint256 public minVotePct;
+  uint256 public voteQuorum;
 
   /// @notice The minimum % of vetos required to submit vetos to `LlamaCore`.
-  uint256 public minVetoPct;
+  uint256 public minVetoQuorum;
 
   /// @notice The role used by this contract to cast votes and vetos.
-  /// @dev This role is expected to have the ability to force approve and disapprove actions.
+  /// @dev This role is expected to have the ability to force approve and disapprove actions on a llama strategy.
   uint8 public role;
 
   /// @dev EIP-712 base typehash.
@@ -186,23 +186,23 @@ abstract contract TokenholderCaster is Initializable {
   /// @dev This will be called by the `initialize` of the inheriting contract.
   /// @param _llamaCore The `LlamaCore` contract for this Llama instance.
   /// @param _role The role used by this contract to cast votes and vetos.
-  /// @param _minVotePct The minimum % of votes required to submit votes to `LlamaCore`.
-  /// @param _minVetoPct The minimum % of vetos required to submit vetos to `LlamaCore`.
+  /// @param _voteQuorum The minimum % of votes required to submit votes to `LlamaCore`.
+  /// @param _minVetoQuorum The minimum % of vetos required to submit vetos to `LlamaCore`.
   function __initializeTokenholderCasterMinimalProxy(
     ILlamaCore _llamaCore,
     uint8 _role,
-    uint256 _minVotePct,
-    uint256 _minVetoPct
+    uint256 _voteQuorum,
+    uint256 _minVetoQuorum
   ) internal {
     if (_llamaCore.actionsCount() < 0) revert InvalidLlamaCoreAddress();
     if (_role > _llamaCore.policy().numRoles()) revert RoleNotInitialized(_role);
-    if (_minVotePct > ONE_HUNDRED_IN_BPS || _minVotePct <= 0) revert InvalidMinVotesPct(_minVotePct);
-    if (_minVetoPct > ONE_HUNDRED_IN_BPS || _minVetoPct <= 0) revert InvalidMinVetoPct(_minVetoPct);
+    if (_voteQuorum > ONE_HUNDRED_IN_BPS || _voteQuorum <= 0) revert InvalidVotesQuorum(_voteQuorum);
+    if (_minVetoQuorum > ONE_HUNDRED_IN_BPS || _minVetoQuorum <= 0) revert InvalidMinVetoQuorum(_minVetoQuorum);
 
     llamaCore = _llamaCore;
     role = _role;
-    minVotePct = _minVotePct;
-    minVetoPct = _minVetoPct;
+    voteQuorum = _voteQuorum;
+    minVetoQuorum = _minVetoQuorum;
   }
 
   /// @notice How tokenholders add their support of an action with a vote and a reason.
@@ -284,8 +284,8 @@ abstract contract TokenholderCaster is Initializable {
     uint96 votesFor = casts[actionInfo.id].votesFor;
     uint96 votesAgainst = casts[actionInfo.id].votesAgainst;
     uint96 votesAbstain = casts[actionInfo.id].votesAbstain;
-    uint256 threshold = FixedPointMathLib.mulDivUp(totalSupply, minVotePct, ONE_HUNDRED_IN_BPS);
-    if (votesFor < threshold) revert InsufficientVotes(votesFor, threshold);
+    uint256 quorum = FixedPointMathLib.mulDivUp(totalSupply, voteQuorum, ONE_HUNDRED_IN_BPS);
+    if (votesFor < quorum) revert InsufficientVotes(votesFor, quorum);
     if (votesFor <= votesAgainst) revert ForDoesNotSurpassAgainst(votesFor, votesAgainst);
 
     casts[actionInfo.id].votesSubmitted = true;
@@ -318,8 +318,8 @@ abstract contract TokenholderCaster is Initializable {
     uint96 vetosFor = casts[actionInfo.id].vetosFor;
     uint96 vetosAgainst = casts[actionInfo.id].vetosAgainst;
     uint96 vetosAbstain = casts[actionInfo.id].vetosAbstain;
-    uint256 threshold = FixedPointMathLib.mulDivUp(totalSupply, minVetoPct, ONE_HUNDRED_IN_BPS);
-    if (vetosFor < threshold) revert InsufficientVotes(vetosFor, threshold);
+    uint256 quorum = FixedPointMathLib.mulDivUp(totalSupply, minVetoQuorum, ONE_HUNDRED_IN_BPS);
+    if (vetosFor < quorum) revert InsufficientVotes(vetosFor, quorum);
     if (vetosFor <= vetosAgainst) revert ForDoesNotSurpassAgainst(vetosFor, vetosAgainst);
 
     casts[actionInfo.id].vetoSubmitted = true;
