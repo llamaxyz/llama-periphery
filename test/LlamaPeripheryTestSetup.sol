@@ -5,6 +5,8 @@ import {Test, console2} from "forge-std/Test.sol";
 
 import {Vm} from "forge-std/Vm.sol";
 
+import {MockProtocol} from "test/mock/MockProtocol.sol";
+
 import {ILlamaAccount} from "src/interfaces/ILlamaAccount.sol";
 import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
@@ -34,8 +36,12 @@ contract LlamaPeripheryTestSetup is Test {
   address coreTeam4 = 0x6b45E38c87bfCa15ee90AAe2AFe3CFC58cE08F75;
   address coreTeam5 = 0xbdfcE43E5D2C7AA8599290d940c9932B8dBC94Ca;
 
+  // Mock protocol for action targets.
+  MockProtocol public mockProtocol;
+
   // Function selectors used in tests.
-  bytes4 public constant SET_ROLE_HOLDER_SELECTOR = 0x2524842c; // pause(bool)
+  bytes4 public constant PAUSE_SELECTOR = MockProtocol.pause.selector; // pause(bool)
+  bytes4 public constant SET_ROLE_HOLDER_SELECTOR = ILlamaPolicy.setRoleHolder.selector; // setRoleHolder(uint8,address,uint96,uint64)
 
   // Permission data for those selectors.
   PermissionData setRoleHolderPermission = PermissionData(address(POLICY), SET_ROLE_HOLDER_SELECTOR, STRATEGY);
@@ -50,6 +56,9 @@ contract LlamaPeripheryTestSetup is Test {
 
   function setUp() public virtual {
     vm.createSelectFork(MAINNET_RPC_URL, 18_707_845);
+
+    // We deploy the mock protocol to be used as a Target.
+    mockProtocol = new MockProtocol(address(EXECUTOR));
   }
 
   function mineBlock() internal {
