@@ -48,6 +48,29 @@ contract LlamaTokenVotingFactoryTest is LlamaTokenVotingTestSetup {
   }
 }
 
+contract Constructor is LlamaTokenVotingFactoryTest {
+  function test_SetsERC20TokenholderActionCreatorLogicAddress() public {
+    assertEq(
+      address(tokenVotingFactory.ERC20_TOKENHOLDER_ACTION_CREATOR_LOGIC()), address(erc20TokenholderActionCreatorLogic)
+    );
+  }
+
+  function test_SetsERC20TokenholderCasterLogicAddress() public {
+    assertEq(address(tokenVotingFactory.ERC20_TOKENHOLDER_CASTER_LOGIC()), address(erc20TokenholderCasterLogic));
+  }
+
+  function test_SetsERC721TokenholderActionCreatorLogicAddress() public {
+    assertEq(
+      address(tokenVotingFactory.ERC721_TOKENHOLDER_ACTION_CREATOR_LOGIC()),
+      address(erc721TokenholderActionCreatorLogic)
+    );
+  }
+
+  function test_SetsERC721TokenholderCasterLogicAddress() public {
+    assertEq(address(tokenVotingFactory.ERC721_TOKENHOLDER_CASTER_LOGIC()), address(erc721TokenholderCasterLogic));
+  }
+}
+
 contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
   function test_CanDeployERC20TokenVotingModule() public {
     // Set up action to call `deployTokenVotingModule` with the ERC20 token.
