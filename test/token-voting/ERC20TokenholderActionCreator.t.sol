@@ -59,17 +59,6 @@ contract ERC20TokenholderActionCreatorTest is LlamaTokenVotingTestSetup, LlamaCo
       })
     );
   }
-
-  function _setRolePermissionToTokenholderActionCreator() internal {
-    // Assign permission for `MockProtocol.pause` to the TokenholderActionCreator.
-    vm.prank(address(EXECUTOR));
-    POLICY.setRolePermission(
-      tokenVotingActionCreatorRole,
-      ILlamaPolicy.PermissionData(address(mockProtocol), PAUSE_SELECTOR, address(STRATEGY)),
-      true
-    );
-    vm.stopPrank();
-  }
 }
 
 // contract Constructor is ERC20TokenholderActionCreatorTest {

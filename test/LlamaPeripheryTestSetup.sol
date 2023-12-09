@@ -65,4 +65,23 @@ contract LlamaPeripheryTestSetup is Test {
     vm.roll(block.number + 1);
     vm.warp(block.timestamp + 1);
   }
+
+  function encodeStrategyConfigs(ILlamaRelativeStrategyBase.Config[] memory strategies)
+    internal
+    pure
+    returns (bytes[] memory encoded)
+  {
+    encoded = new bytes[](strategies.length);
+    for (uint256 i = 0; i < strategies.length; i++) {
+      encoded[i] = encodeStrategy(strategies[i]);
+    }
+  }
+
+  function encodeStrategy(ILlamaRelativeStrategyBase.Config memory strategy)
+    internal
+    pure
+    returns (bytes memory encoded)
+  {
+    encoded = abi.encode(strategy);
+  }
 }

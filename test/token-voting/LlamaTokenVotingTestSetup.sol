@@ -137,4 +137,15 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
     return
       (ERC721TokenholderActionCreator(erc721TokenholderActionCreator), ERC721TokenholderCaster(erc721TokenholderCaster));
   }
+
+  function _setRolePermissionToTokenholderActionCreator() internal {
+    // Assign permission for `MockProtocol.pause` to the TokenholderActionCreator.
+    vm.prank(address(EXECUTOR));
+    POLICY.setRolePermission(
+      tokenVotingActionCreatorRole,
+      ILlamaPolicy.PermissionData(address(mockProtocol), PAUSE_SELECTOR, address(STRATEGY)),
+      true
+    );
+    vm.stopPrank();
+  }
 }
