@@ -241,9 +241,9 @@ contract CreateActionBySig is ERC20TokenholderActionCreatorTest {
       r,
       s
     );
-
     Action memory action = CORE.getAction(actionId);
     assertEq(actionId, actionCount);
+    assertEq(CORE.actionsCount() - 1, actionCount);
     assertEq(action.creationTime, block.timestamp);
   }
 
