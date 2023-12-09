@@ -38,7 +38,6 @@ contract ERC721TokenholderCasterTest is LlamaTokenVotingTestSetup, LlamaCoreSigU
 
     // Mint tokens to tokenholders so that there is an existing supply
     erc721VotesToken.mint(tokenHolder1, 0);
-
     vm.prank(tokenHolder1);
     erc721VotesToken.delegate(tokenHolder1);
 
