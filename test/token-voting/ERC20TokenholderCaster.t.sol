@@ -38,12 +38,6 @@ contract ERC20TokenholderCasterTest is LlamaTokenVotingTestSetup, LlamaCoreSigUt
 
   function setUp() public virtual override {
     LlamaTokenVotingTestSetup.setUp();
-    // vm.deal(address(this), 1 ether);
-    // vm.deal(address(msg.sender), 1 ether);
-    // vm.deal(address(EXECUTOR), 1 ether);
-    // vm.deal(tokenHolder1, 1 ether);
-    // vm.deal(tokenHolder2, 1 ether);
-    // vm.deal(tokenHolder3, 1 ether);
 
     // Mint tokens to tokenholders so that there is an existing supply
     erc20VotesToken.mint(tokenHolder1, ERC20_CREATION_THRESHOLD / 2);

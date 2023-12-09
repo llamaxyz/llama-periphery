@@ -35,8 +35,6 @@ contract ERC20TokenholderActionCreatorTest is LlamaTokenVotingTestSetup, LlamaCo
 
   function setUp() public virtual override {
     LlamaTokenVotingTestSetup.setUp();
-    vm.deal(address(this), 1 ether);
-    vm.deal(address(msg.sender), 1 ether);
 
     // Mint tokens to tokenholders so that there is an existing supply.
     erc20VotesToken.mint(tokenHolder0, ERC20_CREATION_THRESHOLD);
