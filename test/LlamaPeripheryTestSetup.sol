@@ -5,8 +5,11 @@ import {Test, console2} from "forge-std/Test.sol";
 
 import {Vm} from "forge-std/Vm.sol";
 
+import {MockProtocol} from "test/mock/MockProtocol.sol";
+
 import {ILlamaAccount} from "src/interfaces/ILlamaAccount.sol";
 import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
+import {ILlamaRelativeStrategyBase} from "src/interfaces/ILlamaRelativeStrategyBase.sol";
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
 import {ILlamaExecutor} from "src/interfaces/ILlamaExecutor.sol";
 import {ILlamaLens} from "src/interfaces/ILlamaLens.sol";
@@ -34,14 +37,11 @@ contract LlamaPeripheryTestSetup is Test {
   address coreTeam4 = 0x6b45E38c87bfCa15ee90AAe2AFe3CFC58cE08F75;
   address coreTeam5 = 0xbdfcE43E5D2C7AA8599290d940c9932B8dBC94Ca;
 
+  // Mock protocol for action targets.
+  MockProtocol public mockProtocol;
+
   // Function selectors used in tests.
-  bytes4 public constant SET_ROLE_HOLDER_SELECTOR = 0x2524842c; // pause(bool)
-
-  // Permission data for those selectors.
-  PermissionData setRoleHolderPermission = PermissionData(address(POLICY), SET_ROLE_HOLDER_SELECTOR, STRATEGY);
-
-  // Permission IDs for the permission data.
-  bytes32 setRoleHolderPermissionId = keccak256(abi.encode(setRoleHolderPermission));
+  bytes4 public constant PAUSE_SELECTOR = MockProtocol.pause.selector; // pause(bool)
 
   // Othes constants.
   uint96 DEFAULT_ROLE_QTY = 1;
@@ -50,10 +50,32 @@ contract LlamaPeripheryTestSetup is Test {
 
   function setUp() public virtual {
     vm.createSelectFork(MAINNET_RPC_URL, 18_707_845);
+
+    // We deploy the mock protocol to be used as a Target.
+    mockProtocol = new MockProtocol(address(EXECUTOR));
   }
 
   function mineBlock() internal {
     vm.roll(block.number + 1);
     vm.warp(block.timestamp + 1);
+  }
+
+  function encodeStrategyConfigs(ILlamaRelativeStrategyBase.Config[] memory strategies)
+    internal
+    pure
+    returns (bytes[] memory encoded)
+  {
+    encoded = new bytes[](strategies.length);
+    for (uint256 i = 0; i < strategies.length; i++) {
+      encoded[i] = encodeStrategy(strategies[i]);
+    }
+  }
+
+  function encodeStrategy(ILlamaRelativeStrategyBase.Config memory strategy)
+    internal
+    pure
+    returns (bytes memory encoded)
+  {
+    encoded = abi.encode(strategy);
   }
 }

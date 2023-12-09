@@ -4,18 +4,18 @@ pragma solidity 0.8.23;
 import {Script} from "forge-std/Script.sol";
 
 import {DeployUtils} from "script/DeployUtils.sol";
-import {ERC20TokenHolderActionCreator} from "src/token-voting/ERC20TokenHolderActionCreator.sol";
-import {ERC20TokenHolderCaster} from "src/token-voting/ERC20TokenHolderCaster.sol";
-import {ERC721TokenHolderActionCreator} from "src/token-voting/ERC721TokenHolderActionCreator.sol";
-import {ERC721TokenHolderCaster} from "src/token-voting/ERC721TokenHolderCaster.sol";
+import {ERC20TokenholderActionCreator} from "src/token-voting/ERC20TokenholderActionCreator.sol";
+import {ERC20TokenholderCaster} from "src/token-voting/ERC20TokenholderCaster.sol";
+import {ERC721TokenholderActionCreator} from "src/token-voting/ERC721TokenholderActionCreator.sol";
+import {ERC721TokenholderCaster} from "src/token-voting/ERC721TokenholderCaster.sol";
 import {LlamaTokenVotingFactory} from "src/token-voting/LlamaTokenVotingFactory.sol";
 
 contract DeployLlamaTokenVotingFactory is Script {
   // Logic contracts.
-  ERC20TokenHolderActionCreator erc20TokenHolderActionCreatorLogic;
-  ERC20TokenHolderCaster erc20TokenHolderCasterLogic;
-  ERC721TokenHolderActionCreator erc721TokenHolderActionCreatorLogic;
-  ERC721TokenHolderCaster erc721TokenHolderCasterLogic;
+  ERC20TokenholderActionCreator erc20TokenholderActionCreatorLogic;
+  ERC20TokenholderCaster erc20TokenholderCasterLogic;
+  ERC721TokenholderActionCreator erc721TokenholderActionCreatorLogic;
+  ERC721TokenholderCaster erc721TokenholderCasterLogic;
 
   // Factory contracts.
   LlamaTokenVotingFactory tokenVotingFactory;
@@ -26,37 +26,37 @@ contract DeployLlamaTokenVotingFactory is Script {
     );
 
     vm.broadcast();
-    erc20TokenHolderActionCreatorLogic = new ERC20TokenHolderActionCreator();
+    erc20TokenholderActionCreatorLogic = new ERC20TokenholderActionCreator();
     DeployUtils.print(
-      string.concat("  ERC20TokenHolderActionCreatorLogic: ", vm.toString(address(erc20TokenHolderActionCreatorLogic)))
+      string.concat("  ERC20TokenholderActionCreatorLogic: ", vm.toString(address(erc20TokenholderActionCreatorLogic)))
     );
 
     vm.broadcast();
-    erc20TokenHolderCasterLogic = new ERC20TokenHolderCaster();
+    erc20TokenholderCasterLogic = new ERC20TokenholderCaster();
     DeployUtils.print(
-      string.concat("  ERC20TokenHolderCasterLogic: ", vm.toString(address(erc20TokenHolderCasterLogic)))
+      string.concat("  ERC20TokenholderCasterLogic: ", vm.toString(address(erc20TokenholderCasterLogic)))
     );
 
     vm.broadcast();
-    erc721TokenHolderActionCreatorLogic = new ERC721TokenHolderActionCreator();
+    erc721TokenholderActionCreatorLogic = new ERC721TokenholderActionCreator();
     DeployUtils.print(
       string.concat(
-        "  ERC721TokenHolderActionCreatorLogic: ", vm.toString(address(erc721TokenHolderActionCreatorLogic))
+        "  ERC721TokenholderActionCreatorLogic: ", vm.toString(address(erc721TokenholderActionCreatorLogic))
       )
     );
 
     vm.broadcast();
-    erc721TokenHolderCasterLogic = new ERC721TokenHolderCaster();
+    erc721TokenholderCasterLogic = new ERC721TokenholderCaster();
     DeployUtils.print(
-      string.concat("  ERC721TokenHolderCasterLogic: ", vm.toString(address(erc721TokenHolderCasterLogic)))
+      string.concat("  ERC721TokenholderCasterLogic: ", vm.toString(address(erc721TokenholderCasterLogic)))
     );
 
     vm.broadcast();
     tokenVotingFactory = new LlamaTokenVotingFactory(
-      erc20TokenHolderActionCreatorLogic,
-      erc20TokenHolderCasterLogic,
-      erc721TokenHolderActionCreatorLogic,
-      erc721TokenHolderCasterLogic
+      erc20TokenholderActionCreatorLogic,
+      erc20TokenholderCasterLogic,
+      erc721TokenholderActionCreatorLogic,
+      erc721TokenholderCasterLogic
     );
     DeployUtils.print(string.concat("  LlamaTokenVotingFactory: ", vm.toString(address(tokenVotingFactory))));
   }

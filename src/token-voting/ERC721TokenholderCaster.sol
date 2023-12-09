@@ -10,7 +10,7 @@ import {IERC721} from "@openzeppelin/token/ERC721/IERC721.sol";
 /// @author Llama (devsdosomething@llama.xyz)
 /// @notice This contract lets holders of a given governance ERC721Votes token cast approvals and disapprovals
 /// on created actions.
-contract ERC721TokenHolderCaster is TokenHolderCaster {
+contract ERC721TokenholderCaster is TokenholderCaster {
   ERC721Votes public token;
 
   /// @dev This contract is deployed as a minimal proxy from the factory's `deployTokenVotingModule` function. The
@@ -19,22 +19,19 @@ contract ERC721TokenHolderCaster is TokenHolderCaster {
     _disableInitializers();
   }
 
-  /// @notice Initializes a new `ERC721TokenHolderCaster` clone.
+  /// @notice Initializes a new `ERC721TokenholderCaster` clone.
   /// @dev This function is called by the `deployTokenVotingModule` function in the `LlamaTokenVotingFactory` contract.
   /// The `initializer` modifier ensures that this function can be invoked at most once.
   /// @param _token The ERC721 token to be used for voting.
   /// @param _llamaCore The `LlamaCore` contract for this Llama instance.
   /// @param _role The role used by this contract to cast approvals and disapprovals.
-  /// @param _minApprovalPct The minimum % of approvals required to submit approvals to `LlamaCore`.
-  /// @param _minDisapprovalPct The minimum % of disapprovals required to submit disapprovals to `LlamaCore`.
-  function initialize(
-    ERC721Votes _token,
-    ILlamaCore _llamaCore,
-    uint8 _role,
-    uint256 _minApprovalPct,
-    uint256 _minDisapprovalPct
-  ) external initializer {
-    __initializeTokenHolderCasterMinimalProxy(_llamaCore, _role, _minApprovalPct, _minDisapprovalPct);
+  /// @param _voteQuorum The minimum % of approvals required to submit approvals to `LlamaCore`.
+  /// @param _vetoQuorum The minimum % of disapprovals required to submit disapprovals to `LlamaCore`.
+  function initialize(ERC721Votes _token, ILlamaCore _llamaCore, uint8 _role, uint256 _voteQuorum, uint256 _vetoQuorum)
+    external
+    initializer
+  {
+    __initializeTokenholderCasterMinimalProxy(_llamaCore, _role, _voteQuorum, _vetoQuorum);
     token = _token;
     if (!token.supportsInterface(type(IERC721).interfaceId)) revert InvalidTokenAddress();
   }

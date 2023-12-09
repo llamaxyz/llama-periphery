@@ -18,7 +18,7 @@ import {ILlamaRelativeStrategyBase} from "src/interfaces/ILlamaRelativeStrategyB
 /// it must hold a Policy from the specified `LlamaCore` instance to actually be able to cast on an action. This
 /// contract does not verify that it holds the correct policy when voting and relies on `LlamaCore` to
 /// verify that during submission.
-abstract contract TokenHolderCaster is Initializable {
+abstract contract TokenholderCaster is Initializable {
   // =========================
   // ======== Structs ========
   // =========================
@@ -86,7 +86,7 @@ abstract contract TokenHolderCaster is Initializable {
   error InvalidVotesQuorum(uint256 votesQuorum);
 
   /// @dev Thrown when an invalid `vetoQuorum` is passed to the constructor.
-  error InvalidMinVetoQuorum(uint256 vetoQuorum);
+  error InvalidVetoQuorum(uint256 vetoQuorum);
 
   /// @dev Thrown when an invalid `llamaCore` address is passed to the constructor.
   error InvalidLlamaCoreAddress();
@@ -152,8 +152,8 @@ abstract contract TokenHolderCaster is Initializable {
   /// @notice The minimum % of vetos required to submit vetos to `LlamaCore`.
   uint256 public minVetoQuorum;
 
-  /// @notice The role used by this contract to cast votes and vetos.
-  /// @dev This role is expected to have the ability to force approve and disapprove actions on a llama strategy.
+  /// @notice The role used by this contract to cast approvals and disapprovals.
+  /// @dev This role is expected to have the ability to force approve and disapprove actions.
   uint8 public role;
 
   /// @dev EIP-712 base typehash.
@@ -187,22 +187,22 @@ abstract contract TokenHolderCaster is Initializable {
   /// @param _llamaCore The `LlamaCore` contract for this Llama instance.
   /// @param _role The role used by this contract to cast votes and vetos.
   /// @param _voteQuorum The minimum % of votes required to submit votes to `LlamaCore`.
-  /// @param _minVetoQuorum The minimum % of vetos required to submit vetos to `LlamaCore`.
+  /// @param _VetoQuorum The minimum % of vetos required to submit vetos to `LlamaCore`.
   function __initializeTokenHolderCasterMinimalProxy(
     ILlamaCore _llamaCore,
     uint8 _role,
     uint256 _voteQuorum,
-    uint256 _minVetoQuorum
+    uint256 _VetoQuorum
   ) internal {
     if (_llamaCore.actionsCount() < 0) revert InvalidLlamaCoreAddress();
     if (_role > _llamaCore.policy().numRoles()) revert RoleNotInitialized(_role);
     if (_voteQuorum > ONE_HUNDRED_IN_BPS || _voteQuorum <= 0) revert InvalidVotesQuorum(_voteQuorum);
-    if (_minVetoQuorum > ONE_HUNDRED_IN_BPS || _minVetoQuorum <= 0) revert InvalidMinVetoQuorum(_minVetoQuorum);
+    if (_VetoQuorum > ONE_HUNDRED_IN_BPS || _VetoQuorum <= 0) revert InvalidVetoQuorum(_VetoQuorum);
 
     llamaCore = _llamaCore;
     role = _role;
     voteQuorum = _voteQuorum;
-    minVetoQuorum = _minVetoQuorum;
+    minVetoQuorum = _VetoQuorum;
   }
 
   /// @notice How tokenHolders add their support of an action with a vote and a reason.
@@ -451,10 +451,6 @@ abstract contract TokenHolderCaster is Initializable {
         CAST_VETO_BY_SIG_TYPEHASH,
         tokenHolder,
         support,
-        _getActionInfoHash(actionInfo),
-        keccak256(bytes(reason)),
-        _useNonce(tokenHolder, msg.sig)
-      )
     );
 
     return keccak256(abi.encodePacked("\x19\x01", _getDomainHash(), castVetoHash));
