@@ -10,7 +10,10 @@ import {LlamaPeripheryTestSetup} from "test/LlamaPeripheryTestSetup.sol";
 
 import {DeployLlamaTokenVotingFactory} from "script/DeployLlamaTokenVotingFactory.s.sol";
 
+import {Action, ActionInfo, PermissionData} from "src/lib/Structs.sol";
 import {ILlamaPolicy} from "src/interfaces/ILlamaPolicy.sol";
+import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
+import {ILlamaRelativeStrategyBase} from "src/interfaces/ILlamaRelativeStrategyBase.sol";
 import {RoleDescription} from "src/lib/UDVTs.sol";
 import {ERC20TokenholderActionCreator} from "src/token-voting/ERC20TokenholderActionCreator.sol";
 import {ERC20TokenholderCaster} from "src/token-voting/ERC20TokenholderCaster.sol";
@@ -19,7 +22,7 @@ import {ERC721TokenholderCaster} from "src/token-voting/ERC721TokenholderCaster.
 
 contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenVotingFactory {
   // Percentages
-  uint256 internal constant ONE_HUNDRED_IN_BPS = 10_000;
+  uint16 internal constant ONE_HUNDRED_IN_BPS = 10_000;
   uint256 internal constant ONE_THIRD_IN_BPS = 3333;
   uint256 internal constant TWO_THIRDS_IN_BPS = 6667;
 
@@ -148,5 +151,54 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
       true
     );
     vm.stopPrank();
+  }
+
+  function _deployRelativeQuantityQuorumAndSetRolePermissionToCoreTeam(uint8 _tokenVotingCasterRole)
+    internal
+    returns (ILlamaStrategy newStrategy)
+  {
+    uint8[] memory forceRoles = new uint8[](0);
+
+    ILlamaRelativeStrategyBase.Config memory strategyConfig = ILlamaRelativeStrategyBase.Config({
+      approvalPeriod: 1 days,
+      queuingPeriod: 1 days,
+      expirationPeriod: 1 days,
+      isFixedLengthApprovalPeriod: false,
+      minApprovalPct: ONE_HUNDRED_IN_BPS,
+      minDisapprovalPct: ONE_HUNDRED_IN_BPS,
+      approvalRole: _tokenVotingCasterRole,
+      disapprovalRole: _tokenVotingCasterRole,
+      forceApprovalRoles: forceRoles,
+      forceDisapprovalRoles: forceRoles
+    });
+
+    ILlamaRelativeStrategyBase.Config[] memory strategyConfigs = new ILlamaRelativeStrategyBase.Config[](1);
+    strategyConfigs[0] = strategyConfig;
+
+    vm.prank(address(EXECUTOR));
+    CORE.createStrategies(RELATIVE_QUANTITY_QUORUM_LOGIC, encodeStrategyConfigs(strategyConfigs));
+
+    newStrategy = ILlamaStrategy(
+      LENS.computeLlamaStrategyAddress(
+        address(RELATIVE_QUANTITY_QUORUM_LOGIC), encodeStrategy(strategyConfig), address(CORE)
+      )
+    );
+
+    {
+      vm.prank(address(EXECUTOR));
+      POLICY.setRolePermission(
+        CORE_TEAM_ROLE, ILlamaPolicy.PermissionData(address(mockProtocol), PAUSE_SELECTOR, address(STRATEGY)), true
+      );
+    }
+  }
+
+  function _createActionWithTokenVotingStrategy(ILlamaStrategy _tokenVotingStrategy)
+    public
+    returns (ActionInfo memory _actionInfo)
+  {
+    bytes memory data = abi.encodeCall(mockProtocol.pause, (true));
+    vm.prank(coreTeam1);
+    uint256 actionId = CORE.createAction(CORE_TEAM_ROLE, _tokenVotingStrategy, address(mockProtocol), 0, data, "");
+    _actionInfo = ActionInfo(actionId, coreTeam1, CORE_TEAM_ROLE, _tokenVotingStrategy, address(mockProtocol), 0, data);
   }
 }
