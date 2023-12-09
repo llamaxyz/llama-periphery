@@ -151,7 +151,7 @@ contract ERC20TokenholderCasterTest is LlamaTokenVotingTestSetup, LlamaCoreSigUt
 //   }
 // }
 
-contract CastApproval is ERC20TokenholderCasterTest {
+contract CastVote is ERC20TokenholderCasterTest {
   function test_RevertsIf_ActionInfoMismatch(ActionInfo memory notActionInfo) public {
     vm.assume(notActionInfo.id != actionInfo.id);
     vm.expectRevert();
@@ -231,7 +231,7 @@ contract CastApproval is ERC20TokenholderCasterTest {
   }
 }
 
-contract CastApprovalBySig is ERC20TokenholderCasterTest {
+contract CastVoteBySig is ERC20TokenholderCasterTest {
   function setUp() public virtual override {
     ERC20TokenholderCasterTest.setUp();
   }
@@ -241,14 +241,9 @@ contract CastApprovalBySig is ERC20TokenholderCasterTest {
     view
     returns (uint8 v, bytes32 r, bytes32 s)
   {
-    LlamaCoreSigUtils.CastApproval memory castVote = LlamaCoreSigUtils.CastApproval({
-      actionInfo: _actionInfo,
-      support: 1,
-      reason: "",
-      tokenHolder: tokenHolder1,
-      nonce: 0
-    });
-    bytes32 digest = getCastApprovalTypedDataHash(castVote);
+    LlamaCoreSigUtils.CastVote memory castVote =
+      LlamaCoreSigUtils.CastVote({actionInfo: _actionInfo, support: 1, reason: "", tokenHolder: tokenHolder1, nonce: 0});
+    bytes32 digest = getCastVoteTypedDataHash(castVote);
     (v, r, s) = vm.sign(privateKey, digest);
   }
 
@@ -319,7 +314,7 @@ contract CastApprovalBySig is ERC20TokenholderCasterTest {
   }
 }
 
-contract CastDisapproval is ERC20TokenholderCasterTest {
+contract CastVeto is ERC20TokenholderCasterTest {
   function setUp() public virtual override {
     ERC20TokenholderCasterTest.setUp();
 
@@ -404,7 +399,7 @@ contract CastDisapproval is ERC20TokenholderCasterTest {
   }
 }
 
-contract CastDisapprovalBySig is ERC20TokenholderCasterTest {
+contract CastVetoBySig is ERC20TokenholderCasterTest {
   function setUp() public virtual override {
     ERC20TokenholderCasterTest.setUp();
 
@@ -421,14 +416,9 @@ contract CastDisapprovalBySig is ERC20TokenholderCasterTest {
     view
     returns (uint8 v, bytes32 r, bytes32 s)
   {
-    LlamaCoreSigUtils.CastDisapproval memory castVeto = LlamaCoreSigUtils.CastDisapproval({
-      actionInfo: _actionInfo,
-      support: 1,
-      reason: "",
-      tokenHolder: tokenHolder1,
-      nonce: 0
-    });
-    bytes32 digest = getCastDisapprovalTypedDataHash(castVeto);
+    LlamaCoreSigUtils.CastVeto memory castVeto =
+      LlamaCoreSigUtils.CastVeto({actionInfo: _actionInfo, support: 1, reason: "", tokenHolder: tokenHolder1, nonce: 0});
+    bytes32 digest = getCastVetoTypedDataHash(castVeto);
     (v, r, s) = vm.sign(privateKey, digest);
   }
 
