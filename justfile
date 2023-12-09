@@ -18,8 +18,8 @@ run-script script_name flags='' sig='' args='':
     -vvvv {{flags}}
   mv _test test
 
-dry-run-deploy: (run-script 'DeployLlamaFactory')
+dry-run-deploy: (run-script 'DeployLlamaTokenVotingFactory')
 
-deploy: (run-script 'DeployLlamaFactory' '--broadcast --verify --build-info --build-info-path build_info')
+deploy: (run-script 'DeployLlamaTokenVotingFactory' '--broadcast --verify --build-info --build-info-path build_info')
 
-verify: (run-script 'DeployLlamaFactory' '--verify --resume')
+verify: (run-script 'DeployLlamaTokenVotingFactory' '--verify --resume')

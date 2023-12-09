@@ -12,19 +12,7 @@ contract LlamaCoreSigUtils {
   }
 
   struct CreateAction {
-    address policyholder;
-    uint8 role;
-    address strategy;
-    address target;
-    uint256 value;
-    bytes data;
-    string description;
-    uint256 nonce;
-  }
-
-  struct CreateActionBySig {
     address tokenHolder;
-    uint8 role;
     address strategy;
     address target;
     uint256 value;
@@ -34,34 +22,12 @@ contract LlamaCoreSigUtils {
   }
 
   struct CancelAction {
-    address policyholder;
-    ActionInfo actionInfo;
-    uint256 nonce;
-  }
-
-  struct CancelActionBySig {
     address tokenHolder;
     ActionInfo actionInfo;
     uint256 nonce;
   }
 
   struct CastApproval {
-    address policyholder;
-    uint8 role;
-    ActionInfo actionInfo;
-    string reason;
-    uint256 nonce;
-  }
-
-  struct CastDisapproval {
-    address policyholder;
-    uint8 role;
-    ActionInfo actionInfo;
-    string reason;
-    uint256 nonce;
-  }
-
-  struct CastApprovalBySig {
     address tokenHolder;
     uint8 support;
     ActionInfo actionInfo;
@@ -69,7 +35,7 @@ contract LlamaCoreSigUtils {
     uint256 nonce;
   }
 
-  struct CastDisapprovalBySig {
+  struct CastDisapproval {
     address tokenHolder;
     uint8 support;
     ActionInfo actionInfo;
@@ -83,41 +49,21 @@ contract LlamaCoreSigUtils {
 
   /// @notice EIP-712 createAction typehash.
   bytes32 internal constant CREATE_ACTION_TYPEHASH = keccak256(
-    "CreateAction(address policyholder,uint8 role,address strategy,address target,uint256 value,bytes data,string description,uint256 nonce)"
-  );
-
-  /// @notice EIP-712 createAction typehash.
-  bytes32 internal constant CREATE_ACTION_BY_SIG_TYPEHASH = keccak256(
-    "CreateAction(address tokenHolder,uint8 role,address strategy,address target,uint256 value,bytes data,string description,uint256 nonce)"
+    "CreateAction(address tokenHolder,address strategy,address target,uint256 value,bytes data,string description,uint256 nonce)"
   );
 
   /// @dev EIP-712 cancelAction typehash.
   bytes32 internal constant CANCEL_ACTION_TYPEHASH = keccak256(
-    "CancelAction(address policyholder,ActionInfo actionInfo,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
-  );
-
-  /// @dev EIP-712 cancelAction typehash.
-  bytes32 internal constant CANCEL_ACTION_BY_SIG_TYPEHASH = keccak256(
     "CancelAction(address tokenHolder,ActionInfo actionInfo,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
   );
 
   /// @notice EIP-712 castApproval typehash.
   bytes32 internal constant CAST_APPROVAL_TYPEHASH = keccak256(
-    "CastApproval(address policyholder,uint8 role,ActionInfo actionInfo,string reason,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
-  );
-
-  /// @notice EIP-712 castApproval typehash.
-  bytes32 internal constant CAST_APPROVAL_BY_SIG_TYPEHASH = keccak256(
     "CastApproval(address tokenHolder,uint8 support,ActionInfo actionInfo,string reason,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
   );
 
   /// @notice EIP-712 castDisapproval typehash.
   bytes32 internal constant CAST_DISAPPROVAL_TYPEHASH = keccak256(
-    "CastDisapproval(address policyholder,uint8 role,ActionInfo actionInfo,string reason,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
-  );
-
-  /// @notice EIP-712 castDisapproval typehash.
-  bytes32 internal constant CAST_DISAPPROVAL_BY_SIG_TYPEHASH = keccak256(
     "CastDisapproval(address tokenHolder,uint8 role,ActionInfo actionInfo,string reason,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
   );
 
@@ -146,25 +92,7 @@ contract LlamaCoreSigUtils {
     return keccak256(
       abi.encode(
         CREATE_ACTION_TYPEHASH,
-        createAction.policyholder,
-        createAction.role,
-        createAction.strategy,
-        createAction.target,
-        createAction.value,
-        keccak256(createAction.data),
-        keccak256(bytes(createAction.description)),
-        createAction.nonce
-      )
-    );
-  }
-
-  /// @notice Returns the hash of CreateAction.
-  function getCreateActionBySigHash(CreateActionBySig memory createAction) internal pure returns (bytes32) {
-    return keccak256(
-      abi.encode(
-        CREATE_ACTION_BY_SIG_TYPEHASH,
         createAction.tokenHolder,
-        createAction.role,
         createAction.strategy,
         createAction.target,
         createAction.value,
@@ -181,32 +109,11 @@ contract LlamaCoreSigUtils {
     return keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, getCreateActionHash(createAction)));
   }
 
-  /// @notice Returns the hash of the fully encoded EIP-712 message for the CreateAction domain, which can be used to
-  /// recover the signer.
-  function getCreateActionBySigTypedDataHash(CreateActionBySig memory createAction) internal view returns (bytes32) {
-    return keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, getCreateActionBySigHash(createAction)));
-  }
-
-  /// @notice Returns the hash of CancelAction.
+  /// @notice Returns the hash of CancelActionBySig.
   function getCancelActionHash(CancelAction memory cancelAction) internal pure returns (bytes32) {
     return keccak256(
       abi.encode(
-        CANCEL_ACTION_TYPEHASH,
-        cancelAction.policyholder,
-        getActionInfoHash(cancelAction.actionInfo),
-        cancelAction.nonce
-      )
-    );
-  }
-
-  /// @notice Returns the hash of CancelActionBySig.
-  function getCancelActionBySigHash(CancelActionBySig memory cancelAction) internal pure returns (bytes32) {
-    return keccak256(
-      abi.encode(
-        CANCEL_ACTION_BY_SIG_TYPEHASH,
-        cancelAction.tokenHolder,
-        getActionInfoHash(cancelAction.actionInfo),
-        cancelAction.nonce
+        CANCEL_ACTION_TYPEHASH, cancelAction.tokenHolder, getActionInfoHash(cancelAction.actionInfo), cancelAction.nonce
       )
     );
   }
@@ -217,31 +124,11 @@ contract LlamaCoreSigUtils {
     return keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, getCancelActionHash(cancelAction)));
   }
 
-  /// @notice Returns the hash of the fully encoded EIP-712 message for the CancelActionBySig domain, which can be used
-  /// to
-  /// recover the signer.
-  function getCancelActionBySigTypedDataHash(CancelActionBySig memory cancelAction) internal view returns (bytes32) {
-    return keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, getCancelActionBySigHash(cancelAction)));
-  }
-
   /// @notice Returns the hash of CastApproval.
   function getCastApprovalHash(CastApproval memory castApproval) internal pure returns (bytes32) {
     return keccak256(
       abi.encode(
         CAST_APPROVAL_TYPEHASH,
-        castApproval.policyholder,
-        castApproval.role,
-        getActionInfoHash(castApproval.actionInfo),
-        keccak256(bytes(castApproval.reason)),
-        castApproval.nonce
-      )
-    );
-  }
-
-  function getCastApprovalBySigHash(CastApprovalBySig memory castApproval) internal pure returns (bytes32) {
-    return keccak256(
-      abi.encode(
-        CAST_APPROVAL_BY_SIG_TYPEHASH,
         castApproval.tokenHolder,
         castApproval.support,
         getActionInfoHash(castApproval.actionInfo),
@@ -257,32 +144,11 @@ contract LlamaCoreSigUtils {
     return keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, getCastApprovalHash(castApproval)));
   }
 
-  /// @notice Returns the hash of the fully encoded EIP-712 message for the CastApprovalBySig domain, which can be used
-  /// to
-  /// recover the signer.
-  function getCastApprovalBySigTypedDataHash(CastApprovalBySig memory castApproval) internal view returns (bytes32) {
-    return keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, getCastApprovalBySigHash(castApproval)));
-  }
-
-  /// @notice Returns the hash of CastDisapproval.
+  /// @notice Returns the hash of CastDisapprovalBySig.
   function getCastDisapprovalHash(CastDisapproval memory castDisapproval) internal pure returns (bytes32) {
     return keccak256(
       abi.encode(
         CAST_DISAPPROVAL_TYPEHASH,
-        castDisapproval.policyholder,
-        castDisapproval.role,
-        getActionInfoHash(castDisapproval.actionInfo),
-        keccak256(bytes(castDisapproval.reason)),
-        castDisapproval.nonce
-      )
-    );
-  }
-
-  /// @notice Returns the hash of CastDisapprovalBySig.
-  function getCastDisapprovalBySigHash(CastDisapprovalBySig memory castDisapproval) internal pure returns (bytes32) {
-    return keccak256(
-      abi.encode(
-        CAST_DISAPPROVAL_BY_SIG_TYPEHASH,
         castDisapproval.tokenHolder,
         castDisapproval.support,
         getActionInfoHash(castDisapproval.actionInfo),
@@ -296,17 +162,6 @@ contract LlamaCoreSigUtils {
   /// recover the signer.
   function getCastDisapprovalTypedDataHash(CastDisapproval memory castDisapproval) internal view returns (bytes32) {
     return keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, getCastDisapprovalHash(castDisapproval)));
-  }
-
-  /// @notice Returns the hash of the fully encoded EIP-712 message for the CastDisapprovalBySig domain, which can be
-  /// used to
-  /// recover the signer.
-  function getCastDisapprovalBySigTypedDataHash(CastDisapprovalBySig memory castDisapproval)
-    internal
-    view
-    returns (bytes32)
-  {
-    return keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, getCastDisapprovalBySigHash(castDisapproval)));
   }
 
   /// @notice Returns the hash of ActionInfo.

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
+import {Initializable} from "@openzeppelin/proxy/utils/Initializable.sol";
+
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
 import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
 import {Action, ActionInfo} from "src/lib/Structs.sol";
@@ -14,13 +16,24 @@ import {LlamaUtils} from "src/lib/LlamaUtils.sol";
 /// it must hold a Policy from the specified `LlamaCore` instance to actually be able to create an action. The
 /// instance's policy encodes what actions this contract is allowed to create, and attempting to create an action that
 /// is not allowed by the policy will result in a revert.
-abstract contract TokenholderActionCreator {
+abstract contract TokenholderActionCreator is Initializable {
   /// @notice The core contract for this Llama instance.
-  ILlamaCore public immutable LLAMA_CORE;
+  ILlamaCore public llamaCore;
 
-  /// @dev EIP-712 actionInfo typehash.
-  bytes32 internal constant ACTION_INFO_TYPEHASH = keccak256(
-    "ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
+  /// @notice The default number of tokens required to create an action.
+  uint256 public creationThreshold;
+
+  /// @notice The role used by this contract to cast approvals and disapprovals.
+  /// @dev This role is expected to have the permissions to create appropriate actions.
+  uint8 public role;
+
+  /// @dev EIP-712 base typehash.
+  bytes32 internal constant EIP712_DOMAIN_TYPEHASH =
+    keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
+
+  /// @dev EIP-712 createAction typehash.
+  bytes32 internal constant CREATE_ACTION_TYPEHASH = keccak256(
+    "CreateAction(address tokenHolder,address strategy,address target,uint256 value,bytes data,string description,uint256 nonce)"
   );
 
   /// @dev EIP-712 cancelAction typehash.
@@ -28,14 +41,10 @@ abstract contract TokenholderActionCreator {
     "CancelAction(address tokenHolder,ActionInfo actionInfo,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
   );
 
-  /// @dev EIP-712 createAction typehash.
-  bytes32 internal constant CREATE_ACTION_TYPEHASH = keccak256(
-    "CreateAction(address tokenHolder,uint8 role,address strategy,address target,uint256 value,bytes data,string description,uint256 nonce)"
+  /// @dev EIP-712 actionInfo typehash.
+  bytes32 internal constant ACTION_INFO_TYPEHASH = keccak256(
+    "ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
   );
-
-  /// @dev EIP-712 base typehash.
-  bytes32 internal constant EIP712_DOMAIN_TYPEHASH =
-    keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
 
   /// @notice The address of the tokenholder that created the action.
   mapping(uint256 => address) public actionCreators;
@@ -44,9 +53,6 @@ abstract contract TokenholderActionCreator {
   /// @dev This is used to prevent replay attacks by incrementing the nonce for each operation (`createAction`,
   /// `cancelAction`, `castApproval` and `castDisapproval`) signed by the token holder.
   mapping(address tokenHolder => mapping(bytes4 selector => uint256 currentNonce)) public nonces;
-
-  /// @notice The default number of tokens required to create an action.
-  uint256 public creationThreshold;
 
   /// @dev Emitted when an action is canceled.
   event ActionCanceled(uint256 id, address indexed creator);
@@ -94,20 +100,30 @@ abstract contract TokenholderActionCreator {
   /// @dev Thrown when an address other than the `LlamaExecutor` tries to call a function.
   error OnlyLlamaExecutor();
 
-  /// @param llamaCore The `LlamaCore` contract for this Llama instance.
+  /// @dev Thrown when an invalid `role` is passed to the constructor.
+  error RoleNotInitialized(uint8 role);
+
+  /// @dev This will be called by the `initialize` of the inheriting contract.
+  /// @param _llamaCore The `LlamaCore` contract for this Llama instance.
+  /// @param _role The role used by this contract to cast approvals and disapprovals.
   /// @param _creationThreshold The default number of tokens required to create an action. This must
   /// be in the same decimals as the token. For example, if the token has 18 decimals and you want a
   /// creation threshold of 1000 tokens, pass in 1000e18.
-  constructor(ILlamaCore llamaCore, uint256 _creationThreshold) {
-    if (llamaCore.actionsCount() < 0) revert InvalidLlamaCoreAddress();
+  function __initializeTokenholderActionCreatorMinimalProxy(
+    ILlamaCore _llamaCore,
+    uint8 _role,
+    uint256 _creationThreshold
+  ) internal {
+    if (_llamaCore.actionsCount() < 0) revert InvalidLlamaCoreAddress();
+    if (_role > _llamaCore.policy().numRoles()) revert RoleNotInitialized(_role);
 
-    LLAMA_CORE = llamaCore;
+    llamaCore = _llamaCore;
+    role = _role;
     _setActionThreshold(_creationThreshold);
   }
 
   /// @notice Creates an action.
   /// @dev Use `""` for `description` if there is no description.
-  /// @param role The role that will be used to determine the permission ID of the policyholder.
   /// @param strategy The strategy contract that will determine how the action is executed.
   /// @param target The contract called when the action is executed.
   /// @param value The value in wei to be sent when the action is executed.
@@ -115,21 +131,19 @@ abstract contract TokenholderActionCreator {
   /// @param description A human readable description of the action and the changes it will enact.
   /// @return actionId Action ID of the newly created action.
   function createAction(
-    uint8 role,
     ILlamaStrategy strategy,
     address target,
     uint256 value,
     bytes calldata data,
     string memory description
   ) external returns (uint256 actionId) {
-    return _createAction(msg.sender, role, strategy, target, value, data, description);
+    return _createAction(msg.sender, strategy, target, value, data, description);
   }
 
   /// @notice Creates an action via an off-chain signature. The creator needs to hold a policy with the permission ID
   /// of the provided `(target, selector, strategy)`.
   /// @dev Use `""` for `description` if there is no description.
   /// @param tokenHolder The tokenHolder that signed the message.
-  /// @param role The role that will be used to determine the permission ID of the tokenHolder.
   /// @param strategy The strategy contract that will determine how the action is executed.
   /// @param target The contract called when the action is executed.
   /// @param value The value in wei to be sent when the action is executed.
@@ -141,7 +155,6 @@ abstract contract TokenholderActionCreator {
   /// @return actionId Action ID of the newly created action.
   function createActionBySig(
     address tokenHolder,
-    uint8 role,
     ILlamaStrategy strategy,
     address target,
     uint256 value,
@@ -151,10 +164,10 @@ abstract contract TokenholderActionCreator {
     bytes32 r,
     bytes32 s
   ) external returns (uint256 actionId) {
-    bytes32 digest = _getCreateActionTypedDataHash(tokenHolder, role, strategy, target, value, data, description);
+    bytes32 digest = _getCreateActionTypedDataHash(tokenHolder, strategy, target, value, data, description);
     address signer = ecrecover(digest, v, r, s);
     if (signer == address(0) || signer != tokenHolder) revert InvalidSignature();
-    actionId = _createAction(signer, role, strategy, target, value, data, description);
+    actionId = _createAction(signer, strategy, target, value, data, description);
   }
 
   /// @notice Cancels an action.
@@ -184,7 +197,7 @@ abstract contract TokenholderActionCreator {
   /// @param _creationThreshold The number of tokens required to create an action.
   /// @dev This must be in the same decimals as the token.
   function setActionThreshold(uint256 _creationThreshold) external {
-    if (msg.sender != address(LLAMA_CORE.executor())) revert OnlyLlamaExecutor();
+    if (msg.sender != address(llamaCore.executor())) revert OnlyLlamaExecutor();
     if (_creationThreshold > _getPastTotalSupply(block.timestamp - 1)) revert InvalidCreationThreshold();
     _setActionThreshold(_creationThreshold);
   }
@@ -199,7 +212,6 @@ abstract contract TokenholderActionCreator {
 
   function _createAction(
     address tokenHolder,
-    uint8 role,
     ILlamaStrategy strategy,
     address target,
     uint256 value,
@@ -215,7 +227,7 @@ abstract contract TokenholderActionCreator {
     uint256 balance = _getPastVotes(tokenHolder, block.timestamp - 1);
     if (balance < creationThreshold) revert InsufficientBalance(balance);
 
-    actionId = LLAMA_CORE.createAction(role, strategy, target, value, data, description);
+    actionId = llamaCore.createAction(role, strategy, target, value, data, description);
     actionCreators[actionId] = tokenHolder;
     emit ActionCreated(actionId, tokenHolder, role, strategy, target, value, data, description);
   }
@@ -227,7 +239,7 @@ abstract contract TokenholderActionCreator {
 
   function _cancelAction(address creator, ActionInfo calldata actionInfo) internal {
     if (creator != actionCreators[actionInfo.id]) revert OnlyActionCreator();
-    LLAMA_CORE.cancelAction(actionInfo);
+    llamaCore.cancelAction(actionInfo);
     emit ActionCanceled(actionInfo.id, creator);
   }
 
@@ -248,7 +260,7 @@ abstract contract TokenholderActionCreator {
   function _getDomainHash() internal view returns (bytes32) {
     return keccak256(
       abi.encode(
-        EIP712_DOMAIN_TYPEHASH, keccak256(bytes(LLAMA_CORE.name())), keccak256(bytes("1")), block.chainid, address(this)
+        EIP712_DOMAIN_TYPEHASH, keccak256(bytes(llamaCore.name())), keccak256(bytes("1")), block.chainid, address(this)
       )
     );
   }
@@ -257,7 +269,6 @@ abstract contract TokenholderActionCreator {
   /// recover the signer.
   function _getCreateActionTypedDataHash(
     address tokenHolder,
-    uint8 role,
     ILlamaStrategy strategy,
     address target,
     uint256 value,
@@ -272,7 +283,6 @@ abstract contract TokenholderActionCreator {
       abi.encode(
         CREATE_ACTION_TYPEHASH,
         tokenHolder,
-        role,
         address(strategy),
         target,
         value,
@@ -297,8 +307,8 @@ abstract contract TokenholderActionCreator {
 
     return keccak256(abi.encodePacked("\x19\x01", _getDomainHash(), cancelActionHash));
   }
-  /// @dev Returns the hash of `actionInfo`.
 
+  /// @dev Returns the hash of `actionInfo`.
   function _getActionInfoHash(ActionInfo calldata actionInfo) internal pure returns (bytes32) {
     return keccak256(
       abi.encode(

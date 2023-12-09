@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
+import {Initializable} from "@openzeppelin/proxy/utils/Initializable.sol";
+
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
 import {ActionState} from "src/lib/Enums.sol";
@@ -16,7 +18,7 @@ import {ILlamaRelativeStrategyBase} from "src/interfaces/ILlamaRelativeStrategyB
 /// it must hold a Policy from the specified `LlamaCore` instance to actually be able to cast on an action. This
 /// contract does not verify that it holds the correct policy when voting and relies on `LlamaCore` to
 /// verify that during submission.
-abstract contract TokenholderCaster {
+abstract contract TokenholderCaster is Initializable {
   // =========================
   // ======== Structs ========
   // =========================
@@ -142,17 +144,17 @@ abstract contract TokenholderCaster {
   uint256 internal constant TWO_THIRDS_IN_BPS = 6667;
 
   /// @notice The core contract for this Llama instance.
-  ILlamaCore public immutable LLAMA_CORE;
+  ILlamaCore public llamaCore;
 
   /// @notice The minimum % of approvals required to submit approvals to `LlamaCore`.
-  uint256 public immutable MIN_APPROVAL_PCT;
+  uint256 public minApprovalPct;
 
   /// @notice The minimum % of disapprovals required to submit disapprovals to `LlamaCore`.
-  uint256 public immutable MIN_DISAPPROVAL_PCT;
+  uint256 public minDisapprovalPct;
 
   /// @notice The role used by this contract to cast approvals and disapprovals.
   /// @dev This role is expected to have the ability to force approve and disapprove actions.
-  uint8 public immutable ROLE;
+  uint8 public role;
 
   /// @dev EIP-712 base typehash.
   bytes32 internal constant EIP712_DOMAIN_TYPEHASH =
@@ -181,22 +183,28 @@ abstract contract TokenholderCaster {
   /// `cancelAction`, `castApproval` and `castDisapproval`) signed by the tokenholders.
   mapping(address tokenholders => mapping(bytes4 selector => uint256 currentNonce)) public nonces;
 
-  /// @param llamaCore The `LlamaCore` contract for this Llama instance.
-  /// @param role The role used by this contract to cast approvals and disapprovals.
-  /// @param minApprovalPct The minimum % of approvals required to submit approvals to `LlamaCore`.
-  /// @param minDisapprovalPct The minimum % of disapprovals required to submit disapprovals to `LlamaCore`.
-  constructor(ILlamaCore llamaCore, uint8 role, uint256 minApprovalPct, uint256 minDisapprovalPct) {
-    if (llamaCore.actionsCount() < 0) revert InvalidLlamaCoreAddress();
-    if (role > llamaCore.policy().numRoles()) revert RoleNotInitialized(role);
-    if (minApprovalPct > ONE_HUNDRED_IN_BPS || minApprovalPct <= 0) revert InvalidMinApprovalPct(minApprovalPct);
-    if (minDisapprovalPct > ONE_HUNDRED_IN_BPS || minDisapprovalPct <= 0) {
-      revert InvalidMinDisapprovalPct(minDisapprovalPct);
+  /// @dev This will be called by the `initialize` of the inheriting contract.
+  /// @param _llamaCore The `LlamaCore` contract for this Llama instance.
+  /// @param _role The role used by this contract to cast approvals and disapprovals.
+  /// @param _minApprovalPct The minimum % of approvals required to submit approvals to `LlamaCore`.
+  /// @param _minDisapprovalPct The minimum % of disapprovals required to submit disapprovals to `LlamaCore`.
+  function __initializeTokenholderCasterMinimalProxy(
+    ILlamaCore _llamaCore,
+    uint8 _role,
+    uint256 _minApprovalPct,
+    uint256 _minDisapprovalPct
+  ) internal {
+    if (_llamaCore.actionsCount() < 0) revert InvalidLlamaCoreAddress();
+    if (_role > _llamaCore.policy().numRoles()) revert RoleNotInitialized(_role);
+    if (_minApprovalPct > ONE_HUNDRED_IN_BPS || _minApprovalPct <= 0) revert InvalidMinApprovalPct(_minApprovalPct);
+    if (_minDisapprovalPct > ONE_HUNDRED_IN_BPS || _minDisapprovalPct <= 0) {
+      revert InvalidMinDisapprovalPct(_minDisapprovalPct);
     }
 
-    LLAMA_CORE = llamaCore;
-    ROLE = role;
-    MIN_APPROVAL_PCT = minApprovalPct;
-    MIN_DISAPPROVAL_PCT = minDisapprovalPct;
+    llamaCore = _llamaCore;
+    role = _role;
+    minApprovalPct = _minApprovalPct;
+    minDisapprovalPct = _minDisapprovalPct;
   }
 
   /// @notice How tokenholders add their support of the approval of an action with a reason.
@@ -257,7 +265,7 @@ abstract contract TokenholderCaster {
   /// @param actionInfo Data required to create an action.
   /// @dev this function can be called by anyone
   function submitApprovals(ActionInfo calldata actionInfo) external {
-    Action memory action = LLAMA_CORE.getAction(actionInfo.id);
+    Action memory action = llamaCore.getAction(actionInfo.id);
 
     if (casts[actionInfo.id].approvalSubmitted) revert AlreadySubmittedApproval();
     // check to make sure the casting period has ended
@@ -278,12 +286,12 @@ abstract contract TokenholderCaster {
     uint96 approvalsFor = casts[actionInfo.id].approvalsFor;
     uint96 approvalsAgainst = casts[actionInfo.id].approvalsAgainst;
     uint96 approvalsAbstain = casts[actionInfo.id].approvalsAbstain;
-    uint256 threshold = FixedPointMathLib.mulDivUp(totalSupply, MIN_APPROVAL_PCT, ONE_HUNDRED_IN_BPS);
+    uint256 threshold = FixedPointMathLib.mulDivUp(totalSupply, minApprovalPct, ONE_HUNDRED_IN_BPS);
     if (approvalsFor < threshold) revert InsufficientApprovals(approvalsFor, threshold);
     if (approvalsFor <= approvalsAgainst) revert ForDoesNotSurpassAgainst(approvalsFor, approvalsAgainst);
 
     casts[actionInfo.id].approvalSubmitted = true;
-    LLAMA_CORE.castApproval(ROLE, actionInfo, "");
+    llamaCore.castApproval(role, actionInfo, "");
     emit ApprovalsSubmitted(actionInfo.id, approvalsFor, approvalsAgainst, approvalsAbstain);
   }
 
@@ -291,9 +299,9 @@ abstract contract TokenholderCaster {
   /// @param actionInfo Data required to create an action.
   /// @dev this function can be called by anyone
   function submitDisapprovals(ActionInfo calldata actionInfo) external {
-    Action memory action = LLAMA_CORE.getAction(actionInfo.id);
+    Action memory action = llamaCore.getAction(actionInfo.id);
 
-    actionInfo.strategy.checkIfDisapprovalEnabled(actionInfo, msg.sender, ROLE); // Reverts if not allowed.
+    actionInfo.strategy.checkIfDisapprovalEnabled(actionInfo, msg.sender, role); // Reverts if not allowed.
     if (casts[actionInfo.id].disapprovalSubmitted) revert AlreadySubmittedDisapproval();
 
     uint256 queuingPeriod = ILlamaRelativeStrategyBase(address(actionInfo.strategy)).queuingPeriod();
@@ -312,22 +320,22 @@ abstract contract TokenholderCaster {
     uint96 disapprovalsFor = casts[actionInfo.id].disapprovalsFor;
     uint96 disapprovalsAgainst = casts[actionInfo.id].disapprovalsAgainst;
     uint96 disapprovalsAbstain = casts[actionInfo.id].disapprovalsAbstain;
-    uint256 threshold = FixedPointMathLib.mulDivUp(totalSupply, MIN_DISAPPROVAL_PCT, ONE_HUNDRED_IN_BPS);
+    uint256 threshold = FixedPointMathLib.mulDivUp(totalSupply, minDisapprovalPct, ONE_HUNDRED_IN_BPS);
     if (disapprovalsFor < threshold) revert InsufficientApprovals(disapprovalsFor, threshold);
     if (disapprovalsFor <= disapprovalsAgainst) revert ForDoesNotSurpassAgainst(disapprovalsFor, disapprovalsAgainst);
 
     casts[actionInfo.id].disapprovalSubmitted = true;
-    LLAMA_CORE.castDisapproval(ROLE, actionInfo, "");
+    llamaCore.castDisapproval(role, actionInfo, "");
     emit DisapprovalsSubmitted(actionInfo.id, disapprovalsFor, disapprovalsAgainst, disapprovalsAbstain);
   }
 
   function _castApproval(address caster, ActionInfo calldata actionInfo, uint8 support, string calldata reason)
     internal
   {
-    Action memory action = LLAMA_CORE.getAction(actionInfo.id);
+    Action memory action = llamaCore.getAction(actionInfo.id);
 
-    actionInfo.strategy.checkIfApprovalEnabled(actionInfo, caster, ROLE); // Reverts if not allowed.
-    if (LLAMA_CORE.getActionState(actionInfo) != uint8(ActionState.Active)) revert ActionNotActive();
+    actionInfo.strategy.checkIfApprovalEnabled(actionInfo, caster, role); // Reverts if not allowed.
+    if (llamaCore.getActionState(actionInfo) != uint8(ActionState.Active)) revert ActionNotActive();
     if (casts[actionInfo.id].castApproval[caster]) revert AlreadyCastApproval();
     if (
       block.timestamp
@@ -343,15 +351,15 @@ abstract contract TokenholderCaster {
     else if (support == 1) casts[actionInfo.id].approvalsFor += LlamaUtils.toUint96(balance);
     else if (support == 2) casts[actionInfo.id].approvalsAbstain += LlamaUtils.toUint96(balance);
     casts[actionInfo.id].castApproval[caster] = true;
-    emit ApprovalCast(actionInfo.id, caster, ROLE, support, balance, reason);
+    emit ApprovalCast(actionInfo.id, caster, role, support, balance, reason);
   }
 
   function _castDisapproval(address caster, ActionInfo calldata actionInfo, uint8 support, string calldata reason)
     internal
   {
-    Action memory action = LLAMA_CORE.getAction(actionInfo.id);
+    Action memory action = llamaCore.getAction(actionInfo.id);
 
-    actionInfo.strategy.checkIfDisapprovalEnabled(actionInfo, caster, ROLE); // Reverts if not allowed.
+    actionInfo.strategy.checkIfDisapprovalEnabled(actionInfo, caster, role); // Reverts if not allowed.
     if (!actionInfo.strategy.isActionApproved(actionInfo)) revert ActionNotApproved();
     if (actionInfo.strategy.isActionExpired(actionInfo)) revert ActionExpired();
     if (casts[actionInfo.id].castDisapproval[caster]) revert AlreadyCastDisapproval();
@@ -369,7 +377,7 @@ abstract contract TokenholderCaster {
     else if (support == 1) casts[actionInfo.id].disapprovalsFor += LlamaUtils.toUint96(balance);
     else if (support == 2) casts[actionInfo.id].disapprovalsAbstain += LlamaUtils.toUint96(balance);
     casts[actionInfo.id].castDisapproval[caster] = true;
-    emit DisapprovalCast(actionInfo.id, caster, ROLE, support, balance, reason);
+    emit DisapprovalCast(actionInfo.id, caster, role, support, balance, reason);
   }
 
   function _preCastAssertions(uint256 balance, uint8 support) internal view {
@@ -409,7 +417,7 @@ abstract contract TokenholderCaster {
   function _getDomainHash() internal view returns (bytes32) {
     return keccak256(
       abi.encode(
-        EIP712_DOMAIN_TYPEHASH, keccak256(bytes(LLAMA_CORE.name())), keccak256(bytes("1")), block.chainid, address(this)
+        EIP712_DOMAIN_TYPEHASH, keccak256(bytes(llamaCore.name())), keccak256(bytes("1")), block.chainid, address(this)
       )
     );
   }
@@ -440,7 +448,7 @@ abstract contract TokenholderCaster {
   /// recover the signer.
   function _getCastDisapprovalTypedDataHash(
     address tokenholder,
-    uint8 role,
+    uint8 support,
     ActionInfo calldata actionInfo,
     string calldata reason
   ) internal returns (bytes32) {
@@ -448,7 +456,7 @@ abstract contract TokenholderCaster {
       abi.encode(
         CAST_DISAPPROVAL_BY_SIG_TYPEHASH,
         tokenholder,
-        role,
+        support,
         _getActionInfoHash(actionInfo),
         keccak256(bytes(reason)),
         _useNonce(tokenholder, msg.sig)
