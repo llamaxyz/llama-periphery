@@ -5,17 +5,14 @@ import {Test, console2} from "forge-std/Test.sol";
 
 import {Clones} from "@openzeppelin/proxy/Clones.sol";
 
-import {MockERC20Votes} from "test/mock/MockERC20Votes.sol";
 import {LlamaTokenVotingTestSetup} from "test/token-voting/LlamaTokenVotingTestSetup.sol";
 import {LlamaCoreSigUtils} from "test/utils/LlamaCoreSigUtils.sol";
 
 import {ActionState} from "src/lib/Enums.sol";
 import {Action, ActionInfo, PermissionData} from "src/lib/Structs.sol";
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
-import {ILlamaPolicy} from "src/interfaces/ILlamaPolicy.sol";
 import {ILlamaRelativeStrategyBase} from "src/interfaces/ILlamaRelativeStrategyBase.sol";
 import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
-import {RoleDescription} from "src/lib/UDVTs.sol";
 import {ERC20TokenholderCaster} from "src/token-voting/ERC20TokenholderCaster.sol";
 import {TokenholderCaster} from "src/token-voting/TokenholderCaster.sol";
 
