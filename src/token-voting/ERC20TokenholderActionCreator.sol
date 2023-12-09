@@ -9,7 +9,7 @@ import {ERC20Votes} from "@openzeppelin/token/ERC20/extensions/ERC20Votes.sol";
 /// @author Llama (devsdosomething@llama.xyz)
 /// @notice This contract lets holders of a specified `ERC20Votes` token create actions on a llama instance if their
 /// token balance is greater than or equal to the creation threshold.
-contract ERC20TokenholderActionCreator is TokenholderActionCreator {
+contract ERC20TokenHolderActionCreator is TokenHolderActionCreator {
   ERC20Votes public token;
 
   /// @dev This contract is deployed as a minimal proxy from the factory's `deployTokenVotingModule` function. The
@@ -18,7 +18,7 @@ contract ERC20TokenholderActionCreator is TokenholderActionCreator {
     _disableInitializers();
   }
 
-  /// @notice Initializes a new `ERC20TokenholderActionCreator` clone.
+  /// @notice Initializes a new `ERC20TokenHolderActionCreator` clone.
   /// @dev This function is called by the `deployTokenVotingModule` function in the `LlamaTokenVotingFactory` contract.
   /// The `initializer` modifier ensures that this function can be invoked at most once.
   /// @param _token The ERC20 token to be used for voting.
@@ -31,7 +31,7 @@ contract ERC20TokenholderActionCreator is TokenholderActionCreator {
     external
     initializer
   {
-    __initializeTokenholderActionCreatorMinimalProxy(_llamaCore, _role, _creationThreshold);
+    __initializeTokenHolderActionCreatorMinimalProxy(_llamaCore, _role, _creationThreshold);
     token = _token;
     uint256 totalSupply = token.totalSupply();
     if (totalSupply == 0) revert InvalidTokenAddress();

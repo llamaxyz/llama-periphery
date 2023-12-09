@@ -47,39 +47,14 @@ contract LlamaTokenVotingFactory {
     ERC721_TOKENHOLDER_CASTER_LOGIC = erc721TokenHolderCasterLogic;
   }
 
-  /// @notice The ERC20 Tokenholder Action Creator (logic) contract.
-  ERC20TokenholderActionCreator public immutable ERC20_TOKENHOLDER_ACTION_CREATOR_LOGIC;
-
-  /// @notice The ERC20 Tokenholder Caster (logic) contract.
-  ERC20TokenholderCaster public immutable ERC20_TOKENHOLDER_CASTER_LOGIC;
-
-  /// @notice The ERC721 Tokenholder Action Creator (logic) contract.
-  ERC721TokenholderActionCreator public immutable ERC721_TOKENHOLDER_ACTION_CREATOR_LOGIC;
-
-  /// @notice The ERC721 Tokenholder Caster (logic) contract.
-  ERC721TokenholderCaster public immutable ERC721_TOKENHOLDER_CASTER_LOGIC;
-
-  /// @dev Set the logic contracts used to deploy Token Voting modules.
-  constructor(
-    ERC20TokenholderActionCreator erc20TokenholderActionCreatorLogic,
-    ERC20TokenholderCaster erc20TokenholderCasterLogic,
-    ERC721TokenholderActionCreator erc721TokenholderActionCreatorLogic,
-    ERC721TokenholderCaster erc721TokenholderCasterLogic
-  ) {
-    ERC20_TOKENHOLDER_ACTION_CREATOR_LOGIC = erc20TokenholderActionCreatorLogic;
-    ERC20_TOKENHOLDER_CASTER_LOGIC = erc20TokenholderCasterLogic;
-    ERC721_TOKENHOLDER_ACTION_CREATOR_LOGIC = erc721TokenholderActionCreatorLogic;
-    ERC721_TOKENHOLDER_CASTER_LOGIC = erc721TokenholderCasterLogic;
-  }
-
   ///@notice Deploys a token voting module in a single function so it can be deployed in a single llama action.
   ///@dev This method CAN NOT be used in tandem with `delegateCallDeployTokenVotingModuleWithRoles`. You must use one or
   /// the other due to the delegateCallDeployTokenVotingModuleWithRoles method requring the contract to be authorized as
   /// a script.
   ///@param token The address of the token to be used for voting.
   ///@param isERC20 Whether the token is an ERC20 or ERC721.
-  ///@param actionCreatorRole The role required by the TokenholderActionCreator to create an action.
-  ///@param casterRole The role required by the TokenholderCaster to cast approvals and disapprovals.
+  ///@param actionCreatorRole The role required by the TokenHolderActionCreator to create an action.
+  ///@param casterRole The role required by the TokenHolderCaster to cast approvals and disapprovals.
   ///@param creationThreshold The number of tokens required to create an action (set to 0 if not deploying action
   /// creator).
   ///@param voteQuorum The minimum percentage of tokens required to approve an action (set to 0 if not deploying
@@ -97,45 +72,51 @@ contract LlamaTokenVotingFactory {
     uint256 vetoQuorum
   ) external returns (address actionCreator, address caster) {
     if (isERC20) {
-      actionCreator = address(_deployERC20TokenholderActionCreator(ERC20Votes(token), llamaCore, actionCreatorRole, creationThreshold));
-      caster = address(_deployERC20TokenholderCaster(ERC20Votes(token), llamaCore, casterRole, voteQuorum, vetoQuorum));
+      actionCreator = address(
+        _deployERC20TokenHolderActionCreator(ERC20Votes(token), llamaCore, actionCreatorRole, creationThreshold)
+      );
+      caster = address(_deployERC20TokenHolderCaster(ERC20Votes(token), llamaCore, casterRole, voteQuorum, vetoQuorum));
     } else {
-      actionCreator = address(_deployERC721TokenholderActionCreator(ERC721Votes(token), llamaCore, actionCreatorRole, creationThreshold));
-      caster = address(_deployERC721TokenholderCaster(ERC721Votes(token), llamaCore, casterRole, voteQuorum, vetoQuorum));
+      actionCreator = address(
+        _deployERC721TokenHolderActionCreator(ERC721Votes(token), llamaCore, actionCreatorRole, creationThreshold)
+      );
+      caster =
+        address(_deployERC721TokenHolderCaster(ERC721Votes(token), llamaCore, casterRole, voteQuorum, vetoQuorum));
+    }
   }
 
   // ====================================
   // ======== Internal Functions ========
   // ====================================
 
-  function _deployERC20TokenholderActionCreator(
+  function _deployERC20TokenHolderActionCreator(
     ERC20Votes token,
     ILlamaCore llamaCore,
     uint8 role,
     uint256 creationThreshold
-  ) internal returns (ERC20TokenholderActionCreator actionCreator) {
-    actionCreator = ERC20TokenholderActionCreator(
+  ) internal returns (ERC20TokenHolderActionCreator actionCreator) {
+    actionCreator = ERC20TokenHolderActionCreator(
       Clones.cloneDeterministic(
         address(ERC20_TOKENHOLDER_ACTION_CREATOR_LOGIC), keccak256(abi.encodePacked(address(token), msg.sender))
       )
     );
     actionCreator.initialize(token, llamaCore, role, creationThreshold);
-    emit ERC20TokenholderActionCreatorCreated(address(actionCreator), address(token));
+    emit ERC20TokenHolderActionCreatorCreated(address(actionCreator), address(token));
   }
 
-  function _deployERC721TokenholderActionCreator(
+  function _deployERC721TokenHolderActionCreator(
     ERC721Votes token,
     ILlamaCore llamaCore,
     uint8 role,
     uint256 creationThreshold
-  ) internal returns (ERC721TokenholderActionCreator actionCreator) {
-    actionCreator = ERC721TokenholderActionCreator(
+  ) internal returns (ERC721TokenHolderActionCreator actionCreator) {
+    actionCreator = ERC721TokenHolderActionCreator(
       Clones.cloneDeterministic(
         address(ERC721_TOKENHOLDER_ACTION_CREATOR_LOGIC), keccak256(abi.encodePacked(address(token), msg.sender))
       )
     );
     actionCreator.initialize(token, llamaCore, role, creationThreshold);
-    emit ERC721TokenholderActionCreatorCreated(address(actionCreator), address(token));
+    emit ERC721TokenHolderActionCreatorCreated(address(actionCreator), address(token));
   }
 
   function _deployERC20TokenHolderCaster(

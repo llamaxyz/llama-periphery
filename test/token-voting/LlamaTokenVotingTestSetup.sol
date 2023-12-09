@@ -15,10 +15,10 @@ import {ILlamaPolicy} from "src/interfaces/ILlamaPolicy.sol";
 import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
 import {ILlamaRelativeStrategyBase} from "src/interfaces/ILlamaRelativeStrategyBase.sol";
 import {RoleDescription} from "src/lib/UDVTs.sol";
-import {ERC20TokenholderActionCreator} from "src/token-voting/ERC20TokenholderActionCreator.sol";
-import {ERC20TokenholderCaster} from "src/token-voting/ERC20TokenholderCaster.sol";
-import {ERC721TokenholderActionCreator} from "src/token-voting/ERC721TokenholderActionCreator.sol";
-import {ERC721TokenholderCaster} from "src/token-voting/ERC721TokenholderCaster.sol";
+import {ERC20TokenHolderActionCreator} from "src/token-voting/ERC20TokenHolderActionCreator.sol";
+import {ERC20TokenHolderCaster} from "src/token-voting/ERC20TokenHolderCaster.sol";
+import {ERC721TokenHolderActionCreator} from "src/token-voting/ERC721TokenHolderActionCreator.sol";
+import {ERC721TokenHolderCaster} from "src/token-voting/ERC721TokenHolderCaster.sol";
 
 contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenVotingFactory {
   // Percentages
@@ -91,11 +91,12 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
 
   function _deployERC20TokenVotingModuleAndSetRole()
     internal
-    returns (ERC20TokenholderActionCreator, ERC20TokenholderCaster)
+    returns (ERC20TokenHolderActionCreator, ERC20TokenHolderCaster)
   {
     vm.startPrank(address(EXECUTOR));
     // Deploy Token Voting Module
-    (address erc20TokenholderActionCreator, address erc20TokenholderCaster) = tokenVotingFactory.deployTokenVotingModule(
+    (address erc20TokenHolderActionCreator, address erc20TokenHolderCaster) = tokenVotingFactory.deployTokenVotingModule(
+      CORE,
       address(erc20VotesToken),
       true,
       tokenVotingActionCreatorRole,
@@ -106,23 +107,24 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
     );
     // Assign roles to Token Voting Modules
     POLICY.setRoleHolder(
-      tokenVotingActionCreatorRole, erc20TokenholderActionCreator, DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION
+      tokenVotingActionCreatorRole, erc20TokenHolderActionCreator, DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION
     );
-    POLICY.setRoleHolder(tokenVotingCasterRole, erc20TokenholderCaster, DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION);
+    POLICY.setRoleHolder(tokenVotingCasterRole, erc20TokenHolderCaster, DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION);
     vm.stopPrank();
 
     return
-      (ERC20TokenholderActionCreator(erc20TokenholderActionCreator), ERC20TokenholderCaster(erc20TokenholderCaster));
+      (ERC20TokenHolderActionCreator(erc20TokenHolderActionCreator), ERC20TokenHolderCaster(erc20TokenHolderCaster));
   }
 
   function _deployERC721TokenVotingModuleAndSetRole()
     internal
-    returns (ERC721TokenholderActionCreator, ERC721TokenholderCaster)
+    returns (ERC721TokenHolderActionCreator, ERC721TokenHolderCaster)
   {
     vm.startPrank(address(EXECUTOR));
     // Deploy Token Voting Module
-    (address erc721TokenholderActionCreator, address erc721TokenholderCaster) = tokenVotingFactory
+    (address erc721TokenHolderActionCreator, address erc721TokenHolderCaster) = tokenVotingFactory
       .deployTokenVotingModule(
+      CORE,
       address(erc721VotesToken),
       false,
       tokenVotingActionCreatorRole,
@@ -133,17 +135,17 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
     );
     // Assign roles to Token Voting Modules
     POLICY.setRoleHolder(
-      tokenVotingActionCreatorRole, erc721TokenholderActionCreator, DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION
+      tokenVotingActionCreatorRole, erc721TokenHolderActionCreator, DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION
     );
-    POLICY.setRoleHolder(tokenVotingCasterRole, erc721TokenholderCaster, DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION);
+    POLICY.setRoleHolder(tokenVotingCasterRole, erc721TokenHolderCaster, DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION);
     vm.stopPrank();
 
     return
-      (ERC721TokenholderActionCreator(erc721TokenholderActionCreator), ERC721TokenholderCaster(erc721TokenholderCaster));
+      (ERC721TokenHolderActionCreator(erc721TokenHolderActionCreator), ERC721TokenHolderCaster(erc721TokenHolderCaster));
   }
 
-  function _setRolePermissionToTokenholderActionCreator() internal {
-    // Assign permission for `MockProtocol.pause` to the TokenholderActionCreator.
+  function _setRolePermissionToTokenHolderActionCreator() internal {
+    // Assign permission for `MockProtocol.pause` to the TokenHolderActionCreator.
     vm.prank(address(EXECUTOR));
     POLICY.setRolePermission(
       tokenVotingActionCreatorRole,

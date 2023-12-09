@@ -18,7 +18,7 @@ import {ILlamaRelativeStrategyBase} from "src/interfaces/ILlamaRelativeStrategyB
 /// it must hold a Policy from the specified `LlamaCore` instance to actually be able to cast on an action. This
 /// contract does not verify that it holds the correct policy when voting and relies on `LlamaCore` to
 /// verify that during submission.
-abstract contract TokenholderCaster is Initializable {
+abstract contract TokenHolderCaster is Initializable {
   // =========================
   // ======== Structs ========
   // =========================
@@ -56,13 +56,13 @@ abstract contract TokenholderCaster is Initializable {
   error AlreadyCastVote();
 
   /// @dev Thrown when a user tries to cast vote but the casts have already been submitted to `LlamaCore`.
-  error AlreadySubmittedVote();
+  error AlreadySubmittedVotes();
 
   /// @dev Thrown when a user tries to cast veto but has already casted.
   error AlreadyCastVeto();
 
   /// @dev Thrown when a user tries to cast veto but the casts have already been submitted to `LlamaCore.
-  error AlreadySubmittedVeto();
+  error AlreadySubmittedVetos();
 
   /// @dev Thrown when a user tries to cast vote/veto but the casting period has ended.
   error CastingPeriodOver();
@@ -150,7 +150,7 @@ abstract contract TokenholderCaster is Initializable {
   uint256 public voteQuorum;
 
   /// @notice The minimum % of vetos required to submit vetos to `LlamaCore`.
-  uint256 public minVetoQuorum;
+  uint256 public vetoQuorum;
 
   /// @notice The role used by this contract to cast approvals and disapprovals.
   /// @dev This role is expected to have the ability to force approve and disapprove actions.
@@ -187,22 +187,22 @@ abstract contract TokenholderCaster is Initializable {
   /// @param _llamaCore The `LlamaCore` contract for this Llama instance.
   /// @param _role The role used by this contract to cast votes and vetos.
   /// @param _voteQuorum The minimum % of votes required to submit votes to `LlamaCore`.
-  /// @param _VetoQuorum The minimum % of vetos required to submit vetos to `LlamaCore`.
+  /// @param _vetoQuorum The minimum % of vetos required to submit vetos to `LlamaCore`.
   function __initializeTokenHolderCasterMinimalProxy(
     ILlamaCore _llamaCore,
     uint8 _role,
     uint256 _voteQuorum,
-    uint256 _VetoQuorum
+    uint256 _vetoQuorum
   ) internal {
     if (_llamaCore.actionsCount() < 0) revert InvalidLlamaCoreAddress();
     if (_role > _llamaCore.policy().numRoles()) revert RoleNotInitialized(_role);
     if (_voteQuorum > ONE_HUNDRED_IN_BPS || _voteQuorum <= 0) revert InvalidVotesQuorum(_voteQuorum);
-    if (_VetoQuorum > ONE_HUNDRED_IN_BPS || _VetoQuorum <= 0) revert InvalidVetoQuorum(_VetoQuorum);
+    if (_vetoQuorum > ONE_HUNDRED_IN_BPS || _vetoQuorum <= 0) revert InvalidVetoQuorum(_vetoQuorum);
 
     llamaCore = _llamaCore;
     role = _role;
     voteQuorum = _voteQuorum;
-    minVetoQuorum = _VetoQuorum;
+    vetoQuorum = _vetoQuorum;
   }
 
   /// @notice How tokenHolders add their support of an action with a vote and a reason.
@@ -265,7 +265,7 @@ abstract contract TokenholderCaster is Initializable {
   function submitVotes(ActionInfo calldata actionInfo) external {
     Action memory action = llamaCore.getAction(actionInfo.id);
 
-    if (casts[actionInfo.id].votesSubmitted) revert AlreadySubmittedVote();
+    if (casts[actionInfo.id].votesSubmitted) revert AlreadySubmittedVotes();
     // check to make sure the casting period has ended
     uint256 votePeriod = ILlamaRelativeStrategyBase(address(actionInfo.strategy)).approvalPeriod();
     if (block.timestamp < action.creationTime + (votePeriod * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS) {
@@ -300,7 +300,7 @@ abstract contract TokenholderCaster is Initializable {
     Action memory action = llamaCore.getAction(actionInfo.id);
 
     actionInfo.strategy.checkIfDisapprovalEnabled(actionInfo, msg.sender, role); // Reverts if not allowed.
-    if (casts[actionInfo.id].vetoSubmitted) revert AlreadySubmittedVeto();
+    if (casts[actionInfo.id].vetoSubmitted) revert AlreadySubmittedVetos();
 
     uint256 queuingPeriod = ILlamaRelativeStrategyBase(address(actionInfo.strategy)).queuingPeriod();
     // check to make sure the current timestamp is within the submitVetoBuffer period
@@ -318,7 +318,7 @@ abstract contract TokenholderCaster is Initializable {
     uint96 vetosFor = casts[actionInfo.id].vetosFor;
     uint96 vetosAgainst = casts[actionInfo.id].vetosAgainst;
     uint96 vetosAbstain = casts[actionInfo.id].vetosAbstain;
-    uint256 quorum = FixedPointMathLib.mulDivUp(totalSupply, minVetoQuorum, ONE_HUNDRED_IN_BPS);
+    uint256 quorum = FixedPointMathLib.mulDivUp(totalSupply, vetoQuorum, ONE_HUNDRED_IN_BPS);
     if (vetosFor < quorum) revert InsufficientVotes(vetosFor, quorum);
     if (vetosFor <= vetosAgainst) revert ForDoesNotSurpassAgainst(vetosFor, vetosAgainst);
 
@@ -446,12 +446,7 @@ abstract contract TokenholderCaster is Initializable {
     ActionInfo calldata actionInfo,
     string calldata reason
   ) internal returns (bytes32) {
-    bytes32 castVetoHash = keccak256(
-      abi.encode(
-        CAST_VETO_BY_SIG_TYPEHASH,
-        tokenHolder,
-        support,
-    );
+    bytes32 castVetoHash = keccak256(abi.encode(CAST_VETO_BY_SIG_TYPEHASH, tokenHolder, support));
 
     return keccak256(abi.encodePacked("\x19\x01", _getDomainHash(), castVetoHash));
   }
