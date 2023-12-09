@@ -328,86 +328,90 @@ contract CastApprovalBySig is ERC20TokenholderCasterTest {
   }
 }
 
-// contract CastDisapproval is ERC20TokenholderCasterTest {
-//   function setUp() public virtual override {
-//     ERC20TokenholderCasterTest.setUp();
+contract CastDisapproval is ERC20TokenholderCasterTest {
+  function setUp() public virtual override {
+    ERC20TokenholderCasterTest.setUp();
 
-//     castApprovalsFor();
+    castApprovalsFor();
 
-//     vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
+    vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
 
-//     vm.prank(tokenHolder1);
-//     erc20TokenholderCaster.submitApprovals(actionInfo);
-//   }
+    vm.prank(tokenHolder1);
+    erc20TokenholderCaster.submitApprovals(actionInfo);
+  }
 
-//   function test_RevertsIf_ActionInfoMismatch(ActionInfo memory notActionInfo) public {
-//     vm.assume(notActionInfo.id != actionInfo.id);
-//     vm.expectRevert();
-//     erc20TokenholderCaster.castDisapproval(notActionInfo, tokenVotingCasterRole, "");
-//   }
+  function test_RevertsIf_ActionInfoMismatch(ActionInfo memory notActionInfo) public {
+    vm.assume(notActionInfo.id != actionInfo.id);
+    vm.expectRevert();
+    erc20TokenholderCaster.castDisapproval(notActionInfo, tokenVotingCasterRole, "");
+  }
 
-//   function test_RevertsIf_DisapprovalNotEnabled() public {
-//     TokenholderCaster casterWithWrongRole = new ERC20TokenholderCaster(
-//       erc20VotesToken, ILlamaCore(address(CORE)), madeUpRole, DEFAULT_APPROVAL_THRESHOLD, DEFAULT_APPROVAL_THRESHOLD
-//     );
-//     vm.expectRevert(abi.encodeWithSelector(ILlamaRelativeStrategyBase.InvalidRole.selector, tokenVotingCasterRole));
-//     casterWithWrongRole.castDisapproval(actionInfo, madeUpRole, "");
-//   }
+  function test_RevertsIf_DisapprovalNotEnabled() public {
+    ERC20TokenholderCaster casterWithWrongRole = ERC20TokenholderCaster(
+      Clones.cloneDeterministic(
+        address(erc20TokenholderCasterLogic), keccak256(abi.encodePacked(address(erc20VotesToken), msg.sender))
+      )
+    );
+    casterWithWrongRole.initialize(erc20VotesToken, CORE, madeUpRole, ERC20_MIN_APPROVAL_PCT, ERC20_MIN_DISAPPROVAL_PCT);
 
-//   function test_RevertsIf_AlreadyCastApproval() public {
-//     vm.startPrank(tokenHolder1);
-//     erc20TokenholderCaster.castDisapproval(actionInfo, 1, "");
+    vm.expectRevert(abi.encodeWithSelector(ILlamaRelativeStrategyBase.InvalidRole.selector, tokenVotingCasterRole));
+    casterWithWrongRole.castDisapproval(actionInfo, madeUpRole, "");
+  }
 
-//     vm.expectRevert(TokenholderCaster.AlreadyCastDisapproval.selector);
-//     erc20TokenholderCaster.castDisapproval(actionInfo, 1, "");
-//   }
+  function test_RevertsIf_AlreadyCastApproval() public {
+    vm.startPrank(tokenHolder1);
+    erc20TokenholderCaster.castDisapproval(actionInfo, 1, "");
 
-//   function test_RevertsIf_InvalidSupport() public {
-//     vm.expectRevert(abi.encodeWithSelector(TokenholderCaster.InvalidSupport.selector, uint8(3)));
-//     erc20TokenholderCaster.castDisapproval(actionInfo, 3, "");
-//   }
+    vm.expectRevert(TokenholderCaster.AlreadyCastDisapproval.selector);
+    erc20TokenholderCaster.castDisapproval(actionInfo, 1, "");
+  }
 
-//   function test_RevertsIf_CastingPeriodOver() public {
-//     // TODO why do we need to add 2 here
-//     vm.warp(block.timestamp + 2 + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS); // 2/3 of the approval period
-//     vm.expectRevert(TokenholderCaster.CastingPeriodOver.selector);
-//     erc20TokenholderCaster.castDisapproval(actionInfo, 1, "");
-//   }
+  function test_RevertsIf_InvalidSupport() public {
+    vm.expectRevert(abi.encodeWithSelector(TokenholderCaster.InvalidSupport.selector, uint8(3)));
+    erc20TokenholderCaster.castDisapproval(actionInfo, 3, "");
+  }
 
-//   function test_RevertsIf_InsufficientBalance() public {
-//     vm.expectRevert(abi.encodeWithSelector(TokenholderCaster.InsufficientBalance.selector, 0));
-//     erc20TokenholderCaster.castDisapproval(actionInfo, 1, "");
-//   }
+  function test_RevertsIf_CastingPeriodOver() public {
+    // TODO why do we need to add 2 here
+    vm.warp(block.timestamp + 2 + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS); // 2/3 of the approval period
+    vm.expectRevert(TokenholderCaster.CastingPeriodOver.selector);
+    erc20TokenholderCaster.castDisapproval(actionInfo, 1, "");
+  }
 
-//   function test_CastsDisapprovalCorrectly(uint8 support) public {
-//     support = uint8(bound(support, 0, 2));
-//     vm.expectEmit();
-//     emit DisapprovalCast(
-//       actionInfo.id,
-//       tokenHolder1,
-//       tokenVotingCasterRole,
-//       support,
-//       erc20VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1),
-//       ""
-//     );
-//     vm.prank(tokenHolder1);
-//     erc20TokenholderCaster.castDisapproval(actionInfo, support, "");
-//   }
+  function test_RevertsIf_InsufficientBalance() public {
+    vm.expectRevert(abi.encodeWithSelector(TokenholderCaster.InsufficientBalance.selector, 0));
+    erc20TokenholderCaster.castDisapproval(actionInfo, 1, "");
+  }
 
-//   function test_CastsDisapprovalCorrectly_WithReason() public {
-//     vm.expectEmit();
-//     emit DisapprovalCast(
-//       actionInfo.id,
-//       tokenHolder1,
-//       tokenVotingCasterRole,
-//       1,
-//       erc20VotesToken.getPastVotes(tokenHolder1, erc20VotesToken.clock() - 1),
-//       "reason"
-//     );
-//     vm.prank(tokenHolder1);
-//     erc20TokenholderCaster.castDisapproval(actionInfo, 1, "reason");
-//   }
-// }
+  function test_CastsDisapprovalCorrectly(uint8 support) public {
+    support = uint8(bound(support, 0, 2));
+    vm.expectEmit();
+    emit DisapprovalCast(
+      actionInfo.id,
+      tokenHolder1,
+      tokenVotingCasterRole,
+      support,
+      erc20VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1),
+      ""
+    );
+    vm.prank(tokenHolder1);
+    erc20TokenholderCaster.castDisapproval(actionInfo, support, "");
+  }
+
+  function test_CastsDisapprovalCorrectly_WithReason() public {
+    vm.expectEmit();
+    emit DisapprovalCast(
+      actionInfo.id,
+      tokenHolder1,
+      tokenVotingCasterRole,
+      1,
+      erc20VotesToken.getPastVotes(tokenHolder1, erc20VotesToken.clock() - 1),
+      "reason"
+    );
+    vm.prank(tokenHolder1);
+    erc20TokenholderCaster.castDisapproval(actionInfo, 1, "reason");
+  }
+}
 
 // contract SubmitApprovals is ERC20TokenholderCasterTest {
 //   function setUp() public virtual override {
