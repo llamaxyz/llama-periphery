@@ -96,6 +96,7 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
     vm.startPrank(address(EXECUTOR));
     // Deploy Token Voting Module
     (address erc20TokenholderActionCreator, address erc20TokenholderCaster) = tokenVotingFactory.deployTokenVotingModule(
+      CORE,
       address(erc20VotesToken),
       true,
       tokenVotingActionCreatorRole,
@@ -123,6 +124,7 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
     // Deploy Token Voting Module
     (address erc721TokenholderActionCreator, address erc721TokenholderCaster) = tokenVotingFactory
       .deployTokenVotingModule(
+      CORE,
       address(erc721VotesToken),
       false,
       tokenVotingActionCreatorRole,

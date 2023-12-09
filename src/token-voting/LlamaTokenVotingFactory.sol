@@ -76,15 +76,19 @@ contract LlamaTokenVotingFactory {
     uint256 minDisapprovalPct
   ) external returns (address actionCreator, address caster) {
     if (isERC20) {
-      actionCreator =
-        address(_deployERC20TokenholderActionCreator(ERC20Votes(token), core, actionCreatorRole, creationThreshold));
-      caster =
-        address(_deployERC20TokenholderCaster(ERC20Votes(token), core, casterRole, minApprovalPct, minDisapprovalPct));
+      actionCreator = address(
+        _deployERC20TokenholderActionCreator(ERC20Votes(token), llamaCore, actionCreatorRole, creationThreshold)
+      );
+      caster = address(
+        _deployERC20TokenholderCaster(ERC20Votes(token), llamaCore, casterRole, minApprovalPct, minDisapprovalPct)
+      );
     } else {
-      actionCreator =
-        address(_deployERC721TokenholderActionCreator(ERC721Votes(token), core, actionCreatorRole, creationThreshold));
-      caster =
-        address(_deployERC721TokenholderCaster(ERC721Votes(token), core, casterRole, minApprovalPct, minDisapprovalPct));
+      actionCreator = address(
+        _deployERC721TokenholderActionCreator(ERC721Votes(token), llamaCore, actionCreatorRole, creationThreshold)
+      );
+      caster = address(
+        _deployERC721TokenholderCaster(ERC721Votes(token), llamaCore, casterRole, minApprovalPct, minDisapprovalPct)
+      );
     }
   }
 

@@ -89,6 +89,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     // Set up action to call `deployTokenVotingModule` with the ERC20 token.
     bytes memory data = abi.encodeWithSelector(
       LlamaTokenVotingFactory.deployTokenVotingModule.selector,
+      CORE,
       address(erc20VotesToken),
       true,
       tokenVotingActionCreatorRole,
@@ -141,6 +142,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     // Set up action to call `deployTokenVotingModule` with the ERC721 token.
     bytes memory data = abi.encodeWithSelector(
       LlamaTokenVotingFactory.deployTokenVotingModule.selector,
+      CORE,
       address(erc721VotesToken),
       false,
       tokenVotingActionCreatorRole,
