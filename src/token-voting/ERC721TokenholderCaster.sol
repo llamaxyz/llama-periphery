@@ -8,7 +8,7 @@ import {IERC721} from "@openzeppelin/token/ERC721/IERC721.sol";
 
 /// @title ERC721TokenholderCaster
 /// @author Llama (devsdosomething@llama.xyz)
-/// @notice This contract lets holders of a given governance ERC721Votes token cast approvals and disapprovals
+/// @notice This contract lets holders of a given governance ERC721Votes token cast approvals and vetos
 /// on created actions.
 contract ERC721TokenholderCaster is TokenholderCaster {
   ERC721Votes public token;
@@ -24,17 +24,14 @@ contract ERC721TokenholderCaster is TokenholderCaster {
   /// The `initializer` modifier ensures that this function can be invoked at most once.
   /// @param _token The ERC721 token to be used for voting.
   /// @param _llamaCore The `LlamaCore` contract for this Llama instance.
-  /// @param _role The role used by this contract to cast approvals and disapprovals.
-  /// @param _minApprovalPct The minimum % of approvals required to submit approvals to `LlamaCore`.
-  /// @param _minDisapprovalPct The minimum % of disapprovals required to submit disapprovals to `LlamaCore`.
-  function initialize(
-    ERC721Votes _token,
-    ILlamaCore _llamaCore,
-    uint8 _role,
-    uint256 _minApprovalPct,
-    uint256 _minDisapprovalPct
-  ) external initializer {
-    __initializeTokenholderCasterMinimalProxy(_llamaCore, _role, _minApprovalPct, _minDisapprovalPct);
+  /// @param _role The role used by this contract to cast approvals and vetos.
+  /// @param _voteQuorum The minimum % of approvals required to submit approvals to `LlamaCore`.
+  /// @param _vetoQuorum The minimum % of vetos required to submit vetos to `LlamaCore`.
+  function initialize(ERC721Votes _token, ILlamaCore _llamaCore, uint8 _role, uint256 _voteQuorum, uint256 _vetoQuorum)
+    external
+    initializer
+  {
+    __initializeTokenholderCasterMinimalProxy(_llamaCore, _role, _voteQuorum, _vetoQuorum);
     token = _token;
     if (!token.supportsInterface(type(IERC721).interfaceId)) revert InvalidTokenAddress();
   }

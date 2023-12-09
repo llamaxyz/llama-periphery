@@ -17,17 +17,17 @@ import {ERC721TokenholderCaster} from "src/token-voting/ERC721TokenholderCaster.
 import {TokenholderCaster} from "src/token-voting/TokenholderCaster.sol";
 
 contract ERC721TokenholderCasterTest is LlamaTokenVotingTestSetup, LlamaCoreSigUtils {
-  event ApprovalCast(
+  event VoteCast(
     uint256 id, address indexed policyholder, uint8 indexed role, uint8 indexed support, uint256 quantity, string reason
   );
 
-  event ApprovalsSubmitted(uint256 id, uint96 quantityFor, uint96 quantityAgainst, uint96 quantityAbstain);
+  event VotesSubmitted(uint256 id, uint96 quantityFor, uint96 quantityAgainst, uint96 quantityAbstain);
 
-  event DisapprovalCast(
+  event VetoCast(
     uint256 id, address indexed policyholder, uint8 indexed role, uint8 indexed support, uint256 quantity, string reason
   );
 
-  event DisapprovalsSubmitted(uint256 id, uint96 quantityFor, uint96 quantityAgainst, uint96 quantityAbstain);
+  event VetosSubmitted(uint256 id, uint96 quantityFor, uint96 quantityAgainst, uint96 quantityAbstain);
 
   ActionInfo actionInfo;
   ERC721TokenholderCaster erc721TokenholderCaster;
@@ -73,22 +73,22 @@ contract ERC721TokenholderCasterTest is LlamaTokenVotingTestSetup, LlamaCoreSigU
     );
   }
 
-  function castApprovalsFor() public {
+  function castVotesFor() public {
     vm.prank(tokenHolder1);
-    erc721TokenholderCaster.castApproval(actionInfo, 1, "");
+    erc721TokenholderCaster.castVote(actionInfo, 1, "");
     vm.prank(tokenHolder2);
-    erc721TokenholderCaster.castApproval(actionInfo, 1, "");
+    erc721TokenholderCaster.castVote(actionInfo, 1, "");
     vm.prank(tokenHolder3);
-    erc721TokenholderCaster.castApproval(actionInfo, 1, "");
+    erc721TokenholderCaster.castVote(actionInfo, 1, "");
   }
 
-  function castDisapprovalsFor() public {
+  function castVetosFor() public {
     vm.prank(tokenHolder1);
-    erc721TokenholderCaster.castDisapproval(actionInfo, 1, "");
+    erc721TokenholderCaster.castVeto(actionInfo, 1, "");
     vm.prank(tokenHolder2);
-    erc721TokenholderCaster.castDisapproval(actionInfo, 1, "");
+    erc721TokenholderCaster.castVeto(actionInfo, 1, "");
     vm.prank(tokenHolder3);
-    erc721TokenholderCaster.castDisapproval(actionInfo, 1, "");
+    erc721TokenholderCaster.castVeto(actionInfo, 1, "");
   }
 }
 
@@ -116,20 +116,20 @@ contract ERC721TokenholderCasterTest is LlamaTokenVotingTestSetup, LlamaCoreSigU
 //     new ERC721TokenholderCaster(erc721VotesToken, ILlamaCore(address(CORE)), uint8(255), uint256(1), uint256(1));
 //   }
 
-//   function test_RevertsIf_InvalidMinApprovalPct() public {
-//     vm.expectRevert(abi.encodeWithSelector(TokenholderCaster.InvalidMinApprovalPct.selector, uint256(0)));
+//   function test_RevertsIf_InvalidVoteQuorum() public {
+//     vm.expectRevert(abi.encodeWithSelector(TokenholderCaster.InvalidVoteQuorum.selector, uint256(0)));
 //     new ERC721TokenholderCaster(erc721VotesToken, ILlamaCore(address(CORE)), tokenVotingCasterRole, uint256(0),
 // uint256(1));
-//     vm.expectRevert(abi.encodeWithSelector(TokenholderCaster.InvalidMinApprovalPct.selector, uint256(10_001)));
+//     vm.expectRevert(abi.encodeWithSelector(TokenholderCaster.InvalidVoteQuorum.selector, uint256(10_001)));
 //     new ERC721TokenholderCaster(erc721VotesToken, ILlamaCore(address(CORE)), tokenVotingCasterRole, uint256(10_001),
 // uint256(1));
 //   }
 
-//   function test_RevertsIf_InvalidMinDisapprovalPct() public {
-//     vm.expectRevert(abi.encodeWithSelector(TokenholderCaster.InvalidMinDisapprovalPct.selector, uint256(0)));
+//   function test_RevertsIf_InvalidVetoQuorum() public {
+//     vm.expectRevert(abi.encodeWithSelector(TokenholderCaster.InvalidVetoQuorum.selector, uint256(0)));
 //     new ERC721TokenholderCaster(erc721VotesToken, ILlamaCore(address(CORE)), tokenVotingCasterRole, uint256(1),
 // uint256(0));
-//     vm.expectRevert(abi.encodeWithSelector(TokenholderCaster.InvalidMinDisapprovalPct.selector, uint256(10_001)));
+//     vm.expectRevert(abi.encodeWithSelector(TokenholderCaster.InvalidVetoQuorum.selector, uint256(10_001)));
 //     new ERC721TokenholderCaster(erc721VotesToken, ILlamaCore(address(CORE)), tokenVotingCasterRole, uint256(1),
 // uint256(10_001));
 //   }
@@ -156,7 +156,7 @@ contract CastApproval is ERC721TokenholderCasterTest {
   function test_RevertsIf_ActionInfoMismatch(ActionInfo memory notActionInfo) public {
     vm.assume(notActionInfo.id != actionInfo.id);
     vm.expectRevert();
-    erc721TokenholderCaster.castApproval(notActionInfo, 1, "");
+    erc721TokenholderCaster.castVote(notActionInfo, 1, "");
   }
 
   function test_RevertsIf_ApprovalNotEnabled() public {
@@ -170,44 +170,44 @@ contract CastApproval is ERC721TokenholderCasterTest {
     );
 
     vm.expectRevert(abi.encodeWithSelector(ILlamaRelativeStrategyBase.InvalidRole.selector, tokenVotingCasterRole));
-    casterWithWrongRole.castApproval(actionInfo, 1, "");
+    casterWithWrongRole.castVote(actionInfo, 1, "");
   }
 
   function test_RevertsIf_ActionNotActive() public {
     vm.warp(block.timestamp + 1 days + 1);
     vm.expectRevert(TokenholderCaster.ActionNotActive.selector);
-    erc721TokenholderCaster.castApproval(actionInfo, 1, "");
+    erc721TokenholderCaster.castVote(actionInfo, 1, "");
   }
 
-  function test_RevertsIf_AlreadyCastApproval() public {
+  function test_RevertsIf_AlreadyCastVote() public {
     vm.startPrank(tokenHolder1);
-    erc721TokenholderCaster.castApproval(actionInfo, 1, "");
+    erc721TokenholderCaster.castVote(actionInfo, 1, "");
 
-    vm.expectRevert(TokenholderCaster.AlreadyCastApproval.selector);
-    erc721TokenholderCaster.castApproval(actionInfo, 1, "");
+    vm.expectRevert(TokenholderCaster.AlreadyCastVote.selector);
+    erc721TokenholderCaster.castVote(actionInfo, 1, "");
   }
 
   function test_RevertsIf_InvalidSupport() public {
     vm.expectRevert(abi.encodeWithSelector(TokenholderCaster.InvalidSupport.selector, uint8(3)));
-    erc721TokenholderCaster.castApproval(actionInfo, 3, "");
+    erc721TokenholderCaster.castVote(actionInfo, 3, "");
   }
 
   function test_RevertsIf_CastingPeriodOver() public {
     vm.warp(block.timestamp + ((1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS) + 1); // 2/3 of the approval period
     vm.expectRevert(TokenholderCaster.CastingPeriodOver.selector);
     vm.prank(tokenHolder1);
-    erc721TokenholderCaster.castApproval(actionInfo, 1, "");
+    erc721TokenholderCaster.castVote(actionInfo, 1, "");
   }
 
   function test_RevertsIf_InsufficientBalance() public {
     vm.expectRevert(abi.encodeWithSelector(TokenholderCaster.InsufficientBalance.selector, 0));
-    erc721TokenholderCaster.castApproval(actionInfo, 1, "");
+    erc721TokenholderCaster.castVote(actionInfo, 1, "");
   }
 
   function test_CastsApprovalCorrectly(uint8 support) public {
     support = uint8(bound(support, 0, 2));
     vm.expectEmit();
-    emit ApprovalCast(
+    emit VoteCast(
       actionInfo.id,
       tokenHolder1,
       tokenVotingCasterRole,
@@ -216,12 +216,12 @@ contract CastApproval is ERC721TokenholderCasterTest {
       ""
     );
     vm.prank(tokenHolder1);
-    erc721TokenholderCaster.castApproval(actionInfo, support, "");
+    erc721TokenholderCaster.castVote(actionInfo, support, "");
   }
 
   function test_CastsApprovalCorrectly_WithReason() public {
     vm.expectEmit();
-    emit ApprovalCast(
+    emit VoteCast(
       actionInfo.id,
       tokenHolder1,
       tokenVotingCasterRole,
@@ -230,7 +230,7 @@ contract CastApproval is ERC721TokenholderCasterTest {
       "reason"
     );
     vm.prank(tokenHolder1);
-    erc721TokenholderCaster.castApproval(actionInfo, 1, "reason");
+    erc721TokenholderCaster.castVote(actionInfo, 1, "reason");
   }
 }
 
@@ -244,26 +244,26 @@ contract CastApprovalBySig is ERC721TokenholderCasterTest {
     view
     returns (uint8 v, bytes32 r, bytes32 s)
   {
-    LlamaCoreSigUtils.CastApproval memory castApproval = LlamaCoreSigUtils.CastApproval({
+    LlamaCoreSigUtils.CastApproval memory castVote = LlamaCoreSigUtils.CastApproval({
       actionInfo: _actionInfo,
       support: 1,
       reason: "",
       tokenHolder: tokenHolder1,
       nonce: 0
     });
-    bytes32 digest = getCastApprovalTypedDataHash(castApproval);
+    bytes32 digest = getCastApprovalTypedDataHash(castVote);
     (v, r, s) = vm.sign(privateKey, digest);
   }
 
-  function castApprovalBySig(ActionInfo memory _actionInfo, uint8 support, uint8 v, bytes32 r, bytes32 s) internal {
-    erc721TokenholderCaster.castApprovalBySig(tokenHolder1, support, _actionInfo, "", v, r, s);
+  function castVoteBySig(ActionInfo memory _actionInfo, uint8 support, uint8 v, bytes32 r, bytes32 s) internal {
+    erc721TokenholderCaster.castVoteBySig(tokenHolder1, support, _actionInfo, "", v, r, s);
   }
 
   function test_CastsApprovalBySig() public {
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
 
     vm.expectEmit();
-    emit ApprovalCast(
+    emit VoteCast(
       actionInfo.id,
       tokenHolder1,
       tokenVotingCasterRole,
@@ -272,24 +272,24 @@ contract CastApprovalBySig is ERC721TokenholderCasterTest {
       ""
     );
 
-    castApprovalBySig(actionInfo, 1, v, r, s);
+    castVoteBySig(actionInfo, 1, v, r, s);
   }
 
   function test_CheckNonceIncrements() public {
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
 
-    assertEq(erc721TokenholderCaster.nonces(tokenHolder1, TokenholderCaster.castApprovalBySig.selector), 0);
-    castApprovalBySig(actionInfo, 1, v, r, s);
-    assertEq(erc721TokenholderCaster.nonces(tokenHolder1, TokenholderCaster.castApprovalBySig.selector), 1);
+    assertEq(erc721TokenholderCaster.nonces(tokenHolder1, TokenholderCaster.castVoteBySig.selector), 0);
+    castVoteBySig(actionInfo, 1, v, r, s);
+    assertEq(erc721TokenholderCaster.nonces(tokenHolder1, TokenholderCaster.castVoteBySig.selector), 1);
   }
 
   function test_OperationCannotBeReplayed() public {
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
-    castApprovalBySig(actionInfo, 1, v, r, s);
+    castVoteBySig(actionInfo, 1, v, r, s);
     // Invalid Signature error since the recovered signer address during the second call is not the same as
     // erc20VotesTokenholder since nonce has increased.
     vm.expectRevert(TokenholderCaster.InvalidSignature.selector);
-    castApprovalBySig(actionInfo, 1, v, r, s);
+    castVoteBySig(actionInfo, 1, v, r, s);
   }
 
   function test_RevertIf_SignerIsNotTokenHolder() public {
@@ -298,7 +298,7 @@ contract CastApprovalBySig is ERC721TokenholderCasterTest {
     // Invalid Signature error since the recovered signer address is not the same as the erc20VotesTokenholder passed
     // in as parameter.
     vm.expectRevert(ILlamaCore.InvalidSignature.selector);
-    castApprovalBySig(actionInfo, 1, v, r, s);
+    castVoteBySig(actionInfo, 1, v, r, s);
   }
 
   function test_RevertIf_SignerIsZeroAddress() public {
@@ -306,19 +306,19 @@ contract CastApprovalBySig is ERC721TokenholderCasterTest {
     // Invalid Signature error since the recovered signer address is zero address due to invalid signature values
     // (v,r,s).
     vm.expectRevert(ILlamaCore.InvalidSignature.selector);
-    castApprovalBySig(actionInfo, 1, (v + 1), r, s);
+    castVoteBySig(actionInfo, 1, (v + 1), r, s);
   }
 
   function test_RevertIf_TokenHolderIncrementsNonce() public {
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
 
     vm.prank(tokenHolder1);
-    erc721TokenholderCaster.incrementNonce(ILlamaCore.castApprovalBySig.selector);
+    erc721TokenholderCaster.incrementNonce(TokenholderCaster.castVoteBySig.selector);
 
     // Invalid Signature error since the recovered signer address during the call is not the same as
     // erc20VotesTokenholder since nonce has increased.
     vm.expectRevert(ILlamaCore.InvalidSignature.selector);
-    castApprovalBySig(actionInfo, 1, v, r, s);
+    castVoteBySig(actionInfo, 1, v, r, s);
   }
 }
 
@@ -326,18 +326,18 @@ contract CastDisapproval is ERC721TokenholderCasterTest {
   function setUp() public virtual override {
     ERC721TokenholderCasterTest.setUp();
 
-    castApprovalsFor();
+    castVotesFor();
 
     vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
 
     vm.prank(tokenHolder1);
-    erc721TokenholderCaster.submitApprovals(actionInfo);
+    erc721TokenholderCaster.submitVotes(actionInfo);
   }
 
   function test_RevertsIf_ActionInfoMismatch(ActionInfo memory notActionInfo) public {
     vm.assume(notActionInfo.id != actionInfo.id);
     vm.expectRevert();
-    erc721TokenholderCaster.castDisapproval(notActionInfo, tokenVotingCasterRole, "");
+    erc721TokenholderCaster.castVeto(notActionInfo, tokenVotingCasterRole, "");
   }
 
   function test_RevertsIf_DisapprovalNotEnabled() public {
@@ -351,38 +351,38 @@ contract CastDisapproval is ERC721TokenholderCasterTest {
     );
 
     vm.expectRevert(abi.encodeWithSelector(ILlamaRelativeStrategyBase.InvalidRole.selector, tokenVotingCasterRole));
-    casterWithWrongRole.castDisapproval(actionInfo, madeUpRole, "");
+    casterWithWrongRole.castVeto(actionInfo, madeUpRole, "");
   }
 
-  function test_RevertsIf_AlreadyCastApproval() public {
+  function test_RevertsIf_AlreadyCastVote() public {
     vm.startPrank(tokenHolder1);
-    erc721TokenholderCaster.castDisapproval(actionInfo, 1, "");
+    erc721TokenholderCaster.castVeto(actionInfo, 1, "");
 
-    vm.expectRevert(TokenholderCaster.AlreadyCastDisapproval.selector);
-    erc721TokenholderCaster.castDisapproval(actionInfo, 1, "");
+    vm.expectRevert(TokenholderCaster.AlreadyCastVeto.selector);
+    erc721TokenholderCaster.castVeto(actionInfo, 1, "");
   }
 
   function test_RevertsIf_InvalidSupport() public {
     vm.expectRevert(abi.encodeWithSelector(TokenholderCaster.InvalidSupport.selector, uint8(3)));
-    erc721TokenholderCaster.castDisapproval(actionInfo, 3, "");
+    erc721TokenholderCaster.castVeto(actionInfo, 3, "");
   }
 
   function test_RevertsIf_CastingPeriodOver() public {
     // TODO why do we need to add 2 here
     vm.warp(block.timestamp + 2 + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS); // 2/3 of the approval period
     vm.expectRevert(TokenholderCaster.CastingPeriodOver.selector);
-    erc721TokenholderCaster.castDisapproval(actionInfo, 1, "");
+    erc721TokenholderCaster.castVeto(actionInfo, 1, "");
   }
 
   function test_RevertsIf_InsufficientBalance() public {
     vm.expectRevert(abi.encodeWithSelector(TokenholderCaster.InsufficientBalance.selector, 0));
-    erc721TokenholderCaster.castDisapproval(actionInfo, 1, "");
+    erc721TokenholderCaster.castVeto(actionInfo, 1, "");
   }
 
   function test_CastsDisapprovalCorrectly(uint8 support) public {
     support = uint8(bound(support, 0, 2));
     vm.expectEmit();
-    emit DisapprovalCast(
+    emit VetoCast(
       actionInfo.id,
       tokenHolder1,
       tokenVotingCasterRole,
@@ -391,12 +391,12 @@ contract CastDisapproval is ERC721TokenholderCasterTest {
       ""
     );
     vm.prank(tokenHolder1);
-    erc721TokenholderCaster.castDisapproval(actionInfo, support, "");
+    erc721TokenholderCaster.castVeto(actionInfo, support, "");
   }
 
   function test_CastsDisapprovalCorrectly_WithReason() public {
     vm.expectEmit();
-    emit DisapprovalCast(
+    emit VetoCast(
       actionInfo.id,
       tokenHolder1,
       tokenVotingCasterRole,
@@ -405,7 +405,7 @@ contract CastDisapproval is ERC721TokenholderCasterTest {
       "reason"
     );
     vm.prank(tokenHolder1);
-    erc721TokenholderCaster.castDisapproval(actionInfo, 1, "reason");
+    erc721TokenholderCaster.castVeto(actionInfo, 1, "reason");
   }
 }
 
@@ -413,12 +413,12 @@ contract CastDisapprovalBySig is ERC721TokenholderCasterTest {
   function setUp() public virtual override {
     ERC721TokenholderCasterTest.setUp();
 
-    castApprovalsFor();
+    castVotesFor();
 
     vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
 
     vm.prank(tokenHolder1);
-    erc721TokenholderCaster.submitApprovals(actionInfo);
+    erc721TokenholderCaster.submitVotes(actionInfo);
   }
 
   function createOffchainSignature(ActionInfo memory _actionInfo, uint256 privateKey)
@@ -426,26 +426,26 @@ contract CastDisapprovalBySig is ERC721TokenholderCasterTest {
     view
     returns (uint8 v, bytes32 r, bytes32 s)
   {
-    LlamaCoreSigUtils.CastDisapproval memory castDisapproval = LlamaCoreSigUtils.CastDisapproval({
+    LlamaCoreSigUtils.CastDisapproval memory castVeto = LlamaCoreSigUtils.CastDisapproval({
       actionInfo: _actionInfo,
       support: 1,
       reason: "",
       tokenHolder: tokenHolder1,
       nonce: 0
     });
-    bytes32 digest = getCastDisapprovalTypedDataHash(castDisapproval);
+    bytes32 digest = getCastDisapprovalTypedDataHash(castVeto);
     (v, r, s) = vm.sign(privateKey, digest);
   }
 
-  function castDisapprovalBySig(ActionInfo memory _actionInfo, uint8 v, bytes32 r, bytes32 s) internal {
-    erc721TokenholderCaster.castDisapprovalBySig(tokenHolder1, 1, _actionInfo, "", v, r, s);
+  function castVetoBySig(ActionInfo memory _actionInfo, uint8 v, bytes32 r, bytes32 s) internal {
+    erc721TokenholderCaster.castVetoBySig(tokenHolder1, 1, _actionInfo, "", v, r, s);
   }
 
   function test_CastsDisapprovalBySig() public {
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
 
     vm.expectEmit();
-    emit DisapprovalCast(
+    emit VetoCast(
       actionInfo.id,
       tokenHolder1,
       tokenVotingCasterRole,
@@ -454,28 +454,28 @@ contract CastDisapprovalBySig is ERC721TokenholderCasterTest {
       ""
     );
 
-    castDisapprovalBySig(actionInfo, v, r, s);
+    castVetoBySig(actionInfo, v, r, s);
 
     // assertEq(CORE.getAction(0).totalDisapprovals, 1);
-    // assertEq(CORE.disapprovals(0, disapproverDrake), true);
+    // assertEq(CORE.vetos(0, disapproverDrake), true);
   }
 
   function test_CheckNonceIncrements() public {
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
 
-    assertEq(erc721TokenholderCaster.nonces(tokenHolder1, ILlamaCore.castDisapprovalBySig.selector), 0);
-    castDisapprovalBySig(actionInfo, v, r, s);
-    assertEq(erc721TokenholderCaster.nonces(tokenHolder1, ILlamaCore.castDisapprovalBySig.selector), 1);
+    assertEq(erc721TokenholderCaster.nonces(tokenHolder1, TokenholderCaster.castVetoBySig.selector), 0);
+    castVetoBySig(actionInfo, v, r, s);
+    assertEq(erc721TokenholderCaster.nonces(tokenHolder1, TokenholderCaster.castVetoBySig.selector), 1);
   }
 
   function test_OperationCannotBeReplayed() public {
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
-    castDisapprovalBySig(actionInfo, v, r, s);
+    castVetoBySig(actionInfo, v, r, s);
     // Invalid Signature error since the recovered signer address during the second call is not the same as
     // erc20VotesTokenholder
     // since nonce has increased.
     vm.expectRevert(ILlamaCore.InvalidSignature.selector);
-    castDisapprovalBySig(actionInfo, v, r, s);
+    castVetoBySig(actionInfo, v, r, s);
   }
 
   function test_RevertIf_SignerIsNotPolicyHolder() public {
@@ -485,7 +485,7 @@ contract CastDisapprovalBySig is ERC721TokenholderCasterTest {
     // erc20VotesTokenholder
     // since nonce has increased.
     vm.expectRevert(ILlamaCore.InvalidSignature.selector);
-    castDisapprovalBySig(actionInfo, v, r, s);
+    castVetoBySig(actionInfo, v, r, s);
   }
 
   function test_RevertIf_SignerIsZeroAddress() public {
@@ -493,27 +493,27 @@ contract CastDisapprovalBySig is ERC721TokenholderCasterTest {
     // Invalid Signature error since the recovered signer address is zero address due to invalid signature values
     // (v,r,s).
     vm.expectRevert(ILlamaCore.InvalidSignature.selector);
-    castDisapprovalBySig(actionInfo, (v + 1), r, s);
+    castVetoBySig(actionInfo, (v + 1), r, s);
   }
 
   function test_RevertIf_PolicyholderIncrementsNonce() public {
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
 
     vm.prank(tokenHolder1);
-    erc721TokenholderCaster.incrementNonce(ILlamaCore.castDisapprovalBySig.selector);
+    erc721TokenholderCaster.incrementNonce(TokenholderCaster.castVetoBySig.selector);
 
     // Invalid Signature error since the recovered signer address during the second call is not the same as policyholder
     // since nonce has increased.
     vm.expectRevert(ILlamaCore.InvalidSignature.selector);
-    castDisapprovalBySig(actionInfo, v, r, s);
+    castVetoBySig(actionInfo, v, r, s);
   }
 
   function test_FailsIfDisapproved() public {
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
 
-    // First disapproval.
+    // First veto.
     vm.expectEmit();
-    emit DisapprovalCast(
+    emit VetoCast(
       actionInfo.id,
       tokenHolder1,
       tokenVotingCasterRole,
@@ -521,16 +521,16 @@ contract CastDisapprovalBySig is ERC721TokenholderCasterTest {
       erc721VotesToken.getPastVotes(tokenHolder1, erc721VotesToken.clock() - 1),
       ""
     );
-    castDisapprovalBySig(actionInfo, v, r, s);
+    castVetoBySig(actionInfo, v, r, s);
     // assertEq(CORE.getAction(actionInfo.id).totalDisapprovals, 1);
 
-    // Second disapproval.
+    // Second veto.
     vm.prank(tokenHolder2);
-    erc721TokenholderCaster.castDisapproval(actionInfo, 1, "");
+    erc721TokenholderCaster.castVeto(actionInfo, 1, "");
 
     vm.warp(block.timestamp + 1 + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
 
-    erc721TokenholderCaster.submitDisapprovals(actionInfo);
+    erc721TokenholderCaster.submitVetos(actionInfo);
 
     // Assertions.
     ActionState state = ActionState(CORE.getActionState(actionInfo));
@@ -545,7 +545,7 @@ contract SubmitApprovals is ERC721TokenholderCasterTest {
   function setUp() public virtual override {
     ERC721TokenholderCasterTest.setUp();
 
-    castApprovalsFor();
+    castVotesFor();
 
     vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
   }
@@ -553,57 +553,57 @@ contract SubmitApprovals is ERC721TokenholderCasterTest {
   function test_RevertsIf_ActionInfoMismatch(ActionInfo memory notActionInfo) public {
     vm.assume(notActionInfo.id != actionInfo.id);
     vm.expectRevert();
-    erc721TokenholderCaster.submitApprovals(notActionInfo);
+    erc721TokenholderCaster.submitVotes(notActionInfo);
   }
 
-  function test_RevertsIf_AlreadySubmittedApproval() public {
+  function test_RevertsIf_AlreadySubmittedVote() public {
     vm.startPrank(tokenHolder1);
-    erc721TokenholderCaster.submitApprovals(actionInfo);
+    erc721TokenholderCaster.submitVotes(actionInfo);
 
-    vm.expectRevert(TokenholderCaster.AlreadySubmittedApproval.selector);
-    erc721TokenholderCaster.submitApprovals(actionInfo);
+    vm.expectRevert(TokenholderCaster.AlreadySubmittedVote.selector);
+    erc721TokenholderCaster.submitVotes(actionInfo);
   }
 
   function test_RevertsIf_SubmissionPeriodOver() public {
     // TODO why do we need to add 2 here
     vm.warp(block.timestamp + ((1 days * ONE_THIRD_IN_BPS) / ONE_HUNDRED_IN_BPS) + 2); // 1/3 of the approval period
     vm.expectRevert(TokenholderCaster.SubmissionPeriodOver.selector);
-    erc721TokenholderCaster.submitApprovals(actionInfo);
+    erc721TokenholderCaster.submitVotes(actionInfo);
   }
 
-  function test_RevertsIf_InsufficientApprovals() public {
+  function test_RevertsIf_InsufficientVotes() public {
     actionInfo = _createActionWithTokenVotingStrategy(tokenVotingStrategy);
     vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
-    vm.expectRevert(abi.encodeWithSelector(TokenholderCaster.InsufficientApprovals.selector, 0, 1));
-    erc721TokenholderCaster.submitApprovals(actionInfo);
+    vm.expectRevert(abi.encodeWithSelector(TokenholderCaster.InsufficientVotes.selector, 0, 1));
+    erc721TokenholderCaster.submitVotes(actionInfo);
   }
 
   function test_RevertsIf_CastingPeriodNotOver() public {
     actionInfo = _createActionWithTokenVotingStrategy(tokenVotingStrategy);
     vm.warp(block.timestamp + (1 days * ONE_THIRD_IN_BPS) / ONE_HUNDRED_IN_BPS); // 1/3 of the approval period
     vm.expectRevert(TokenholderCaster.CantSubmitYet.selector);
-    erc721TokenholderCaster.submitApprovals(actionInfo);
+    erc721TokenholderCaster.submitVotes(actionInfo);
   }
 
   function test_RevertsIf_ForDoesNotSurpassAgainst() public {
     actionInfo = _createActionWithTokenVotingStrategy(tokenVotingStrategy);
 
     vm.prank(tokenHolder1);
-    erc721TokenholderCaster.castApproval(actionInfo, 1, "");
+    erc721TokenholderCaster.castVote(actionInfo, 1, "");
     vm.prank(tokenHolder2);
-    erc721TokenholderCaster.castApproval(actionInfo, 0, "");
+    erc721TokenholderCaster.castVote(actionInfo, 0, "");
     vm.prank(tokenHolder3);
-    erc721TokenholderCaster.castApproval(actionInfo, 0, "");
+    erc721TokenholderCaster.castVote(actionInfo, 0, "");
 
     vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
     vm.expectRevert(abi.encodeWithSelector(TokenholderCaster.ForDoesNotSurpassAgainst.selector, 1, 2));
-    erc721TokenholderCaster.submitApprovals(actionInfo);
+    erc721TokenholderCaster.submitVotes(actionInfo);
   }
 
   function test_SubmitsApprovalsCorrectly() public {
     vm.expectEmit();
-    emit ApprovalsSubmitted(actionInfo.id, 3, 0, 0);
-    erc721TokenholderCaster.submitApprovals(actionInfo);
+    emit VotesSubmitted(actionInfo.id, 3, 0, 0);
+    erc721TokenholderCaster.submitVotes(actionInfo);
   }
 }
 
@@ -611,18 +611,18 @@ contract SubmitDisapprovals is ERC721TokenholderCasterTest {
   function setUp() public virtual override {
     ERC721TokenholderCasterTest.setUp();
 
-    castApprovalsFor();
+    castVotesFor();
 
     vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
 
-    erc721TokenholderCaster.submitApprovals(actionInfo);
+    erc721TokenholderCaster.submitVotes(actionInfo);
   }
 
   function test_RevertsIf_ActionInfoMismatch(ActionInfo memory notActionInfo) public {
     vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
     vm.assume(notActionInfo.id != actionInfo.id);
     vm.expectRevert();
-    erc721TokenholderCaster.submitDisapprovals(notActionInfo);
+    erc721TokenholderCaster.submitVetos(notActionInfo);
   }
 
   function test_RevertsIf_DisapprovalNotEnabled() public {
@@ -636,10 +636,10 @@ contract SubmitDisapprovals is ERC721TokenholderCasterTest {
       erc721VotesToken, CORE, madeUpRole, ERC721_MIN_APPROVAL_PCT, ERC721_MIN_DISAPPROVAL_PCT
     );
     vm.expectRevert(abi.encodeWithSelector(ILlamaRelativeStrategyBase.InvalidRole.selector, tokenVotingCasterRole));
-    casterWithWrongRole.submitDisapprovals(actionInfo);
+    casterWithWrongRole.submitVetos(actionInfo);
   }
 
-  function test_RevertsIf_AlreadySubmittedDisapproval() public {
+  function test_RevertsIf_AlreadySubmittedVeto() public {
     Action memory action = CORE.getAction(actionInfo.id);
     vm.warp(
       action.minExecutionTime
@@ -647,61 +647,61 @@ contract SubmitDisapprovals is ERC721TokenholderCasterTest {
           / ONE_HUNDRED_IN_BPS
     );
 
-    castDisapprovalsFor();
+    castVetosFor();
 
     vm.startPrank(tokenHolder1);
-    erc721TokenholderCaster.submitDisapprovals(actionInfo);
+    erc721TokenholderCaster.submitVetos(actionInfo);
 
-    vm.expectRevert(TokenholderCaster.AlreadySubmittedDisapproval.selector);
-    erc721TokenholderCaster.submitDisapprovals(actionInfo);
+    vm.expectRevert(TokenholderCaster.AlreadySubmittedVeto.selector);
+    erc721TokenholderCaster.submitVetos(actionInfo);
   }
 
   function test_RevertsIf_SubmissionPeriodOver() public {
-    castDisapprovalsFor();
+    castVetosFor();
 
     vm.warp(block.timestamp + 1 days);
     vm.expectRevert(TokenholderCaster.SubmissionPeriodOver.selector);
-    erc721TokenholderCaster.submitDisapprovals(actionInfo);
+    erc721TokenholderCaster.submitVetos(actionInfo);
   }
 
   function test_RevertsIf_InsufficientDisapprovals() public {
     actionInfo = _createActionWithTokenVotingStrategy(tokenVotingStrategy);
-    castApprovalsFor();
+    castVotesFor();
     vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
-    erc721TokenholderCaster.submitApprovals(actionInfo);
+    erc721TokenholderCaster.submitVotes(actionInfo);
 
     //TODO why add 1 here
     vm.warp(block.timestamp + 1 + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
-    vm.expectRevert(abi.encodeWithSelector(TokenholderCaster.InsufficientApprovals.selector, 0, 1));
-    erc721TokenholderCaster.submitDisapprovals(actionInfo);
+    vm.expectRevert(abi.encodeWithSelector(TokenholderCaster.InsufficientVotes.selector, 0, 1));
+    erc721TokenholderCaster.submitVetos(actionInfo);
   }
 
   function test_RevertsIf_CastingPeriodNotOver() public {
     vm.warp(block.timestamp + (1 days * 3333) / ONE_HUNDRED_IN_BPS); // 1/3 of the approval period
     vm.expectRevert(TokenholderCaster.CantSubmitYet.selector);
-    erc721TokenholderCaster.submitDisapprovals(actionInfo);
+    erc721TokenholderCaster.submitVetos(actionInfo);
   }
 
   function test_RevertsIf_ForDoesNotSurpassAgainst() public {
     vm.prank(tokenHolder1);
-    erc721TokenholderCaster.castDisapproval(actionInfo, 1, "");
+    erc721TokenholderCaster.castVeto(actionInfo, 1, "");
     vm.prank(tokenHolder2);
-    erc721TokenholderCaster.castDisapproval(actionInfo, 0, "");
+    erc721TokenholderCaster.castVeto(actionInfo, 0, "");
     vm.prank(tokenHolder3);
-    erc721TokenholderCaster.castDisapproval(actionInfo, 0, "");
+    erc721TokenholderCaster.castVeto(actionInfo, 0, "");
     // TODO why add 1 here?
     vm.warp(block.timestamp + 1 + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
     vm.expectRevert(abi.encodeWithSelector(TokenholderCaster.ForDoesNotSurpassAgainst.selector, 1, 2));
-    erc721TokenholderCaster.submitDisapprovals(actionInfo);
+    erc721TokenholderCaster.submitVetos(actionInfo);
   }
 
   function test_SubmitsDisapprovalsCorrectly() public {
-    castDisapprovalsFor();
+    castVetosFor();
 
     //TODO why add 1 here?
     vm.warp(block.timestamp + 1 + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
     vm.expectEmit();
-    emit DisapprovalsSubmitted(actionInfo.id, 3, 0, 0);
-    erc721TokenholderCaster.submitDisapprovals(actionInfo);
+    emit VetosSubmitted(actionInfo.id, 3, 0, 0);
+    erc721TokenholderCaster.submitVetos(actionInfo);
   }
 }

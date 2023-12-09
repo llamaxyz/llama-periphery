@@ -24,7 +24,7 @@ contract ERC721TokenholderActionCreator is TokenholderActionCreator {
   /// The `initializer` modifier ensures that this function can be invoked at most once.
   /// @param _token The ERC721 token to be used for voting.
   /// @param _llamaCore The `LlamaCore` contract for this Llama instance.
-  /// @param _role The role used by this contract to cast approvals and disapprovals.
+  /// @param _role The role used by this contract to cast approvals and vetos.
   /// @param _creationThreshold The default number of tokens required to create an action. This must
   /// be in the same decimals as the token. For example, if the token has 18 decimals and you want a
   /// creation threshold of 1000 tokens, pass in 1000e18.

@@ -23,7 +23,7 @@ abstract contract TokenholderActionCreator is Initializable {
   /// @notice The default number of tokens required to create an action.
   uint256 public creationThreshold;
 
-  /// @notice The role used by this contract to cast approvals and disapprovals.
+  /// @notice The role used by this contract to cast approvals and vetos.
   /// @dev This role is expected to have the permissions to create appropriate actions.
   uint8 public role;
 
@@ -51,7 +51,7 @@ abstract contract TokenholderActionCreator is Initializable {
 
   /// @notice Mapping of token holder to function selectors to current nonces for EIP-712 signatures.
   /// @dev This is used to prevent replay attacks by incrementing the nonce for each operation (`createAction`,
-  /// `cancelAction`, `castApproval` and `castDisapproval`) signed by the token holder.
+  /// `cancelAction`, `castApproval` and `castVeto`) signed by the token holder.
   mapping(address tokenHolder => mapping(bytes4 selector => uint256 currentNonce)) public nonces;
 
   /// @dev Emitted when an action is canceled.
@@ -105,7 +105,7 @@ abstract contract TokenholderActionCreator is Initializable {
 
   /// @dev This will be called by the `initialize` of the inheriting contract.
   /// @param _llamaCore The `LlamaCore` contract for this Llama instance.
-  /// @param _role The role used by this contract to cast approvals and disapprovals.
+  /// @param _role The role used by this contract to cast approvals and vetos.
   /// @param _creationThreshold The default number of tokens required to create an action. This must
   /// be in the same decimals as the token. For example, if the token has 18 decimals and you want a
   /// creation threshold of 1000 tokens, pass in 1000e18.

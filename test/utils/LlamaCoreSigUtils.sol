@@ -57,12 +57,12 @@ contract LlamaCoreSigUtils {
     "CancelAction(address tokenHolder,ActionInfo actionInfo,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
   );
 
-  /// @notice EIP-712 castApproval typehash.
+  /// @notice EIP-712 castVote typehash.
   bytes32 internal constant CAST_APPROVAL_TYPEHASH = keccak256(
     "CastApproval(address tokenHolder,uint8 support,ActionInfo actionInfo,string reason,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
   );
 
-  /// @notice EIP-712 castDisapproval typehash.
+  /// @notice EIP-712 castVeto typehash.
   bytes32 internal constant CAST_DISAPPROVAL_TYPEHASH = keccak256(
     "CastDisapproval(address tokenHolder,uint8 role,ActionInfo actionInfo,string reason,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
   );
@@ -125,43 +125,43 @@ contract LlamaCoreSigUtils {
   }
 
   /// @notice Returns the hash of CastApproval.
-  function getCastApprovalHash(CastApproval memory castApproval) internal pure returns (bytes32) {
+  function getCastApprovalHash(CastApproval memory castVote) internal pure returns (bytes32) {
     return keccak256(
       abi.encode(
         CAST_APPROVAL_TYPEHASH,
-        castApproval.tokenHolder,
-        castApproval.support,
-        getActionInfoHash(castApproval.actionInfo),
-        keccak256(bytes(castApproval.reason)),
-        castApproval.nonce
+        castVote.tokenHolder,
+        castVote.support,
+        getActionInfoHash(castVote.actionInfo),
+        keccak256(bytes(castVote.reason)),
+        castVote.nonce
       )
     );
   }
 
   /// @notice Returns the hash of the fully encoded EIP-712 message for the CastApproval domain, which can be used to
   /// recover the signer.
-  function getCastApprovalTypedDataHash(CastApproval memory castApproval) internal view returns (bytes32) {
-    return keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, getCastApprovalHash(castApproval)));
+  function getCastApprovalTypedDataHash(CastApproval memory castVote) internal view returns (bytes32) {
+    return keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, getCastApprovalHash(castVote)));
   }
 
   /// @notice Returns the hash of CastDisapprovalBySig.
-  function getCastDisapprovalHash(CastDisapproval memory castDisapproval) internal pure returns (bytes32) {
+  function getCastDisapprovalHash(CastDisapproval memory castVeto) internal pure returns (bytes32) {
     return keccak256(
       abi.encode(
         CAST_DISAPPROVAL_TYPEHASH,
-        castDisapproval.tokenHolder,
-        castDisapproval.support,
-        getActionInfoHash(castDisapproval.actionInfo),
-        keccak256(bytes(castDisapproval.reason)),
-        castDisapproval.nonce
+        castVeto.tokenHolder,
+        castVeto.support,
+        getActionInfoHash(castVeto.actionInfo),
+        keccak256(bytes(castVeto.reason)),
+        castVeto.nonce
       )
     );
   }
 
   /// @notice Returns the hash of the fully encoded EIP-712 message for the CastDisapproval domain, which can be used to
   /// recover the signer.
-  function getCastDisapprovalTypedDataHash(CastDisapproval memory castDisapproval) internal view returns (bytes32) {
-    return keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, getCastDisapprovalHash(castDisapproval)));
+  function getCastDisapprovalTypedDataHash(CastDisapproval memory castVeto) internal view returns (bytes32) {
+    return keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, getCastDisapprovalHash(castVeto)));
   }
 
   /// @notice Returns the hash of ActionInfo.

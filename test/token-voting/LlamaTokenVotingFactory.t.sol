@@ -18,12 +18,8 @@ import {LlamaTokenVotingFactory} from "src/token-voting/LlamaTokenVotingFactory.
 contract LlamaTokenVotingFactoryTest is LlamaTokenVotingTestSetup {
   event ERC20TokenholderActionCreatorCreated(address actionCreator, address indexed token);
   event ERC721TokenholderActionCreatorCreated(address actionCreator, address indexed token);
-  event ERC20TokenholderCasterCreated(
-    address caster, address indexed token, uint256 minApprovalPct, uint256 minDisapprovalPct
-  );
-  event ERC721TokenholderCasterCreated(
-    address caster, address indexed token, uint256 minApprovalPct, uint256 minDisapprovalPct
-  );
+  event ERC20TokenholderCasterCreated(address caster, address indexed token, uint256 voteQuorum, uint256 vetoQuorum);
+  event ERC721TokenholderCasterCreated(address caster, address indexed token, uint256 voteQuorum, uint256 vetoQuorum);
   event ActionThresholdSet(uint256 newThreshold);
 
   function setUp() public override {
@@ -133,8 +129,8 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     assertEq(address(erc20TokenholderCaster.token()), address(erc20VotesToken));
     assertEq(address(erc20TokenholderCaster.llamaCore()), address(CORE));
     assertEq(erc20TokenholderCaster.role(), tokenVotingCasterRole);
-    assertEq(erc20TokenholderCaster.minApprovalPct(), ERC20_MIN_APPROVAL_PCT);
-    assertEq(erc20TokenholderCaster.minDisapprovalPct(), ERC20_MIN_DISAPPROVAL_PCT);
+    assertEq(erc20TokenholderCaster.voteQuorum(), ERC20_MIN_APPROVAL_PCT);
+    assertEq(erc20TokenholderCaster.vetoQuorum(), ERC20_MIN_DISAPPROVAL_PCT);
   }
 
   function test_CanDeployERC721TokenVotingModule() public {
@@ -185,7 +181,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     assertEq(address(erc721TokenholderCaster.token()), address(erc721VotesToken));
     assertEq(address(erc721TokenholderCaster.llamaCore()), address(CORE));
     assertEq(erc721TokenholderCaster.role(), tokenVotingCasterRole);
-    assertEq(erc721TokenholderCaster.minApprovalPct(), ERC721_MIN_APPROVAL_PCT);
-    assertEq(erc721TokenholderCaster.minDisapprovalPct(), ERC721_MIN_DISAPPROVAL_PCT);
+    assertEq(erc721TokenholderCaster.voteQuorum(), ERC721_MIN_APPROVAL_PCT);
+    assertEq(erc721TokenholderCaster.vetoQuorum(), ERC721_MIN_DISAPPROVAL_PCT);
   }
 }
