@@ -91,6 +91,8 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
       LlamaTokenVotingFactory.deployTokenVotingModule.selector,
       address(erc20VotesToken),
       true,
+      tokenVotingActionCreatorRole,
+      tokenVotingCasterRole,
       ERC20_CREATION_THRESHOLD,
       ERC20_MIN_APPROVAL_PCT,
       ERC20_MIN_DISAPPROVAL_PCT
@@ -126,9 +128,11 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
 
     assertEq(address(erc20TokenholderActionCreator.token()), address(erc20VotesToken));
     assertEq(address(erc20TokenholderActionCreator.llamaCore()), address(CORE));
+    assertEq(erc20TokenholderActionCreator.role(), tokenVotingActionCreatorRole);
     assertEq(erc20TokenholderActionCreator.creationThreshold(), ERC20_CREATION_THRESHOLD);
     assertEq(address(erc20TokenholderCaster.token()), address(erc20VotesToken));
     assertEq(address(erc20TokenholderCaster.llamaCore()), address(CORE));
+    assertEq(erc20TokenholderCaster.role(), tokenVotingCasterRole);
     assertEq(erc20TokenholderCaster.minApprovalPct(), ERC20_MIN_APPROVAL_PCT);
     assertEq(erc20TokenholderCaster.minDisapprovalPct(), ERC20_MIN_DISAPPROVAL_PCT);
   }
@@ -139,6 +143,8 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
       LlamaTokenVotingFactory.deployTokenVotingModule.selector,
       address(erc721VotesToken),
       false,
+      tokenVotingActionCreatorRole,
+      tokenVotingCasterRole,
       ERC721_CREATION_THRESHOLD,
       ERC721_MIN_APPROVAL_PCT,
       ERC721_MIN_DISAPPROVAL_PCT
@@ -174,9 +180,11 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
 
     assertEq(address(erc721TokenholderActionCreator.token()), address(erc721VotesToken));
     assertEq(address(erc721TokenholderActionCreator.llamaCore()), address(CORE));
+    assertEq(erc721TokenholderActionCreator.role(), tokenVotingActionCreatorRole);
     assertEq(erc721TokenholderActionCreator.creationThreshold(), ERC721_CREATION_THRESHOLD);
     assertEq(address(erc721TokenholderCaster.token()), address(erc721VotesToken));
     assertEq(address(erc721TokenholderCaster.llamaCore()), address(CORE));
+    assertEq(erc721TokenholderCaster.role(), tokenVotingCasterRole);
     assertEq(erc721TokenholderCaster.minApprovalPct(), ERC721_MIN_APPROVAL_PCT);
     assertEq(erc721TokenholderCaster.minDisapprovalPct(), ERC721_MIN_DISAPPROVAL_PCT);
   }
