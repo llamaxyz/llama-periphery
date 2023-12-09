@@ -190,4 +190,56 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     assertEq(erc721TokenholderCaster.minApprovalPct(), ERC721_MIN_APPROVAL_PCT);
     assertEq(erc721TokenholderCaster.minDisapprovalPct(), ERC721_MIN_DISAPPROVAL_PCT);
   }
+
+  function test_CanBeDeployedByAnyone(address randomCaller) public {
+    vm.assume(randomCaller != address(0));
+    vm.deal(randomCaller, 1 ether);
+
+    ERC20TokenholderActionCreator erc20TokenholderActionCreator = ERC20TokenholderActionCreator(
+      Clones.predictDeterministicAddress(
+        address(erc20TokenholderActionCreatorLogic),
+        keccak256(abi.encodePacked(address(erc20VotesToken), randomCaller)), // salt
+        address(tokenVotingFactory) // deployer
+      )
+    );
+
+    ERC20TokenholderCaster erc20TokenholderCaster = ERC20TokenholderCaster(
+      Clones.predictDeterministicAddress(
+        address(erc20TokenholderCasterLogic),
+        keccak256(abi.encodePacked(address(erc20VotesToken), randomCaller)), // salt
+        address(tokenVotingFactory) // deployer
+      )
+    );
+
+    vm.expectEmit();
+    emit ActionThresholdSet(ERC20_CREATION_THRESHOLD);
+    vm.expectEmit();
+    emit ERC20TokenholderActionCreatorCreated(address(erc20TokenholderActionCreator), address(erc20VotesToken));
+    vm.expectEmit();
+    emit ERC20TokenholderCasterCreated(
+      address(erc20TokenholderCaster), address(erc20VotesToken), ERC20_MIN_APPROVAL_PCT, ERC20_MIN_DISAPPROVAL_PCT
+    );
+
+    vm.prank(randomCaller);
+    tokenVotingFactory.deployTokenVotingModule(
+      CORE,
+      address(erc20VotesToken),
+      true,
+      tokenVotingActionCreatorRole,
+      tokenVotingCasterRole,
+      ERC20_CREATION_THRESHOLD,
+      ERC20_MIN_APPROVAL_PCT,
+      ERC20_MIN_DISAPPROVAL_PCT
+    );
+
+    assertEq(address(erc20TokenholderActionCreator.token()), address(erc20VotesToken));
+    assertEq(address(erc20TokenholderActionCreator.llamaCore()), address(CORE));
+    assertEq(erc20TokenholderActionCreator.role(), tokenVotingActionCreatorRole);
+    assertEq(erc20TokenholderActionCreator.creationThreshold(), ERC20_CREATION_THRESHOLD);
+    assertEq(address(erc20TokenholderCaster.token()), address(erc20VotesToken));
+    assertEq(address(erc20TokenholderCaster.llamaCore()), address(CORE));
+    assertEq(erc20TokenholderCaster.role(), tokenVotingCasterRole);
+    assertEq(erc20TokenholderCaster.minApprovalPct(), ERC20_MIN_APPROVAL_PCT);
+    assertEq(erc20TokenholderCaster.minDisapprovalPct(), ERC20_MIN_DISAPPROVAL_PCT);
+  }
 }
