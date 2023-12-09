@@ -33,8 +33,8 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
 
   // ERC721 Token Voting Constants.
   uint256 public constant ERC721_CREATION_THRESHOLD = 1;
-  uint256 public constant ERC721_MIN_APPROVAL_PCT = 1;
-  uint256 public constant ERC721_MIN_DISAPPROVAL_PCT = 1;
+  uint256 public constant ERC721_MIN_APPROVAL_PCT = 1000;
+  uint256 public constant ERC721_MIN_DISAPPROVAL_PCT = 1000;
 
   // Votes Tokens
   MockERC20Votes public erc20VotesToken;
