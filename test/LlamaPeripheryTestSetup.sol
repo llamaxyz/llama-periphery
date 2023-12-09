@@ -42,13 +42,6 @@ contract LlamaPeripheryTestSetup is Test {
 
   // Function selectors used in tests.
   bytes4 public constant PAUSE_SELECTOR = MockProtocol.pause.selector; // pause(bool)
-  bytes4 public constant SET_ROLE_HOLDER_SELECTOR = ILlamaPolicy.setRoleHolder.selector; // setRoleHolder(uint8,address,uint96,uint64)
-
-  // Permission data for those selectors.
-  PermissionData setRoleHolderPermission = PermissionData(address(POLICY), SET_ROLE_HOLDER_SELECTOR, STRATEGY);
-
-  // Permission IDs for the permission data.
-  bytes32 setRoleHolderPermissionId = keccak256(abi.encode(setRoleHolderPermission));
 
   // Othes constants.
   uint96 DEFAULT_ROLE_QTY = 1;
