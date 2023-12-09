@@ -545,77 +545,78 @@ contract CastDisapprovalBySig is ERC20TokenholderCasterTest {
   }
 }
 
-// contract SubmitApprovals is ERC20TokenholderCasterTest {
-//   function setUp() public virtual override {
-//     ERC20TokenholderCasterTest.setUp();
+contract SubmitApprovals is ERC20TokenholderCasterTest {
+  function setUp() public virtual override {
+    ERC20TokenholderCasterTest.setUp();
 
-//     castApprovalsFor();
+    castApprovalsFor();
 
-//     vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
-//   }
+    vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
+  }
 
-//   function test_RevertsIf_ActionInfoMismatch(ActionInfo memory notActionInfo) public {
-//     vm.assume(notActionInfo.id != actionInfo.id);
-//     vm.expectRevert();
-//     erc20TokenholderCaster.submitApprovals(notActionInfo);
-//   }
+  function test_RevertsIf_ActionInfoMismatch(ActionInfo memory notActionInfo) public {
+    vm.assume(notActionInfo.id != actionInfo.id);
+    vm.expectRevert();
+    erc20TokenholderCaster.submitApprovals(notActionInfo);
+  }
 
-//   function test_RevertsIf_AlreadySubmittedApproval() public {
-//     vm.startPrank(tokenHolder1);
-//     erc20TokenholderCaster.submitApprovals(actionInfo);
+  function test_RevertsIf_AlreadySubmittedApproval() public {
+    vm.startPrank(tokenHolder1);
+    erc20TokenholderCaster.submitApprovals(actionInfo);
 
-//     vm.expectRevert(TokenholderCaster.AlreadySubmittedApproval.selector);
-//     erc20TokenholderCaster.submitApprovals(actionInfo);
-//   }
+    vm.expectRevert(TokenholderCaster.AlreadySubmittedApproval.selector);
+    erc20TokenholderCaster.submitApprovals(actionInfo);
+  }
 
-//   function test_RevertsIf_SubmissionPeriodOver() public {
-//     vm.warp(block.timestamp + (1 days * 3333) / ONE_HUNDRED_IN_BPS); // 1/3 of the approval period
-//     vm.expectRevert(TokenholderCaster.SubmissionPeriodOver.selector);
-//     erc20TokenholderCaster.submitApprovals(actionInfo);
-//   }
+  function test_RevertsIf_SubmissionPeriodOver() public {
+    // TODO why do we need to add 2 here
+    vm.warp(block.timestamp + ((1 days * ONE_THIRD_IN_BPS) / ONE_HUNDRED_IN_BPS) + 2); // 1/3 of the approval period
+    vm.expectRevert(TokenholderCaster.SubmissionPeriodOver.selector);
+    erc20TokenholderCaster.submitApprovals(actionInfo);
+  }
 
-//   function test_RevertsIf_InsufficientApprovals() public {
-//     actionInfo = _createActionWithTokenVotingStrategy(tokenVotingStrategy);
-//     vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
-//     vm.expectRevert(abi.encodeWithSelector(TokenholderCaster.InsufficientApprovals.selector, 0, 150));
-//     erc20TokenholderCaster.submitApprovals(actionInfo);
-//   }
+  function test_RevertsIf_InsufficientApprovals() public {
+    actionInfo = _createActionWithTokenVotingStrategy(tokenVotingStrategy);
+    vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
+    vm.expectRevert(abi.encodeWithSelector(TokenholderCaster.InsufficientApprovals.selector, 0, 75_000e18));
+    erc20TokenholderCaster.submitApprovals(actionInfo);
+  }
 
-//   function test_RevertsIf_CastingPeriodNotOver() public {
-//     actionInfo = _createActionWithTokenVotingStrategy(tokenVotingStrategy);
-//     vm.warp(block.timestamp + (1 days * 3333) / ONE_HUNDRED_IN_BPS); // 1/3 of the approval period
-//     vm.expectRevert(TokenholderCaster.CantSubmitYet.selector);
-//     erc20TokenholderCaster.submitApprovals(actionInfo);
-//   }
+  function test_RevertsIf_CastingPeriodNotOver() public {
+    actionInfo = _createActionWithTokenVotingStrategy(tokenVotingStrategy);
+    vm.warp(block.timestamp + (1 days * ONE_THIRD_IN_BPS) / ONE_HUNDRED_IN_BPS); // 1/3 of the approval period
+    vm.expectRevert(TokenholderCaster.CantSubmitYet.selector);
+    erc20TokenholderCaster.submitApprovals(actionInfo);
+  }
 
-//   function test_RevertsIf_InsufficientApprovalsFor() public {
-//     actionInfo = _createActionWithTokenVotingStrategy(tokenVotingStrategy);
-//     vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
-//     vm.expectRevert(abi.encodeWithSelector(TokenholderCaster.InsufficientApprovals.selector, 0, 150));
-//     erc20TokenholderCaster.submitApprovals(actionInfo);
-//   }
+  function test_RevertsIf_InsufficientApprovalsFor() public {
+    actionInfo = _createActionWithTokenVotingStrategy(tokenVotingStrategy);
+    vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
+    vm.expectRevert(abi.encodeWithSelector(TokenholderCaster.InsufficientApprovals.selector, 0, 75_000e18));
+    erc20TokenholderCaster.submitApprovals(actionInfo);
+  }
 
-//   function test_RevertsIf_ForDoesNotSurpassAgainst() public {
-//     actionInfo = _createActionWithTokenVotingStrategy(tokenVotingStrategy);
+  function test_RevertsIf_ForDoesNotSurpassAgainst() public {
+    actionInfo = _createActionWithTokenVotingStrategy(tokenVotingStrategy);
 
-//     vm.prank(tokenHolder1);
-//     erc20TokenholderCaster.castApproval(actionInfo, 1, "");
-//     vm.prank(tokenHolder2);
-//     erc20TokenholderCaster.castApproval(actionInfo, 0, "");
-//     vm.prank(tokenHolder3);
-//     erc20TokenholderCaster.castApproval(actionInfo, 0, "");
+    vm.prank(tokenHolder1);
+    erc20TokenholderCaster.castApproval(actionInfo, 1, "");
+    vm.prank(tokenHolder2);
+    erc20TokenholderCaster.castApproval(actionInfo, 0, "");
+    vm.prank(tokenHolder3);
+    erc20TokenholderCaster.castApproval(actionInfo, 0, "");
 
-//     vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
-//     vm.expectRevert(abi.encodeWithSelector(TokenholderCaster.ForDoesNotSurpassAgainst.selector, 500, 1000));
-//     erc20TokenholderCaster.submitApprovals(actionInfo);
-//   }
+    vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
+    vm.expectRevert(abi.encodeWithSelector(TokenholderCaster.ForDoesNotSurpassAgainst.selector, 250_000e18, 500_000e18));
+    erc20TokenholderCaster.submitApprovals(actionInfo);
+  }
 
-//   function test_SubmitsApprovalsCorrectly() public {
-//     vm.expectEmit();
-//     emit ApprovalsSubmitted(actionInfo.id, 1500, 0, 0);
-//     erc20TokenholderCaster.submitApprovals(actionInfo);
-//   }
-// }
+  function test_SubmitsApprovalsCorrectly() public {
+    vm.expectEmit();
+    emit ApprovalsSubmitted(actionInfo.id, 750_000e18, 0, 0);
+    erc20TokenholderCaster.submitApprovals(actionInfo);
+  }
+}
 
 // contract SubmitDisapprovals is ERC20TokenholderCasterTest {
 //   function setUp() public virtual override {
