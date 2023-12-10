@@ -4,7 +4,6 @@ pragma solidity ^0.8.23;
 import {Clones} from "@openzeppelin/proxy/Clones.sol";
 
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
-import {ILlamaExecutor} from "src/interfaces/ILlamaExecutor.sol";
 import {ERC20TokenholderActionCreator} from "src/token-voting/ERC20TokenholderActionCreator.sol";
 import {ERC20TokenholderCaster} from "src/token-voting/ERC20TokenholderCaster.sol";
 import {ERC20Votes} from "@openzeppelin/token/ERC20/extensions/ERC20Votes.sol";
@@ -67,6 +66,7 @@ contract LlamaTokenVotingFactory {
   ///@param minDisapprovalPct The minimum percentage of tokens required to disapprove an action (set to 0 if not
   /// deploying caster).
   function deployTokenVotingModule(
+    ILlamaCore llamaCore,
     address token,
     bool isERC20,
     uint8 actionCreatorRole,
@@ -75,17 +75,20 @@ contract LlamaTokenVotingFactory {
     uint256 minApprovalPct,
     uint256 minDisapprovalPct
   ) external returns (address actionCreator, address caster) {
-    ILlamaCore core = ILlamaCore(ILlamaExecutor(msg.sender).LLAMA_CORE());
     if (isERC20) {
-      actionCreator =
-        address(_deployERC20TokenholderActionCreator(ERC20Votes(token), core, actionCreatorRole, creationThreshold));
-      caster =
-        address(_deployERC20TokenholderCaster(ERC20Votes(token), core, casterRole, minApprovalPct, minDisapprovalPct));
+      actionCreator = address(
+        _deployERC20TokenholderActionCreator(ERC20Votes(token), llamaCore, actionCreatorRole, creationThreshold)
+      );
+      caster = address(
+        _deployERC20TokenholderCaster(ERC20Votes(token), llamaCore, casterRole, minApprovalPct, minDisapprovalPct)
+      );
     } else {
-      actionCreator =
-        address(_deployERC721TokenholderActionCreator(ERC721Votes(token), core, actionCreatorRole, creationThreshold));
-      caster =
-        address(_deployERC721TokenholderCaster(ERC721Votes(token), core, casterRole, minApprovalPct, minDisapprovalPct));
+      actionCreator = address(
+        _deployERC721TokenholderActionCreator(ERC721Votes(token), llamaCore, actionCreatorRole, creationThreshold)
+      );
+      caster = address(
+        _deployERC721TokenholderCaster(ERC721Votes(token), llamaCore, casterRole, minApprovalPct, minDisapprovalPct)
+      );
     }
   }
 
