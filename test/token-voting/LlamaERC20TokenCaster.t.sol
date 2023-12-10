@@ -166,7 +166,7 @@ contract CastApproval is LlamaERC20TokenCasterTest {
         address(llamaERC20TokenCasterLogic), keccak256(abi.encodePacked(address(erc20VotesToken), msg.sender))
       )
     );
-    casterWithWrongRole.initialize(erc20VotesToken, CORE, madeUpRole, ERC20_MIN_APPROVAL_PCT, ERC20_MIN_DISAPPROVAL_PCT);
+    casterWithWrongRole.initialize(erc20VotesToken, CORE, madeUpRole, ERC20_VOTE_QUORUM_PCT, ERC20_VETO_QUORUM_PCT);
 
     vm.expectRevert(abi.encodeWithSelector(ILlamaRelativeStrategyBase.InvalidRole.selector, tokenVotingCasterRole));
     casterWithWrongRole.castVote(actionInfo, 1, "");
@@ -345,7 +345,7 @@ contract CastDisapproval is LlamaERC20TokenCasterTest {
         address(llamaERC20TokenCasterLogic), keccak256(abi.encodePacked(address(erc20VotesToken), msg.sender))
       )
     );
-    casterWithWrongRole.initialize(erc20VotesToken, CORE, madeUpRole, ERC20_MIN_APPROVAL_PCT, ERC20_MIN_DISAPPROVAL_PCT);
+    casterWithWrongRole.initialize(erc20VotesToken, CORE, madeUpRole, ERC20_VOTE_QUORUM_PCT, ERC20_VETO_QUORUM_PCT);
 
     vm.expectRevert(abi.encodeWithSelector(ILlamaRelativeStrategyBase.InvalidRole.selector, tokenVotingCasterRole));
     casterWithWrongRole.castVeto(actionInfo, madeUpRole, "");
@@ -629,7 +629,7 @@ contract SubmitDisapprovals is LlamaERC20TokenCasterTest {
         address(llamaERC20TokenCasterLogic), keccak256(abi.encodePacked(address(erc20VotesToken), msg.sender))
       )
     );
-    casterWithWrongRole.initialize(erc20VotesToken, CORE, madeUpRole, ERC20_MIN_APPROVAL_PCT, ERC20_MIN_DISAPPROVAL_PCT);
+    casterWithWrongRole.initialize(erc20VotesToken, CORE, madeUpRole, ERC20_VOTE_QUORUM_PCT, ERC20_VETO_QUORUM_PCT);
     vm.expectRevert(abi.encodeWithSelector(ILlamaRelativeStrategyBase.InvalidRole.selector, tokenVotingCasterRole));
     casterWithWrongRole.submitDisapproval(actionInfo);
   }

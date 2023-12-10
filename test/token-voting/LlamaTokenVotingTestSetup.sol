@@ -28,13 +28,13 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
 
   // ERC20 Token Voting Constants.
   uint256 public constant ERC20_CREATION_THRESHOLD = 500_000e18;
-  uint256 public constant ERC20_MIN_APPROVAL_PCT = 1000;
-  uint256 public constant ERC20_MIN_DISAPPROVAL_PCT = 1000;
+  uint256 public constant ERC20_VOTE_QUORUM_PCT = 1000;
+  uint256 public constant ERC20_VETO_QUORUM_PCT = 1000;
 
   // ERC721 Token Voting Constants.
   uint256 public constant ERC721_CREATION_THRESHOLD = 1;
-  uint256 public constant ERC721_MIN_APPROVAL_PCT = 1000;
-  uint256 public constant ERC721_MIN_DISAPPROVAL_PCT = 1000;
+  uint256 public constant ERC721_VOTE_QUORUM_PCT = 1000;
+  uint256 public constant ERC721_VETO_QUORUM_PCT = 1000;
 
   // Votes Tokens
   MockERC20Votes public erc20VotesToken;
@@ -102,8 +102,8 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
       tokenVotingActionCreatorRole,
       tokenVotingCasterRole,
       ERC20_CREATION_THRESHOLD,
-      ERC20_MIN_APPROVAL_PCT,
-      ERC20_MIN_DISAPPROVAL_PCT
+      ERC20_VOTE_QUORUM_PCT,
+      ERC20_VETO_QUORUM_PCT
     );
     // Assign roles to Token Voting Modules
     POLICY.setRoleHolder(
@@ -128,8 +128,8 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
       tokenVotingActionCreatorRole,
       tokenVotingCasterRole,
       ERC721_CREATION_THRESHOLD,
-      ERC721_MIN_APPROVAL_PCT,
-      ERC721_MIN_DISAPPROVAL_PCT
+      ERC721_VOTE_QUORUM_PCT,
+      ERC721_VETO_QUORUM_PCT
     );
     // Assign roles to Token Voting Modules
     POLICY.setRoleHolder(
