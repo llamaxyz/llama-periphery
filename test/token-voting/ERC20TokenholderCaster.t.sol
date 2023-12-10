@@ -349,6 +349,18 @@ contract CastDisapproval is ERC20TokenholderCasterTest {
     casterWithWrongRole.castDisapproval(actionInfo, madeUpRole, "");
   }
 
+  function test_RevertsIf_ActionNotQueued() public {
+    bytes memory data = abi.encodeCall(mockProtocol.pause, (true));
+    vm.prank(coreTeam1);
+    uint256 actionId = CORE.createAction(CORE_TEAM_ROLE, tokenVotingStrategy, address(mockProtocol), 0, data, "");
+    ActionInfo memory _actionInfo =
+      ActionInfo(actionId, coreTeam1, CORE_TEAM_ROLE, tokenVotingStrategy, address(mockProtocol), 0, data);
+    vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
+    vm.expectRevert(TokenholderCaster.ActionNotQueued.selector);
+    vm.startPrank(tokenHolder1);
+    erc20TokenholderCaster.castDisapproval(_actionInfo, 1, "");
+  }
+
   function test_RevertsIf_AlreadyCastApproval() public {
     vm.startPrank(tokenHolder1);
     erc20TokenholderCaster.castDisapproval(actionInfo, 1, "");
