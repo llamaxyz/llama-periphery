@@ -551,6 +551,17 @@ contract SubmitApprovals is ERC20TokenholderCasterTest {
     erc20TokenholderCaster.submitApprovals(notActionInfo);
   }
 
+  function test_RevertsIf_ApprovalNotEnabled() public {
+    ERC20TokenholderCaster casterWithWrongRole = ERC20TokenholderCaster(
+      Clones.cloneDeterministic(
+        address(erc20TokenholderCasterLogic), keccak256(abi.encodePacked(address(erc20VotesToken), msg.sender))
+      )
+    );
+    casterWithWrongRole.initialize(erc20VotesToken, CORE, madeUpRole, ERC20_MIN_APPROVAL_PCT, ERC20_MIN_DISAPPROVAL_PCT);
+    vm.expectRevert(abi.encodeWithSelector(ILlamaRelativeStrategyBase.InvalidRole.selector, tokenVotingCasterRole));
+    casterWithWrongRole.submitApprovals(actionInfo);
+  }
+
   function test_RevertsIf_AlreadySubmittedApproval() public {
     vm.startPrank(tokenHolder1);
     erc20TokenholderCaster.submitApprovals(actionInfo);
