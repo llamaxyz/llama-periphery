@@ -10,10 +10,10 @@ import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
 import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
 import {ActionState} from "src/lib/Enums.sol";
 import {Action, ActionInfo} from "src/lib/Structs.sol";
-import {LlamaERC20TokenHolderActionCreator} from "src/token-voting/LlamaERC20TokenHolderActionCreator.sol";
-import {LlamaTokenHolderActionCreator} from "src/token-voting/LlamaTokenHolderActionCreator.sol";
+import {LlamaERC20TokenActionCreator} from "src/token-voting/LlamaERC20TokenActionCreator.sol";
+import {LlamaTokenActionCreator} from "src/token-voting/LlamaTokenActionCreator.sol";
 
-contract LlamaERC20TokenHolderActionCreatorTest is LlamaTokenVotingTestSetup, LlamaCoreSigUtils {
+contract LlamaERC20TokenActionCreatorTest is LlamaTokenVotingTestSetup, LlamaCoreSigUtils {
   event ActionCreated(
     uint256 id,
     address indexed creator,
@@ -29,7 +29,7 @@ contract LlamaERC20TokenHolderActionCreatorTest is LlamaTokenVotingTestSetup, Ll
 
   event ActionThresholdSet(uint256 newThreshold);
 
-  LlamaERC20TokenHolderActionCreator llamaERC20TokenHolderActionCreator;
+  LlamaERC20TokenActionCreator llamaERC20TokenActionCreator;
 
   function setUp() public virtual override {
     LlamaTokenVotingTestSetup.setUp();
@@ -42,7 +42,7 @@ contract LlamaERC20TokenHolderActionCreatorTest is LlamaTokenVotingTestSetup, Ll
     mineBlock();
 
     // Deploy ERC20 Token Voting Module.
-    (llamaERC20TokenHolderActionCreator,) = _deployERC20TokenVotingModuleAndSetRole();
+    (llamaERC20TokenActionCreator,) = _deployERC20TokenVotingModuleAndSetRole();
 
     // Setting ERC20TokenHolderActionCreator's EIP-712 Domain Hash
     setDomainHash(
@@ -50,22 +50,22 @@ contract LlamaERC20TokenHolderActionCreatorTest is LlamaTokenVotingTestSetup, Ll
         name: CORE.name(),
         version: "1",
         chainId: block.chainid,
-        verifyingContract: address(llamaERC20TokenHolderActionCreator)
+        verifyingContract: address(llamaERC20TokenActionCreator)
       })
     );
   }
 }
 
-// contract Constructor is LlamaERC20TokenHolderActionCreatorTest {
+// contract Constructor is LlamaERC20TokenActionCreatorTest {
 //   function test_RevertsIf_InvalidLlamaCore() public {
-//     // With invalid LlamaCore instance, LlamaTokenHolderActionCreator.InvalidLlamaCoreAddress is unreachable
+//     // With invalid LlamaCore instance, LlamaTokenActionCreator.InvalidLlamaCoreAddress is unreachable
 //     vm.expectRevert();
-//     new LlamaERC20TokenHolderActionCreator(erc20VotesToken, ILlamaCore(makeAddr("invalid-llama-core")), uint256(0));
+//     new LlamaERC20TokenActionCreator(erc20VotesToken, ILlamaCore(makeAddr("invalid-llama-core")), uint256(0));
 //   }
 
 //   function test_RevertsIf_InvalidTokenAddress() public {
 //     vm.expectRevert(); // will EvmError: Revert vecause totalSupply fn does not exist
-//     new LlamaERC20TokenHolderActionCreator(ERC20Votes(makeAddr("invalid-erc20VotesToken")), CORE, uint256(0));
+//     new LlamaERC20TokenActionCreator(ERC20Votes(makeAddr("invalid-erc20VotesToken")), CORE, uint256(0));
 //   }
 
 //   function test_RevertsIf_CreationThresholdExceedsTotalSupply() public {
@@ -74,8 +74,8 @@ contract LlamaERC20TokenHolderActionCreatorTest is LlamaTokenVotingTestSetup, Ll
 
 //     vm.warp(block.timestamp + 1);
 
-//     vm.expectRevert(LlamaTokenHolderActionCreator.InvalidCreationThreshold.selector);
-//     new LlamaERC20TokenHolderActionCreator(erc20VotesToken, CORE, 17_000_000_000_000_000_000_000_000);
+//     vm.expectRevert(LlamaTokenActionCreator.InvalidCreationThreshold.selector);
+//     new LlamaERC20TokenActionCreator(erc20VotesToken, CORE, 17_000_000_000_000_000_000_000_000);
 //   }
 
 //   function test_ProperlySetsConstructorArguments() public {
@@ -85,17 +85,17 @@ contract LlamaERC20TokenHolderActionCreatorTest is LlamaTokenVotingTestSetup, Ll
 
 //     vm.warp(block.timestamp + 1);
 
-//     LlamaERC20TokenHolderActionCreator llamaERC20TokenHolderActionCreator = new
-// LlamaERC20TokenHolderActionCreator(erc20VotesToken,
+//     LlamaERC20TokenActionCreator llamaERC20TokenActionCreator = new
+// LlamaERC20TokenActionCreator(erc20VotesToken,
 // CORE,
 // threshold);
-//     assertEq(address(llamaERC20TokenHolderActionCreator.TOKEN()), address(erc20VotesToken));
-//     assertEq(address(llamaERC20TokenHolderActionCreator.LLAMA_CORE()), address(CORE));
-//     assertEq(llamaERC20TokenHolderActionCreator.creationThreshold(), threshold);
+//     assertEq(address(llamaERC20TokenActionCreator.TOKEN()), address(erc20VotesToken));
+//     assertEq(address(llamaERC20TokenActionCreator.LLAMA_CORE()), address(CORE));
+//     assertEq(llamaERC20TokenActionCreator.creationThreshold(), threshold);
 //   }
 // }
 
-contract CreateAction is LlamaERC20TokenHolderActionCreatorTest {
+contract CreateAction is LlamaERC20TokenActionCreatorTest {
   bytes data = abi.encodeCall(mockProtocol.pause, (true));
 
   function test_RevertsIf_InsufficientBalance() public {
@@ -105,12 +105,12 @@ contract CreateAction is LlamaERC20TokenHolderActionCreatorTest {
 
     mineBlock();
 
-    vm.expectRevert(abi.encodeWithSelector(LlamaTokenHolderActionCreator.InsufficientBalance.selector, 0));
+    vm.expectRevert(abi.encodeWithSelector(LlamaTokenActionCreator.InsufficientBalance.selector, 0));
     vm.prank(notTokenHolder);
-    llamaERC20TokenHolderActionCreator.createAction(STRATEGY, address(mockProtocol), 0, data, "");
+    llamaERC20TokenActionCreator.createAction(STRATEGY, address(mockProtocol), 0, data, "");
   }
 
-  function test_RevertsIf_LlamaTokenHolderActionCreatorDoesNotHavePermission() public {
+  function test_RevertsIf_LlamaTokenActionCreatorDoesNotHavePermission() public {
     erc20VotesToken.mint(tokenHolder1, ERC20_CREATION_THRESHOLD);
     vm.prank(tokenHolder1);
     erc20VotesToken.delegate(tokenHolder1);
@@ -119,12 +119,12 @@ contract CreateAction is LlamaERC20TokenHolderActionCreatorTest {
 
     vm.expectRevert(ILlamaCore.PolicyholderDoesNotHavePermission.selector);
     vm.prank(tokenHolder1);
-    llamaERC20TokenHolderActionCreator.createAction(STRATEGY, address(mockProtocol), 0, data, "");
+    llamaERC20TokenActionCreator.createAction(STRATEGY, address(mockProtocol), 0, data, "");
   }
 
   function test_ProperlyCreatesAction() public {
-    // Assigns Permission to LlamaTokenHolderActionCreator.
-    _setRolePermissionToLlamaTokenHolderActionCreator();
+    // Assigns Permission to LlamaTokenActionCreator.
+    _setRolePermissionToLlamaTokenActionCreator();
 
     // Mint tokens to tokenholder so that they can create action.
     erc20VotesToken.mint(tokenHolder1, ERC20_CREATION_THRESHOLD);
@@ -141,7 +141,7 @@ contract CreateAction is LlamaERC20TokenHolderActionCreatorTest {
       actionCount, address(tokenHolder1), tokenVotingActionCreatorRole, STRATEGY, address(mockProtocol), 0, data, ""
     );
     vm.prank(tokenHolder1);
-    uint256 actionId = llamaERC20TokenHolderActionCreator.createAction(STRATEGY, address(mockProtocol), 0, data, "");
+    uint256 actionId = llamaERC20TokenActionCreator.createAction(STRATEGY, address(mockProtocol), 0, data, "");
 
     Action memory action = CORE.getAction(actionId);
     assertEq(actionId, actionCount);
@@ -149,12 +149,12 @@ contract CreateAction is LlamaERC20TokenHolderActionCreatorTest {
   }
 }
 
-contract CreateActionBySig is LlamaERC20TokenHolderActionCreatorTest {
+contract CreateActionBySig is LlamaERC20TokenActionCreatorTest {
   function setUp() public virtual override {
-    LlamaERC20TokenHolderActionCreatorTest.setUp();
+    LlamaERC20TokenActionCreatorTest.setUp();
 
-    // Assigns Permission to LlamaTokenHolderActionCreator.
-    _setRolePermissionToLlamaTokenHolderActionCreator();
+    // Assigns Permission to LlamaTokenActionCreator.
+    _setRolePermissionToLlamaTokenActionCreator();
 
     // Mint tokens to tokenholder so that they can create action.
     erc20VotesToken.mint(tokenHolder1, ERC20_CREATION_THRESHOLD);
@@ -188,7 +188,7 @@ contract CreateActionBySig is LlamaERC20TokenHolderActionCreatorTest {
   }
 
   function createActionBySig(uint8 v, bytes32 r, bytes32 s) internal returns (uint256 actionId) {
-    actionId = llamaERC20TokenHolderActionCreator.createActionBySig(
+    actionId = llamaERC20TokenActionCreator.createActionBySig(
       tokenHolder1, STRATEGY, address(mockProtocol), 0, abi.encodeCall(mockProtocol.pause, (true)), "", v, r, s
     );
   }
@@ -231,7 +231,7 @@ contract CreateActionBySig is LlamaERC20TokenHolderActionCreatorTest {
       "# Action 0 \n This is my action."
     );
 
-    uint256 actionId = llamaERC20TokenHolderActionCreator.createActionBySig(
+    uint256 actionId = llamaERC20TokenActionCreator.createActionBySig(
       tokenHolder1,
       STRATEGY,
       address(mockProtocol),
@@ -251,15 +251,9 @@ contract CreateActionBySig is LlamaERC20TokenHolderActionCreatorTest {
 
   function test_CheckNonceIncrements() public {
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(tokenHolder1PrivateKey);
-    assertEq(
-      llamaERC20TokenHolderActionCreator.nonces(tokenHolder1, LlamaTokenHolderActionCreator.createActionBySig.selector),
-      0
-    );
+    assertEq(llamaERC20TokenActionCreator.nonces(tokenHolder1, LlamaTokenActionCreator.createActionBySig.selector), 0);
     createActionBySig(v, r, s);
-    assertEq(
-      llamaERC20TokenHolderActionCreator.nonces(tokenHolder1, LlamaTokenHolderActionCreator.createActionBySig.selector),
-      1
-    );
+    assertEq(llamaERC20TokenActionCreator.nonces(tokenHolder1, LlamaTokenActionCreator.createActionBySig.selector), 1);
   }
 
   function test_OperationCannotBeReplayed() public {
@@ -267,7 +261,7 @@ contract CreateActionBySig is LlamaERC20TokenHolderActionCreatorTest {
     createActionBySig(v, r, s);
     // Invalid Signature error since the recovered signer address during the second call is not the same as
     // policyholder since nonce has increased.
-    vm.expectRevert(LlamaTokenHolderActionCreator.InvalidSignature.selector);
+    vm.expectRevert(LlamaTokenActionCreator.InvalidSignature.selector);
     createActionBySig(v, r, s);
   }
 
@@ -276,7 +270,7 @@ contract CreateActionBySig is LlamaERC20TokenHolderActionCreatorTest {
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(randomSignerPrivateKey);
     // Invalid Signature error since the recovered signer address is not the same as the policyholder passed in as
     // parameter.
-    vm.expectRevert(LlamaTokenHolderActionCreator.InvalidSignature.selector);
+    vm.expectRevert(LlamaTokenActionCreator.InvalidSignature.selector);
     createActionBySig(v, r, s);
   }
 
@@ -284,7 +278,7 @@ contract CreateActionBySig is LlamaERC20TokenHolderActionCreatorTest {
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(tokenHolder1PrivateKey);
     // Invalid Signature error since the recovered signer address is zero address due to invalid signature values
     // (v,r,s).
-    vm.expectRevert(LlamaTokenHolderActionCreator.InvalidSignature.selector);
+    vm.expectRevert(LlamaTokenActionCreator.InvalidSignature.selector);
     createActionBySig((v + 1), r, s);
   }
 
@@ -292,24 +286,24 @@ contract CreateActionBySig is LlamaERC20TokenHolderActionCreatorTest {
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(tokenHolder1PrivateKey);
 
     vm.prank(tokenHolder1);
-    llamaERC20TokenHolderActionCreator.incrementNonce(LlamaTokenHolderActionCreator.createActionBySig.selector);
+    llamaERC20TokenActionCreator.incrementNonce(LlamaTokenActionCreator.createActionBySig.selector);
 
     // Invalid Signature error since the recovered signer address during the call is not the same as policyholder
     // since nonce has increased.
-    vm.expectRevert(LlamaTokenHolderActionCreator.InvalidSignature.selector);
+    vm.expectRevert(LlamaTokenActionCreator.InvalidSignature.selector);
     createActionBySig(v, r, s);
   }
 }
 
-contract CancelAction is LlamaERC20TokenHolderActionCreatorTest {
+contract CancelAction is LlamaERC20TokenActionCreatorTest {
   uint256 actionId;
   ActionInfo actionInfo;
 
   function setUp() public virtual override {
-    LlamaERC20TokenHolderActionCreatorTest.setUp();
+    LlamaERC20TokenActionCreatorTest.setUp();
 
-    // Assigns Permission to LlamaTokenHolderActionCreator.
-    _setRolePermissionToLlamaTokenHolderActionCreator();
+    // Assigns Permission to LlamaTokenActionCreator.
+    _setRolePermissionToLlamaTokenActionCreator();
 
     // Mint tokens to tokenholder so that they can create action.
     erc20VotesToken.mint(tokenHolder1, ERC20_CREATION_THRESHOLD);
@@ -322,11 +316,11 @@ contract CancelAction is LlamaERC20TokenHolderActionCreatorTest {
     bytes memory data = abi.encodeCall(mockProtocol.pause, (true));
 
     vm.prank(tokenHolder1);
-    actionId = llamaERC20TokenHolderActionCreator.createAction(STRATEGY, address(mockProtocol), 0, data, "");
+    actionId = llamaERC20TokenActionCreator.createAction(STRATEGY, address(mockProtocol), 0, data, "");
 
     actionInfo = ActionInfo(
       actionId,
-      address(llamaERC20TokenHolderActionCreator),
+      address(llamaERC20TokenActionCreator),
       tokenVotingActionCreatorRole,
       STRATEGY,
       address(mockProtocol),
@@ -339,26 +333,26 @@ contract CancelAction is LlamaERC20TokenHolderActionCreatorTest {
     vm.expectEmit();
     emit ActionCanceled(actionId, tokenHolder1);
     vm.prank(tokenHolder1);
-    llamaERC20TokenHolderActionCreator.cancelAction(actionInfo);
+    llamaERC20TokenActionCreator.cancelAction(actionInfo);
   }
 
   function test_RevertsIf_CallerIsNotActionCreator(address notCreator) public {
     vm.assume(notCreator != tokenHolder1);
-    vm.expectRevert(LlamaTokenHolderActionCreator.OnlyActionCreator.selector);
+    vm.expectRevert(LlamaTokenActionCreator.OnlyActionCreator.selector);
     vm.prank(notCreator);
-    llamaERC20TokenHolderActionCreator.cancelAction(actionInfo);
+    llamaERC20TokenActionCreator.cancelAction(actionInfo);
   }
 }
 
-contract CancelActionBySig is LlamaERC20TokenHolderActionCreatorTest {
+contract CancelActionBySig is LlamaERC20TokenActionCreatorTest {
   uint256 actionId;
   ActionInfo actionInfo;
 
   function setUp() public virtual override {
-    LlamaERC20TokenHolderActionCreatorTest.setUp();
+    LlamaERC20TokenActionCreatorTest.setUp();
 
-    // Assigns Permission to LlamaTokenHolderActionCreator.
-    _setRolePermissionToLlamaTokenHolderActionCreator();
+    // Assigns Permission to LlamaTokenActionCreator.
+    _setRolePermissionToLlamaTokenActionCreator();
 
     // Mint tokens to tokenholder so that they can create action.
     erc20VotesToken.mint(tokenHolder1, ERC20_CREATION_THRESHOLD);
@@ -371,11 +365,11 @@ contract CancelActionBySig is LlamaERC20TokenHolderActionCreatorTest {
     bytes memory data = abi.encodeCall(mockProtocol.pause, (true));
 
     vm.prank(tokenHolder1);
-    actionId = llamaERC20TokenHolderActionCreator.createAction(STRATEGY, address(mockProtocol), 0, data, "");
+    actionId = llamaERC20TokenActionCreator.createAction(STRATEGY, address(mockProtocol), 0, data, "");
 
     actionInfo = ActionInfo(
       actionId,
-      address(llamaERC20TokenHolderActionCreator),
+      address(llamaERC20TokenActionCreator),
       tokenVotingActionCreatorRole,
       STRATEGY,
       address(mockProtocol),
@@ -392,16 +386,14 @@ contract CancelActionBySig is LlamaERC20TokenHolderActionCreatorTest {
     LlamaCoreSigUtils.CancelAction memory cancelAction = LlamaCoreSigUtils.CancelAction({
       tokenHolder: tokenHolder1,
       actionInfo: _actionInfo,
-      nonce: llamaERC20TokenHolderActionCreator.nonces(
-        tokenHolder1, LlamaTokenHolderActionCreator.cancelActionBySig.selector
-        )
+      nonce: llamaERC20TokenActionCreator.nonces(tokenHolder1, LlamaTokenActionCreator.cancelActionBySig.selector)
     });
     bytes32 digest = getCancelActionTypedDataHash(cancelAction);
     (v, r, s) = vm.sign(privateKey, digest);
   }
 
   function cancelActionBySig(ActionInfo memory _actionInfo, uint8 v, bytes32 r, bytes32 s) internal {
-    llamaERC20TokenHolderActionCreator.cancelActionBySig(tokenHolder1, _actionInfo, v, r, s);
+    llamaERC20TokenActionCreator.cancelActionBySig(tokenHolder1, _actionInfo, v, r, s);
   }
 
   function test_CancelActionBySig() public {
@@ -419,15 +411,9 @@ contract CancelActionBySig is LlamaERC20TokenHolderActionCreatorTest {
   function test_CheckNonceIncrements() public {
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
 
-    assertEq(
-      llamaERC20TokenHolderActionCreator.nonces(tokenHolder1, LlamaTokenHolderActionCreator.cancelActionBySig.selector),
-      0
-    );
+    assertEq(llamaERC20TokenActionCreator.nonces(tokenHolder1, LlamaTokenActionCreator.cancelActionBySig.selector), 0);
     cancelActionBySig(actionInfo, v, r, s);
-    assertEq(
-      llamaERC20TokenHolderActionCreator.nonces(tokenHolder1, LlamaTokenHolderActionCreator.cancelActionBySig.selector),
-      1
-    );
+    assertEq(llamaERC20TokenActionCreator.nonces(tokenHolder1, LlamaTokenActionCreator.cancelActionBySig.selector), 1);
   }
 
   function test_OperationCannotBeReplayed() public {
@@ -435,7 +421,7 @@ contract CancelActionBySig is LlamaERC20TokenHolderActionCreatorTest {
     cancelActionBySig(actionInfo, v, r, s);
     // Invalid Signature error since the recovered signer address during the second call is not the same as policyholder
     // since nonce has increased.
-    vm.expectRevert(LlamaTokenHolderActionCreator.InvalidSignature.selector);
+    vm.expectRevert(LlamaTokenActionCreator.InvalidSignature.selector);
     cancelActionBySig(actionInfo, v, r, s);
   }
 
@@ -444,7 +430,7 @@ contract CancelActionBySig is LlamaERC20TokenHolderActionCreatorTest {
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, randomSignerPrivateKey);
     // Invalid Signature error since the recovered signer address is not the same as the policyholder passed in as
     // parameter.
-    vm.expectRevert(LlamaTokenHolderActionCreator.InvalidSignature.selector);
+    vm.expectRevert(LlamaTokenActionCreator.InvalidSignature.selector);
     cancelActionBySig(actionInfo, v, r, s);
   }
 
@@ -452,7 +438,7 @@ contract CancelActionBySig is LlamaERC20TokenHolderActionCreatorTest {
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
     // Invalid Signature error since the recovered signer address is zero address due to invalid signature values
     // (v,r,s).
-    vm.expectRevert(LlamaTokenHolderActionCreator.InvalidSignature.selector);
+    vm.expectRevert(LlamaTokenActionCreator.InvalidSignature.selector);
     cancelActionBySig(actionInfo, (v + 1), r, s);
   }
 
@@ -460,42 +446,42 @@ contract CancelActionBySig is LlamaERC20TokenHolderActionCreatorTest {
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
 
     vm.prank(tokenHolder1);
-    llamaERC20TokenHolderActionCreator.incrementNonce(LlamaTokenHolderActionCreator.cancelActionBySig.selector);
+    llamaERC20TokenActionCreator.incrementNonce(LlamaTokenActionCreator.cancelActionBySig.selector);
 
     // Invalid Signature error since the recovered signer address during the call is not the same as policyholder
     // since nonce has increased.
-    vm.expectRevert(LlamaTokenHolderActionCreator.InvalidSignature.selector);
+    vm.expectRevert(LlamaTokenActionCreator.InvalidSignature.selector);
     cancelActionBySig(actionInfo, v, r, s);
   }
 }
 
-contract SetActionThreshold is LlamaERC20TokenHolderActionCreatorTest {
+contract SetActionThreshold is LlamaERC20TokenActionCreatorTest {
   function testFuzz_SetsCreationThreshold(uint256 threshold) public {
     threshold = bound(threshold, 0, erc20VotesToken.getPastTotalSupply(block.timestamp - 1));
 
-    assertEq(llamaERC20TokenHolderActionCreator.creationThreshold(), ERC20_CREATION_THRESHOLD);
+    assertEq(llamaERC20TokenActionCreator.creationThreshold(), ERC20_CREATION_THRESHOLD);
 
     vm.expectEmit();
     emit ActionThresholdSet(threshold);
     vm.prank(address(EXECUTOR));
-    llamaERC20TokenHolderActionCreator.setActionThreshold(threshold);
+    llamaERC20TokenActionCreator.setActionThreshold(threshold);
 
-    assertEq(llamaERC20TokenHolderActionCreator.creationThreshold(), threshold);
+    assertEq(llamaERC20TokenActionCreator.creationThreshold(), threshold);
   }
 
   function testFuzz_RevertsIf_CreationThresholdExceedsTotalSupply(uint256 threshold) public {
     vm.assume(threshold > erc20VotesToken.getPastTotalSupply(block.timestamp - 1));
 
-    vm.expectRevert(LlamaTokenHolderActionCreator.InvalidCreationThreshold.selector);
+    vm.expectRevert(LlamaTokenActionCreator.InvalidCreationThreshold.selector);
     vm.prank(address(EXECUTOR));
-    llamaERC20TokenHolderActionCreator.setActionThreshold(threshold);
+    llamaERC20TokenActionCreator.setActionThreshold(threshold);
   }
 
   function testFuzz_RevertsIf_CalledByNotLlamaExecutor(address notLlamaExecutor) public {
     vm.assume(notLlamaExecutor != address(EXECUTOR));
 
-    vm.expectRevert(LlamaTokenHolderActionCreator.OnlyLlamaExecutor.selector);
+    vm.expectRevert(LlamaTokenActionCreator.OnlyLlamaExecutor.selector);
     vm.prank(notLlamaExecutor);
-    llamaERC20TokenHolderActionCreator.setActionThreshold(ERC20_CREATION_THRESHOLD);
+    llamaERC20TokenActionCreator.setActionThreshold(ERC20_CREATION_THRESHOLD);
   }
 }
