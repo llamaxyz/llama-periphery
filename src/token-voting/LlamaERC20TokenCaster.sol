@@ -2,14 +2,14 @@
 pragma solidity ^0.8.23;
 
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
-import {LlamaTokenHolderCaster} from "src/token-voting/LlamaTokenHolderCaster.sol";
+import {LlamaTokenCaster} from "src/token-voting/LlamaTokenCaster.sol";
 import {ERC20Votes} from "@openzeppelin/token/ERC20/extensions/ERC20Votes.sol";
 
-/// @title LlamaERC20TokenHolderCaster
+/// @title LlamaERC20TokenCaster
 /// @author Llama (devsdosomething@llama.xyz)
-/// @notice This contract lets holders of a given governance ERC20Votes token collectively cast an approval or
+/// @notice This contract lets holders of a given governance `ERC20Votes` token collectively cast an approval or
 /// disapproval on created actions.
-contract LlamaERC20TokenHolderCaster is LlamaTokenHolderCaster {
+contract LlamaERC20TokenCaster is LlamaTokenCaster {
   ERC20Votes public token;
 
   /// @dev This contract is deployed as a minimal proxy from the factory's `deployTokenVotingModule` function. The
@@ -18,7 +18,7 @@ contract LlamaERC20TokenHolderCaster is LlamaTokenHolderCaster {
     _disableInitializers();
   }
 
-  /// @notice Initializes a new `LlamaERC20TokenHolderCaster` clone.
+  /// @notice Initializes a new `LlamaERC20TokenCaster` clone.
   /// @dev This function is called by the `deployTokenVotingModule` function in the `LlamaTokenVotingFactory` contract.
   /// The `initializer` modifier ensures that this function can be invoked at most once.
   /// @param _token The ERC20 token to be used for voting.
@@ -33,7 +33,7 @@ contract LlamaERC20TokenHolderCaster is LlamaTokenHolderCaster {
     uint256 _voteQuorumPct,
     uint256 _vetoQuorumPct
   ) external initializer {
-    __initializeLlamaTokenHolderCasterMinimalProxy(_llamaCore, _role, _voteQuorumPct, _vetoQuorumPct);
+    __initializeLlamaTokenCasterMinimalProxy(_llamaCore, _role, _voteQuorumPct, _vetoQuorumPct);
     token = _token;
     uint256 totalSupply = token.totalSupply();
     if (totalSupply == 0) revert InvalidTokenAddress();

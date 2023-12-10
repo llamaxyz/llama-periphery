@@ -4,18 +4,18 @@ pragma solidity 0.8.23;
 import {Script} from "forge-std/Script.sol";
 
 import {DeployUtils} from "script/DeployUtils.sol";
-import {LlamaERC20TokenHolderActionCreator} from "src/token-voting/LlamaERC20TokenHolderActionCreator.sol";
-import {LlamaERC20TokenHolderCaster} from "src/token-voting/LlamaERC20TokenHolderCaster.sol";
-import {LlamaERC721TokenHolderActionCreator} from "src/token-voting/LlamaERC721TokenHolderActionCreator.sol";
-import {LlamaERC721TokenHolderCaster} from "src/token-voting/LlamaERC721TokenHolderCaster.sol";
+import {LlamaERC20TokenActionCreator} from "src/token-voting/LlamaERC20TokenActionCreator.sol";
+import {LlamaERC20TokenCaster} from "src/token-voting/LlamaERC20TokenCaster.sol";
+import {LlamaERC721TokenActionCreator} from "src/token-voting/LlamaERC721TokenActionCreator.sol";
+import {LlamaERC721TokenCaster} from "src/token-voting/LlamaERC721TokenCaster.sol";
 import {LlamaTokenVotingFactory} from "src/token-voting/LlamaTokenVotingFactory.sol";
 
 contract DeployLlamaTokenVotingFactory is Script {
   // Logic contracts.
-  LlamaERC20TokenHolderActionCreator llamaERC20TokenHolderActionCreatorLogic;
-  LlamaERC20TokenHolderCaster llamaERC20TokenHolderCasterLogic;
-  LlamaERC721TokenHolderActionCreator llamaERC721TokenHolderActionCreatorLogic;
-  LlamaERC721TokenHolderCaster llamaERC721TokenHolderCasterLogic;
+  LlamaERC20TokenActionCreator llamaERC20TokenActionCreatorLogic;
+  LlamaERC20TokenCaster llamaERC20TokenCasterLogic;
+  LlamaERC721TokenActionCreator llamaERC721TokenActionCreatorLogic;
+  LlamaERC721TokenCaster llamaERC721TokenCasterLogic;
 
   // Factory contracts.
   LlamaTokenVotingFactory tokenVotingFactory;
@@ -26,39 +26,33 @@ contract DeployLlamaTokenVotingFactory is Script {
     );
 
     vm.broadcast();
-    llamaERC20TokenHolderActionCreatorLogic = new LlamaERC20TokenHolderActionCreator();
+    llamaERC20TokenActionCreatorLogic = new LlamaERC20TokenActionCreator();
     DeployUtils.print(
-      string.concat(
-        "  LlamaERC20TokenHolderActionCreatorLogic: ", vm.toString(address(llamaERC20TokenHolderActionCreatorLogic))
-      )
+      string.concat("  LlamaERC20TokenActionCreatorLogic: ", vm.toString(address(llamaERC20TokenActionCreatorLogic)))
     );
 
     vm.broadcast();
-    llamaERC20TokenHolderCasterLogic = new LlamaERC20TokenHolderCaster();
+    llamaERC20TokenCasterLogic = new LlamaERC20TokenCaster();
+    DeployUtils.print(string.concat("  LlamaERC20TokenCasterLogic: ", vm.toString(address(llamaERC20TokenCasterLogic))));
+
+    vm.broadcast();
+    llamaERC721TokenActionCreatorLogic = new LlamaERC721TokenActionCreator();
     DeployUtils.print(
-      string.concat("  LlamaERC20TokenHolderCasterLogic: ", vm.toString(address(llamaERC20TokenHolderCasterLogic)))
+      string.concat("  LlamaERC721TokenActionCreatorLogic: ", vm.toString(address(llamaERC721TokenActionCreatorLogic)))
     );
 
     vm.broadcast();
-    llamaERC721TokenHolderActionCreatorLogic = new LlamaERC721TokenHolderActionCreator();
+    llamaERC721TokenCasterLogic = new LlamaERC721TokenCaster();
     DeployUtils.print(
-      string.concat(
-        "  LlamaERC721TokenHolderActionCreatorLogic: ", vm.toString(address(llamaERC721TokenHolderActionCreatorLogic))
-      )
-    );
-
-    vm.broadcast();
-    llamaERC721TokenHolderCasterLogic = new LlamaERC721TokenHolderCaster();
-    DeployUtils.print(
-      string.concat("  LlamaERC721TokenHolderCasterLogic: ", vm.toString(address(llamaERC721TokenHolderCasterLogic)))
+      string.concat("  LlamaERC721TokenCasterLogic: ", vm.toString(address(llamaERC721TokenCasterLogic)))
     );
 
     vm.broadcast();
     tokenVotingFactory = new LlamaTokenVotingFactory(
-      llamaERC20TokenHolderActionCreatorLogic,
-      llamaERC20TokenHolderCasterLogic,
-      llamaERC721TokenHolderActionCreatorLogic,
-      llamaERC721TokenHolderCasterLogic
+      llamaERC20TokenActionCreatorLogic,
+      llamaERC20TokenCasterLogic,
+      llamaERC721TokenActionCreatorLogic,
+      llamaERC721TokenCasterLogic
     );
     DeployUtils.print(string.concat("  LlamaTokenVotingFactory: ", vm.toString(address(tokenVotingFactory))));
   }

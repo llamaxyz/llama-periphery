@@ -2,15 +2,15 @@
 pragma solidity ^0.8.23;
 
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
-import {LlamaTokenHolderCaster} from "src/token-voting/LlamaTokenHolderCaster.sol";
+import {LlamaTokenCaster} from "src/token-voting/LlamaTokenCaster.sol";
 import {ERC721Votes} from "@openzeppelin/token/ERC721/extensions/ERC721Votes.sol";
 import {IERC721} from "@openzeppelin/token/ERC721/IERC721.sol";
 
-/// @title LlamaERC721TokenHolderCaster
+/// @title LlamaERC721TokenCaster
 /// @author Llama (devsdosomething@llama.xyz)
-/// @notice This contract lets holders of a given governance ERC721Votes token collectively cast an approval or
+/// @notice This contract lets holders of a given governance `ERC721Votes` token collectively cast an approval or
 /// disapproval on created actions.
-contract LlamaERC721TokenHolderCaster is LlamaTokenHolderCaster {
+contract LlamaERC721TokenCaster is LlamaTokenCaster {
   ERC721Votes public token;
 
   /// @dev This contract is deployed as a minimal proxy from the factory's `deployTokenVotingModule` function. The
@@ -19,7 +19,7 @@ contract LlamaERC721TokenHolderCaster is LlamaTokenHolderCaster {
     _disableInitializers();
   }
 
-  /// @notice Initializes a new `LlamaERC721TokenHolderCaster` clone.
+  /// @notice Initializes a new `LlamaERC721TokenCaster` clone.
   /// @dev This function is called by the `deployTokenVotingModule` function in the `LlamaTokenVotingFactory` contract.
   /// The `initializer` modifier ensures that this function can be invoked at most once.
   /// @param _token The ERC721 token to be used for voting.
@@ -34,7 +34,7 @@ contract LlamaERC721TokenHolderCaster is LlamaTokenHolderCaster {
     uint256 _voteQuorumPct,
     uint256 _vetoQuorumPct
   ) external initializer {
-    __initializeLlamaTokenHolderCasterMinimalProxy(_llamaCore, _role, _voteQuorumPct, _vetoQuorumPct);
+    __initializeLlamaTokenCasterMinimalProxy(_llamaCore, _role, _voteQuorumPct, _vetoQuorumPct);
     token = _token;
     if (!token.supportsInterface(type(IERC721).interfaceId)) revert InvalidTokenAddress();
   }
