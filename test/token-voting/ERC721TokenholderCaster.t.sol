@@ -363,7 +363,7 @@ contract CastDisapproval is ERC721TokenholderCasterTest {
     vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
     vm.expectRevert(TokenholderCaster.ActionNotQueued.selector);
     vm.startPrank(tokenHolder1);
-    erc20TokenholderCaster.castDisapproval(_actionInfo, 1, "");
+    erc721TokenholderCaster.castDisapproval(_actionInfo, 1, "");
   }
 
   function test_RevertsIf_AlreadyCastApproval() public {
@@ -566,6 +566,19 @@ contract SubmitApprovals is ERC721TokenholderCasterTest {
     vm.assume(notActionInfo.id != actionInfo.id);
     vm.expectRevert();
     erc721TokenholderCaster.submitApprovals(notActionInfo);
+  }
+
+  function test_RevertsIf_ApprovalNotEnabled() public {
+    ERC721TokenholderCaster casterWithWrongRole = ERC721TokenholderCaster(
+      Clones.cloneDeterministic(
+        address(erc721TokenholderCasterLogic), keccak256(abi.encodePacked(address(erc721VotesToken), msg.sender))
+      )
+    );
+    casterWithWrongRole.initialize(
+      erc721VotesToken, CORE, madeUpRole, ERC721_MIN_APPROVAL_PCT, ERC721_MIN_DISAPPROVAL_PCT
+    );
+    vm.expectRevert(abi.encodeWithSelector(ILlamaRelativeStrategyBase.InvalidRole.selector, tokenVotingCasterRole));
+    casterWithWrongRole.submitApprovals(actionInfo);
   }
 
   function test_RevertsIf_AlreadySubmittedApproval() public {
