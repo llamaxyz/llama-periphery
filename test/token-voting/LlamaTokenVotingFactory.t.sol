@@ -41,23 +41,21 @@ contract LlamaTokenVotingFactoryTest is LlamaTokenVotingTestSetup {
 
 contract Constructor is LlamaTokenVotingFactoryTest {
   function test_SetsLlamaERC20TokenActionCreatorLogicAddress() public {
-    assertEq(
-      address(tokenVotingFactory.ERC20_TOKENHOLDER_ACTION_CREATOR_LOGIC()), address(llamaERC20TokenActionCreatorLogic)
-    );
+    assertEq(address(tokenVotingFactory.ERC20_TOKEN_ACTION_CREATOR_LOGIC()), address(llamaERC20TokenActionCreatorLogic));
   }
 
   function test_SetsLlamaERC20TokenCasterLogicAddress() public {
-    assertEq(address(tokenVotingFactory.ERC20_TOKENHOLDER_CASTER_LOGIC()), address(llamaERC20TokenCasterLogic));
+    assertEq(address(tokenVotingFactory.ERC20_TOKEN_CASTER_LOGIC()), address(llamaERC20TokenCasterLogic));
   }
 
   function test_SetsLlamaERC721TokenActionCreatorLogicAddress() public {
     assertEq(
-      address(tokenVotingFactory.ERC721_TOKENHOLDER_ACTION_CREATOR_LOGIC()), address(llamaERC721TokenActionCreatorLogic)
+      address(tokenVotingFactory.ERC721_TOKEN_ACTION_CREATOR_LOGIC()), address(llamaERC721TokenActionCreatorLogic)
     );
   }
 
   function test_SetsLlamaERC721TokenCasterLogicAddress() public {
-    assertEq(address(tokenVotingFactory.ERC721_TOKENHOLDER_CASTER_LOGIC()), address(llamaERC721TokenCasterLogic));
+    assertEq(address(tokenVotingFactory.ERC721_TOKEN_CASTER_LOGIC()), address(llamaERC721TokenCasterLogic));
   }
 }
 

@@ -27,16 +27,16 @@ contract LlamaTokenVotingFactory {
   );
 
   /// @notice The ERC20 Tokenholder Action Creator (logic) contract.
-  LlamaERC20TokenActionCreator public immutable ERC20_TOKENHOLDER_ACTION_CREATOR_LOGIC;
+  LlamaERC20TokenActionCreator public immutable ERC20_TOKEN_ACTION_CREATOR_LOGIC;
 
   /// @notice The ERC20 Tokenholder Caster (logic) contract.
-  LlamaERC20TokenCaster public immutable ERC20_TOKENHOLDER_CASTER_LOGIC;
+  LlamaERC20TokenCaster public immutable ERC20_TOKEN_CASTER_LOGIC;
 
   /// @notice The ERC721 Tokenholder Action Creator (logic) contract.
-  LlamaERC721TokenActionCreator public immutable ERC721_TOKENHOLDER_ACTION_CREATOR_LOGIC;
+  LlamaERC721TokenActionCreator public immutable ERC721_TOKEN_ACTION_CREATOR_LOGIC;
 
   /// @notice The ERC721 Tokenholder Caster (logic) contract.
-  LlamaERC721TokenCaster public immutable ERC721_TOKENHOLDER_CASTER_LOGIC;
+  LlamaERC721TokenCaster public immutable ERC721_TOKEN_CASTER_LOGIC;
 
   /// @dev Set the logic contracts used to deploy Token Voting modules.
   constructor(
@@ -45,10 +45,10 @@ contract LlamaTokenVotingFactory {
     LlamaERC721TokenActionCreator llamaERC721TokenActionCreatorLogic,
     LlamaERC721TokenCaster llamaERC721TokenCasterLogic
   ) {
-    ERC20_TOKENHOLDER_ACTION_CREATOR_LOGIC = llamaERC20TokenActionCreatorLogic;
-    ERC20_TOKENHOLDER_CASTER_LOGIC = llamaERC20TokenCasterLogic;
-    ERC721_TOKENHOLDER_ACTION_CREATOR_LOGIC = llamaERC721TokenActionCreatorLogic;
-    ERC721_TOKENHOLDER_CASTER_LOGIC = llamaERC721TokenCasterLogic;
+    ERC20_TOKEN_ACTION_CREATOR_LOGIC = llamaERC20TokenActionCreatorLogic;
+    ERC20_TOKEN_CASTER_LOGIC = llamaERC20TokenCasterLogic;
+    ERC721_TOKEN_ACTION_CREATOR_LOGIC = llamaERC721TokenActionCreatorLogic;
+    ERC721_TOKEN_CASTER_LOGIC = llamaERC721TokenCasterLogic;
   }
 
   ///@notice Deploys a token voting module in a single function so it can be deployed in a llama action.
@@ -95,7 +95,7 @@ contract LlamaTokenVotingFactory {
   ) internal returns (LlamaERC20TokenActionCreator actionCreator) {
     actionCreator = LlamaERC20TokenActionCreator(
       Clones.cloneDeterministic(
-        address(ERC20_TOKENHOLDER_ACTION_CREATOR_LOGIC), keccak256(abi.encodePacked(address(token), msg.sender))
+        address(ERC20_TOKEN_ACTION_CREATOR_LOGIC), keccak256(abi.encodePacked(address(token), msg.sender))
       )
     );
     actionCreator.initialize(token, llamaCore, role, creationThreshold);
@@ -110,7 +110,7 @@ contract LlamaTokenVotingFactory {
   ) internal returns (LlamaERC721TokenActionCreator actionCreator) {
     actionCreator = LlamaERC721TokenActionCreator(
       Clones.cloneDeterministic(
-        address(ERC721_TOKENHOLDER_ACTION_CREATOR_LOGIC), keccak256(abi.encodePacked(address(token), msg.sender))
+        address(ERC721_TOKEN_ACTION_CREATOR_LOGIC), keccak256(abi.encodePacked(address(token), msg.sender))
       )
     );
     actionCreator.initialize(token, llamaCore, role, creationThreshold);
@@ -126,7 +126,7 @@ contract LlamaTokenVotingFactory {
   ) internal returns (LlamaERC20TokenCaster caster) {
     caster = LlamaERC20TokenCaster(
       Clones.cloneDeterministic(
-        address(ERC20_TOKENHOLDER_CASTER_LOGIC), keccak256(abi.encodePacked(address(token), msg.sender))
+        address(ERC20_TOKEN_CASTER_LOGIC), keccak256(abi.encodePacked(address(token), msg.sender))
       )
     );
     caster.initialize(token, llamaCore, role, voteQuorumPct, vetoQuorumPct);
@@ -142,7 +142,7 @@ contract LlamaTokenVotingFactory {
   ) internal returns (LlamaERC721TokenCaster caster) {
     caster = LlamaERC721TokenCaster(
       Clones.cloneDeterministic(
-        address(ERC721_TOKENHOLDER_CASTER_LOGIC), keccak256(abi.encodePacked(address(token), msg.sender))
+        address(ERC721_TOKEN_CASTER_LOGIC), keccak256(abi.encodePacked(address(token), msg.sender))
       )
     );
     caster.initialize(token, llamaCore, role, voteQuorumPct, vetoQuorumPct);
