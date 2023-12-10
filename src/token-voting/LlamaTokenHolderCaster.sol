@@ -287,7 +287,7 @@ abstract contract LlamaTokenHolderCaster is Initializable {
     if (votesFor <= votesAgainst) revert ForDoesNotSurpassAgainst(votesFor, votesAgainst);
 
     casts[actionInfo.id].approvalSubmitted = true;
-    llamaCore.castVote(role, actionInfo, "");
+    llamaCore.castApproval(role, actionInfo, "");
     emit ApprovalSubmitted(actionInfo.id, votesFor, votesAgainst, votesAbstain);
   }
 
@@ -321,7 +321,7 @@ abstract contract LlamaTokenHolderCaster is Initializable {
     if (vetoesFor <= vetoesAgainst) revert ForDoesNotSurpassAgainst(vetoesFor, vetoesAgainst);
 
     casts[actionInfo.id].disapprovalSubmitted = true;
-    llamaCore.castVeto(role, actionInfo, "");
+    llamaCore.castDisapproval(role, actionInfo, "");
     emit DisapprovalSubmitted(actionInfo.id, vetoesFor, vetoesAgainst, vetoesAbstain);
   }
 

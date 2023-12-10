@@ -79,11 +79,11 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     actionInfo = ActionInfo(actionId, coreTeam4, CORE_TEAM_ROLE, STRATEGY, address(tokenVotingFactory), 0, data);
 
     vm.prank(coreTeam1);
-    CORE.castVote(CORE_TEAM_ROLE, actionInfo, "");
+    CORE.castApproval(CORE_TEAM_ROLE, actionInfo, "");
     vm.prank(coreTeam2);
-    CORE.castVote(CORE_TEAM_ROLE, actionInfo, "");
+    CORE.castApproval(CORE_TEAM_ROLE, actionInfo, "");
     vm.prank(coreTeam3);
-    CORE.castVote(CORE_TEAM_ROLE, actionInfo, "");
+    CORE.castApproval(CORE_TEAM_ROLE, actionInfo, "");
   }
 
   function test_CanDeployERC20TokenVotingModule() public {

@@ -316,7 +316,7 @@ contract CastApprovalBySig is LlamaERC721TokenHolderCasterTest {
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
 
     vm.prank(tokenHolder1);
-    llamaERC721TokenHolderCaster.incrementNonce(ILlamaCore.castVoteBySig.selector);
+    llamaERC721TokenHolderCaster.incrementNonce(ILlamaCore.castApprovalBySig.selector);
 
     // Invalid Signature error since the recovered signer address during the call is not the same as
     // erc20VotesTokenholder since nonce has increased.
@@ -466,9 +466,9 @@ contract CastDisapprovalBySig is LlamaERC721TokenHolderCasterTest {
   function test_CheckNonceIncrements() public {
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
 
-    assertEq(llamaERC721TokenHolderCaster.nonces(tokenHolder1, ILlamaCore.castVetoBySig.selector), 0);
+    assertEq(llamaERC721TokenHolderCaster.nonces(tokenHolder1, ILlamaCore.castDisapprovalBySig.selector), 0);
     castDisapprovalBySig(actionInfo, v, r, s);
-    assertEq(llamaERC721TokenHolderCaster.nonces(tokenHolder1, ILlamaCore.castVetoBySig.selector), 1);
+    assertEq(llamaERC721TokenHolderCaster.nonces(tokenHolder1, ILlamaCore.castDisapprovalBySig.selector), 1);
   }
 
   function test_OperationCannotBeReplayed() public {
@@ -503,7 +503,7 @@ contract CastDisapprovalBySig is LlamaERC721TokenHolderCasterTest {
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
 
     vm.prank(tokenHolder1);
-    llamaERC721TokenHolderCaster.incrementNonce(ILlamaCore.castVetoBySig.selector);
+    llamaERC721TokenHolderCaster.incrementNonce(ILlamaCore.castDisapprovalBySig.selector);
 
     // Invalid Signature error since the recovered signer address during the second call is not the same as policyholder
     // since nonce has increased.
@@ -577,7 +577,7 @@ contract SubmitApprovals is LlamaERC721TokenHolderCasterTest {
   function test_RevertsIf_InsufficientVotes() public {
     actionInfo = _createActionWithTokenVotingStrategy(tokenVotingStrategy);
     vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
-    vm.expectRevert(abi.encodeWithSelector(LlamaTokenHolderCaster.InsufficientVote.selector, 0, 1));
+    vm.expectRevert(abi.encodeWithSelector(LlamaTokenHolderCaster.InsufficientVotes.selector, 0, 1));
     llamaERC721TokenHolderCaster.submitApproval(actionInfo);
   }
 
@@ -675,7 +675,7 @@ contract SubmitDisapprovals is LlamaERC721TokenHolderCasterTest {
 
     //TODO why add 1 here
     vm.warp(block.timestamp + 1 + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
-    vm.expectRevert(abi.encodeWithSelector(LlamaTokenHolderCaster.InsufficientVote.selector, 0, 1));
+    vm.expectRevert(abi.encodeWithSelector(LlamaTokenHolderCaster.InsufficientVotes.selector, 0, 1));
     llamaERC721TokenHolderCaster.submitDisapproval(actionInfo);
   }
 
