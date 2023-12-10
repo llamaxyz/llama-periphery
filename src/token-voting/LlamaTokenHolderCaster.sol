@@ -10,7 +10,7 @@ import {LlamaUtils} from "src/lib/LlamaUtils.sol";
 import {Action, ActionInfo} from "src/lib/Structs.sol";
 import {ILlamaRelativeStrategyBase} from "src/interfaces/ILlamaRelativeStrategyBase.sol";
 
-/// @title TokenholderCaster
+/// @title LlamaTokenHolderCaster
 /// @author Llama (devsdosomething@llama.xyz)
 /// @notice This contract lets holders of a given governance token cast approvals and disapprovals
 /// on created actions.
@@ -18,7 +18,7 @@ import {ILlamaRelativeStrategyBase} from "src/interfaces/ILlamaRelativeStrategyB
 /// it must hold a Policy from the specified `LlamaCore` instance to actually be able to cast on an action. This
 /// contract does not verify that it holds the correct policy when voting and relies on `LlamaCore` to
 /// verify that during submission.
-abstract contract TokenholderCaster is Initializable {
+abstract contract LlamaTokenHolderCaster is Initializable {
   // =========================
   // ======== Structs ========
   // =========================
@@ -188,7 +188,7 @@ abstract contract TokenholderCaster is Initializable {
   /// @param _role The role used by this contract to cast approvals and disapprovals.
   /// @param _minApprovalPct The minimum % of approvals required to submit approvals to `LlamaCore`.
   /// @param _minDisapprovalPct The minimum % of disapprovals required to submit disapprovals to `LlamaCore`.
-  function __initializeTokenholderCasterMinimalProxy(
+  function __initializeLlamaTokenHolderCasterMinimalProxy(
     ILlamaCore _llamaCore,
     uint8 _role,
     uint256 _minApprovalPct,

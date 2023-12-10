@@ -8,7 +8,7 @@ import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
 import {Action, ActionInfo} from "src/lib/Structs.sol";
 import {LlamaUtils} from "src/lib/LlamaUtils.sol";
 
-/// @title TokenholderActionCreator
+/// @title LlamaTokenHolderActionCreator
 /// @author Llama (devsdosomething@llama.xyz)
 /// @notice This contract lets holders of a given governance token create actions if they have
 /// sufficient token balance.
@@ -16,7 +16,7 @@ import {LlamaUtils} from "src/lib/LlamaUtils.sol";
 /// it must hold a Policy from the specified `LlamaCore` instance to actually be able to create an action. The
 /// instance's policy encodes what actions this contract is allowed to create, and attempting to create an action that
 /// is not allowed by the policy will result in a revert.
-abstract contract TokenholderActionCreator is Initializable {
+abstract contract LlamaTokenHolderActionCreator is Initializable {
   /// @notice The core contract for this Llama instance.
   ILlamaCore public llamaCore;
 
@@ -109,7 +109,7 @@ abstract contract TokenholderActionCreator is Initializable {
   /// @param _creationThreshold The default number of tokens required to create an action. This must
   /// be in the same decimals as the token. For example, if the token has 18 decimals and you want a
   /// creation threshold of 1000 tokens, pass in 1000e18.
-  function __initializeTokenholderActionCreatorMinimalProxy(
+  function __initializeLlamaTokenHolderActionCreatorMinimalProxy(
     ILlamaCore _llamaCore,
     uint8 _role,
     uint256 _creationThreshold
