@@ -153,7 +153,7 @@ contract LlamaERC20TokenCasterTest is LlamaTokenVotingTestSetup, LlamaCoreSigUti
 //   }
 // }
 
-contract CastApproval is LlamaERC20TokenCasterTest {
+contract CastVote is LlamaERC20TokenCasterTest {
   function test_RevertsIf_ActionInfoMismatch(ActionInfo memory notActionInfo) public {
     vm.assume(notActionInfo.id != actionInfo.id);
     vm.expectRevert();
@@ -233,7 +233,7 @@ contract CastApproval is LlamaERC20TokenCasterTest {
   }
 }
 
-contract CastApprovalBySig is LlamaERC20TokenCasterTest {
+contract CastVoteBySig is LlamaERC20TokenCasterTest {
   function setUp() public virtual override {
     LlamaERC20TokenCasterTest.setUp();
   }
@@ -243,18 +243,13 @@ contract CastApprovalBySig is LlamaERC20TokenCasterTest {
     view
     returns (uint8 v, bytes32 r, bytes32 s)
   {
-    LlamaCoreSigUtils.CastApproval memory castApproval = LlamaCoreSigUtils.CastApproval({
-      actionInfo: _actionInfo,
-      support: 1,
-      reason: "",
-      tokenHolder: tokenHolder1,
-      nonce: 0
-    });
-    bytes32 digest = getCastApprovalTypedDataHash(castApproval);
+    LlamaCoreSigUtils.CastVote memory castApproval =
+      LlamaCoreSigUtils.CastVote({actionInfo: _actionInfo, support: 1, reason: "", tokenHolder: tokenHolder1, nonce: 0});
+    bytes32 digest = getCastVoteTypedDataHash(castApproval);
     (v, r, s) = vm.sign(privateKey, digest);
   }
 
-  function castApprovalBySig(ActionInfo memory _actionInfo, uint8 support, uint8 v, bytes32 r, bytes32 s) internal {
+  function castVoteBySig(ActionInfo memory _actionInfo, uint8 support, uint8 v, bytes32 r, bytes32 s) internal {
     llamaERC20TokenCaster.castVoteBySig(tokenHolder1, support, _actionInfo, "", v, r, s);
   }
 
@@ -271,24 +266,24 @@ contract CastApprovalBySig is LlamaERC20TokenCasterTest {
       ""
     );
 
-    castApprovalBySig(actionInfo, 1, v, r, s);
+    castVoteBySig(actionInfo, 1, v, r, s);
   }
 
   function test_CheckNonceIncrements() public {
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
 
     assertEq(llamaERC20TokenCaster.nonces(tokenHolder1, LlamaTokenCaster.castVoteBySig.selector), 0);
-    castApprovalBySig(actionInfo, 1, v, r, s);
+    castVoteBySig(actionInfo, 1, v, r, s);
     assertEq(llamaERC20TokenCaster.nonces(tokenHolder1, LlamaTokenCaster.castVoteBySig.selector), 1);
   }
 
   function test_OperationCannotBeReplayed() public {
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
-    castApprovalBySig(actionInfo, 1, v, r, s);
+    castVoteBySig(actionInfo, 1, v, r, s);
     // Invalid Signature error since the recovered signer address during the second call is not the same as
     // erc20VotesTokenholder since nonce has increased.
     vm.expectRevert(LlamaTokenCaster.InvalidSignature.selector);
-    castApprovalBySig(actionInfo, 1, v, r, s);
+    castVoteBySig(actionInfo, 1, v, r, s);
   }
 
   function test_RevertIf_SignerIsNotTokenHolder() public {
@@ -296,32 +291,32 @@ contract CastApprovalBySig is LlamaERC20TokenCasterTest {
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, randomSignerPrivateKey);
     // Invalid Signature error since the recovered signer address is not the same as the erc20VotesTokenholder passed
     // in as parameter.
-    vm.expectRevert(ILlamaCore.InvalidSignature.selector);
-    castApprovalBySig(actionInfo, 1, v, r, s);
+    vm.expectRevert(LlamaTokenCaster.InvalidSignature.selector);
+    castVoteBySig(actionInfo, 1, v, r, s);
   }
 
   function test_RevertIf_SignerIsZeroAddress() public {
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
     // Invalid Signature error since the recovered signer address is zero address due to invalid signature values
     // (v,r,s).
-    vm.expectRevert(ILlamaCore.InvalidSignature.selector);
-    castApprovalBySig(actionInfo, 1, (v + 1), r, s);
+    vm.expectRevert(LlamaTokenCaster.InvalidSignature.selector);
+    castVoteBySig(actionInfo, 1, (v + 1), r, s);
   }
 
   function test_RevertIf_TokenHolderIncrementsNonce() public {
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
 
     vm.prank(tokenHolder1);
-    llamaERC20TokenCaster.incrementNonce(ILlamaCore.castApprovalBySig.selector);
+    llamaERC20TokenCaster.incrementNonce(LlamaTokenCaster.castVoteBySig.selector);
 
     // Invalid Signature error since the recovered signer address during the call is not the same as
     // erc20VotesTokenholder since nonce has increased.
-    vm.expectRevert(ILlamaCore.InvalidSignature.selector);
-    castApprovalBySig(actionInfo, 1, v, r, s);
+    vm.expectRevert(LlamaTokenCaster.InvalidSignature.selector);
+    castVoteBySig(actionInfo, 1, v, r, s);
   }
 }
 
-contract CastDisapproval is LlamaERC20TokenCasterTest {
+contract CastVeto is LlamaERC20TokenCasterTest {
   function setUp() public virtual override {
     LlamaERC20TokenCasterTest.setUp();
 
@@ -423,18 +418,13 @@ contract CastDisapprovalBySig is LlamaERC20TokenCasterTest {
     view
     returns (uint8 v, bytes32 r, bytes32 s)
   {
-    LlamaCoreSigUtils.CastDisapproval memory castDisapproval = LlamaCoreSigUtils.CastDisapproval({
-      actionInfo: _actionInfo,
-      support: 1,
-      reason: "",
-      tokenHolder: tokenHolder1,
-      nonce: 0
-    });
-    bytes32 digest = getCastDisapprovalTypedDataHash(castDisapproval);
+    LlamaCoreSigUtils.CastVeto memory castDisapproval =
+      LlamaCoreSigUtils.CastVeto({actionInfo: _actionInfo, support: 1, reason: "", tokenHolder: tokenHolder1, nonce: 0});
+    bytes32 digest = getCastVetoTypedDataHash(castDisapproval);
     (v, r, s) = vm.sign(privateKey, digest);
   }
 
-  function castDisapprovalBySig(ActionInfo memory _actionInfo, uint8 v, bytes32 r, bytes32 s) internal {
+  function castVetoBySig(ActionInfo memory _actionInfo, uint8 v, bytes32 r, bytes32 s) internal {
     llamaERC20TokenCaster.castVetoBySig(tokenHolder1, 1, _actionInfo, "", v, r, s);
   }
 
@@ -451,7 +441,7 @@ contract CastDisapprovalBySig is LlamaERC20TokenCasterTest {
       ""
     );
 
-    castDisapprovalBySig(actionInfo, v, r, s);
+    castVetoBySig(actionInfo, v, r, s);
 
     // assertEq(CORE.getAction(0).totalDisapprovals, 1);
     // assertEq(CORE.disapprovals(0, disapproverDrake), true);
@@ -460,19 +450,19 @@ contract CastDisapprovalBySig is LlamaERC20TokenCasterTest {
   function test_CheckNonceIncrements() public {
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
 
-    assertEq(llamaERC20TokenCaster.nonces(tokenHolder1, ILlamaCore.castDisapprovalBySig.selector), 0);
-    castDisapprovalBySig(actionInfo, v, r, s);
-    assertEq(llamaERC20TokenCaster.nonces(tokenHolder1, ILlamaCore.castDisapprovalBySig.selector), 1);
+    assertEq(llamaERC20TokenCaster.nonces(tokenHolder1, LlamaTokenCaster.castVetoBySig.selector), 0);
+    castVetoBySig(actionInfo, v, r, s);
+    assertEq(llamaERC20TokenCaster.nonces(tokenHolder1, LlamaTokenCaster.castVetoBySig.selector), 1);
   }
 
   function test_OperationCannotBeReplayed() public {
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
-    castDisapprovalBySig(actionInfo, v, r, s);
+    castVetoBySig(actionInfo, v, r, s);
     // Invalid Signature error since the recovered signer address during the second call is not the same as
     // erc20VotesTokenholder
     // since nonce has increased.
-    vm.expectRevert(ILlamaCore.InvalidSignature.selector);
-    castDisapprovalBySig(actionInfo, v, r, s);
+    vm.expectRevert(LlamaTokenCaster.InvalidSignature.selector);
+    castVetoBySig(actionInfo, v, r, s);
   }
 
   function test_RevertIf_SignerIsNotPolicyHolder() public {
@@ -481,28 +471,28 @@ contract CastDisapprovalBySig is LlamaERC20TokenCasterTest {
     // Invalid Signature error since the recovered signer address during the second call is not the same as
     // erc20VotesTokenholder
     // since nonce has increased.
-    vm.expectRevert(ILlamaCore.InvalidSignature.selector);
-    castDisapprovalBySig(actionInfo, v, r, s);
+    vm.expectRevert(LlamaTokenCaster.InvalidSignature.selector);
+    castVetoBySig(actionInfo, v, r, s);
   }
 
   function test_RevertIf_SignerIsZeroAddress() public {
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
     // Invalid Signature error since the recovered signer address is zero address due to invalid signature values
     // (v,r,s).
-    vm.expectRevert(ILlamaCore.InvalidSignature.selector);
-    castDisapprovalBySig(actionInfo, (v + 1), r, s);
+    vm.expectRevert(LlamaTokenCaster.InvalidSignature.selector);
+    castVetoBySig(actionInfo, (v + 1), r, s);
   }
 
   function test_RevertIf_PolicyholderIncrementsNonce() public {
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
 
     vm.prank(tokenHolder1);
-    llamaERC20TokenCaster.incrementNonce(ILlamaCore.castDisapprovalBySig.selector);
+    llamaERC20TokenCaster.incrementNonce(LlamaTokenCaster.castVetoBySig.selector);
 
     // Invalid Signature error since the recovered signer address during the second call is not the same as policyholder
     // since nonce has increased.
-    vm.expectRevert(ILlamaCore.InvalidSignature.selector);
-    castDisapprovalBySig(actionInfo, v, r, s);
+    vm.expectRevert(LlamaTokenCaster.InvalidSignature.selector);
+    castVetoBySig(actionInfo, v, r, s);
   }
 
   function test_FailsIfDisapproved() public {
@@ -518,7 +508,7 @@ contract CastDisapprovalBySig is LlamaERC20TokenCasterTest {
       erc20VotesToken.getPastVotes(tokenHolder1, erc20VotesToken.clock() - 1),
       ""
     );
-    castDisapprovalBySig(actionInfo, v, r, s);
+    castVetoBySig(actionInfo, v, r, s);
     // assertEq(CORE.getAction(actionInfo.id).totalDisapprovals, 1);
 
     // Second disapproval.

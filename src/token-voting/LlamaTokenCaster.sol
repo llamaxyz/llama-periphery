@@ -159,12 +159,12 @@ abstract contract LlamaTokenCaster is Initializable {
     keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
 
   /// @notice EIP-712 castVote typehash.
-  bytes32 internal constant CAST_VOTE_BY_SIG_TYPEHASH = keccak256(
+  bytes32 internal constant CAST_VOTE_TYPEHASH = keccak256(
     "CastVote(address tokenHolder,uint8 support,ActionInfo actionInfo,string reason,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
   );
 
   /// @notice EIP-712 castVeto typehash.
-  bytes32 internal constant CAST_VETO_BY_SIG_TYPEHASH = keccak256(
+  bytes32 internal constant CAST_VETO_TYPEHASH = keccak256(
     "CastVeto(address tokenHolder,uint8 role,ActionInfo actionInfo,string reason,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
   );
 
@@ -224,7 +224,7 @@ abstract contract LlamaTokenCaster is Initializable {
     bytes32 r,
     bytes32 s
   ) external {
-    bytes32 digest = _getCastApprovalTypedDataHash(caster, support, actionInfo, reason);
+    bytes32 digest = _getCastVoteTypedDataHash(caster, support, actionInfo, reason);
     address signer = ecrecover(digest, v, r, s);
     if (signer == address(0) || signer != caster) revert InvalidSignature();
     _castVote(signer, actionInfo, support, reason);
@@ -251,7 +251,7 @@ abstract contract LlamaTokenCaster is Initializable {
     bytes32 r,
     bytes32 s
   ) external {
-    bytes32 digest = _getCastDisapprovalTypedDataHash(caster, support, actionInfo, reason);
+    bytes32 digest = _getCastVetoTypedDataHash(caster, support, actionInfo, reason);
     address signer = ecrecover(digest, v, r, s);
     if (signer == address(0) || signer != caster) revert InvalidSignature();
     _castVeto(signer, actionInfo, support, reason);
@@ -416,7 +416,7 @@ abstract contract LlamaTokenCaster is Initializable {
 
   /// @dev Returns the hash of the ABI-encoded EIP-712 message for the `CastApproval` domain, which can be used to
   /// recover the signer.
-  function _getCastApprovalTypedDataHash(
+  function _getCastVoteTypedDataHash(
     address tokenholder,
     uint8 support,
     ActionInfo calldata actionInfo,
@@ -424,7 +424,7 @@ abstract contract LlamaTokenCaster is Initializable {
   ) internal returns (bytes32) {
     bytes32 castVoteHash = keccak256(
       abi.encode(
-        CAST_VOTE_BY_SIG_TYPEHASH,
+        CAST_VOTE_TYPEHASH,
         tokenholder,
         support,
         _getActionInfoHash(actionInfo),
@@ -438,7 +438,7 @@ abstract contract LlamaTokenCaster is Initializable {
 
   /// @dev Returns the hash of the ABI-encoded EIP-712 message for the `CastDisapproval` domain, which can be used to
   /// recover the signer.
-  function _getCastDisapprovalTypedDataHash(
+  function _getCastVetoTypedDataHash(
     address tokenholder,
     uint8 support,
     ActionInfo calldata actionInfo,
@@ -446,7 +446,7 @@ abstract contract LlamaTokenCaster is Initializable {
   ) internal returns (bytes32) {
     bytes32 castVetoHash = keccak256(
       abi.encode(
-        CAST_VETO_BY_SIG_TYPEHASH,
+        CAST_VETO_TYPEHASH,
         tokenholder,
         support,
         _getActionInfoHash(actionInfo),
