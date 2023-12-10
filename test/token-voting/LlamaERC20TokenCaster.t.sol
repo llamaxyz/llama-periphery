@@ -73,7 +73,7 @@ contract LlamaERC20TokenCasterTest is LlamaTokenVotingTestSetup, LlamaCoreSigUti
     );
   }
 
-  function castApprovalsFor() public {
+  function castVotesFor() public {
     vm.prank(tokenHolder1);
     llamaERC20TokenCaster.castVote(actionInfo, 1, "");
     vm.prank(tokenHolder2);
@@ -82,7 +82,7 @@ contract LlamaERC20TokenCasterTest is LlamaTokenVotingTestSetup, LlamaCoreSigUti
     llamaERC20TokenCaster.castVote(actionInfo, 1, "");
   }
 
-  function castDisapprovalsFor() public {
+  function castVetosFor() public {
     vm.prank(tokenHolder1);
     llamaERC20TokenCaster.castVeto(actionInfo, 1, "");
     vm.prank(tokenHolder2);
@@ -320,7 +320,7 @@ contract CastVeto is LlamaERC20TokenCasterTest {
   function setUp() public virtual override {
     LlamaERC20TokenCasterTest.setUp();
 
-    castApprovalsFor();
+    castVotesFor();
 
     vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
 
@@ -401,11 +401,11 @@ contract CastVeto is LlamaERC20TokenCasterTest {
   }
 }
 
-contract CastDisapprovalBySig is LlamaERC20TokenCasterTest {
+contract CastVetoBySig is LlamaERC20TokenCasterTest {
   function setUp() public virtual override {
     LlamaERC20TokenCasterTest.setUp();
 
-    castApprovalsFor();
+    castVotesFor();
 
     vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
 
@@ -532,7 +532,7 @@ contract SubmitApprovals is LlamaERC20TokenCasterTest {
   function setUp() public virtual override {
     LlamaERC20TokenCasterTest.setUp();
 
-    castApprovalsFor();
+    castVotesFor();
 
     vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
   }
@@ -598,7 +598,7 @@ contract SubmitDisapprovals is LlamaERC20TokenCasterTest {
   function setUp() public virtual override {
     LlamaERC20TokenCasterTest.setUp();
 
-    castApprovalsFor();
+    castVotesFor();
 
     vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
 
@@ -632,7 +632,7 @@ contract SubmitDisapprovals is LlamaERC20TokenCasterTest {
           / ONE_HUNDRED_IN_BPS
     );
 
-    castDisapprovalsFor();
+    castVetosFor();
 
     vm.startPrank(tokenHolder1);
     llamaERC20TokenCaster.submitDisapproval(actionInfo);
@@ -642,7 +642,7 @@ contract SubmitDisapprovals is LlamaERC20TokenCasterTest {
   }
 
   function test_RevertsIf_SubmissionPeriodOver() public {
-    castDisapprovalsFor();
+    castVetosFor();
 
     vm.warp(block.timestamp + 1 days);
     vm.expectRevert(LlamaTokenCaster.SubmissionPeriodOver.selector);
@@ -651,7 +651,7 @@ contract SubmitDisapprovals is LlamaERC20TokenCasterTest {
 
   function test_RevertsIf_InsufficientDisapprovals() public {
     actionInfo = _createActionWithTokenVotingStrategy(tokenVotingStrategy);
-    castApprovalsFor();
+    castVotesFor();
     vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
     llamaERC20TokenCaster.submitApproval(actionInfo);
 
@@ -681,7 +681,7 @@ contract SubmitDisapprovals is LlamaERC20TokenCasterTest {
   }
 
   function test_SubmitsDisapprovalsCorrectly() public {
-    castDisapprovalsFor();
+    castVetosFor();
 
     //TODO why add 1 here?
     vm.warp(block.timestamp + 1 + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);

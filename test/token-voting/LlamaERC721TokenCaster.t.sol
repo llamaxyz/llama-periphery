@@ -73,7 +73,7 @@ contract LlamaERC721TokenCasterTest is LlamaTokenVotingTestSetup, LlamaCoreSigUt
     );
   }
 
-  function castApprovalsFor() public {
+  function castVotesFor() public {
     vm.prank(tokenHolder1);
     llamaERC721TokenCaster.castVote(actionInfo, 1, "");
     vm.prank(tokenHolder2);
@@ -82,7 +82,7 @@ contract LlamaERC721TokenCasterTest is LlamaTokenVotingTestSetup, LlamaCoreSigUt
     llamaERC721TokenCaster.castVote(actionInfo, 1, "");
   }
 
-  function castDisapprovalsFor() public {
+  function castVetosFor() public {
     vm.prank(tokenHolder1);
     llamaERC721TokenCaster.castVeto(actionInfo, 1, "");
     vm.prank(tokenHolder2);
@@ -322,7 +322,7 @@ contract CastVeto is LlamaERC721TokenCasterTest {
   function setUp() public virtual override {
     LlamaERC721TokenCasterTest.setUp();
 
-    castApprovalsFor();
+    castVotesFor();
 
     vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
 
@@ -403,11 +403,11 @@ contract CastVeto is LlamaERC721TokenCasterTest {
   }
 }
 
-contract CastDisapprovalBySig is LlamaERC721TokenCasterTest {
+contract CastVetoBySig is LlamaERC721TokenCasterTest {
   function setUp() public virtual override {
     LlamaERC721TokenCasterTest.setUp();
 
-    castApprovalsFor();
+    castVotesFor();
 
     vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
 
@@ -534,7 +534,7 @@ contract SubmitApprovals is LlamaERC721TokenCasterTest {
   function setUp() public virtual override {
     LlamaERC721TokenCasterTest.setUp();
 
-    castApprovalsFor();
+    castVotesFor();
 
     vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
   }
@@ -600,7 +600,7 @@ contract SubmitDisapprovals is LlamaERC721TokenCasterTest {
   function setUp() public virtual override {
     LlamaERC721TokenCasterTest.setUp();
 
-    castApprovalsFor();
+    castVotesFor();
 
     vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
 
@@ -634,7 +634,7 @@ contract SubmitDisapprovals is LlamaERC721TokenCasterTest {
           / ONE_HUNDRED_IN_BPS
     );
 
-    castDisapprovalsFor();
+    castVetosFor();
 
     vm.startPrank(tokenHolder1);
     llamaERC721TokenCaster.submitDisapproval(actionInfo);
@@ -644,7 +644,7 @@ contract SubmitDisapprovals is LlamaERC721TokenCasterTest {
   }
 
   function test_RevertsIf_SubmissionPeriodOver() public {
-    castDisapprovalsFor();
+    castVetosFor();
 
     vm.warp(block.timestamp + 1 days);
     vm.expectRevert(LlamaTokenCaster.SubmissionPeriodOver.selector);
@@ -653,7 +653,7 @@ contract SubmitDisapprovals is LlamaERC721TokenCasterTest {
 
   function test_RevertsIf_InsufficientDisapprovals() public {
     actionInfo = _createActionWithTokenVotingStrategy(tokenVotingStrategy);
-    castApprovalsFor();
+    castVotesFor();
     vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
     llamaERC721TokenCaster.submitApproval(actionInfo);
 
@@ -683,7 +683,7 @@ contract SubmitDisapprovals is LlamaERC721TokenCasterTest {
   }
 
   function test_SubmitsDisapprovalsCorrectly() public {
-    castDisapprovalsFor();
+    castVetosFor();
 
     //TODO why add 1 here?
     vm.warp(block.timestamp + 1 + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
