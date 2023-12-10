@@ -10,83 +10,81 @@ import {LlamaUtils} from "src/lib/LlamaUtils.sol";
 import {Action, ActionInfo} from "src/lib/Structs.sol";
 import {ILlamaRelativeStrategyBase} from "src/interfaces/ILlamaRelativeStrategyBase.sol";
 
-/// @title TokenholderCaster
+/// @title LlamaTokenCaster
 /// @author Llama (devsdosomething@llama.xyz)
-/// @notice This contract lets holders of a given governance token cast approvals and disapprovals
-/// on created actions.
+/// @notice This contract lets holders of a given governance token collectively cast an approval or
+/// disapproval on created actions.
 /// @dev This contract is deployed by `LlamaTokenVotingFactory`. Anyone can deploy this contract using the factory, but
 /// it must hold a Policy from the specified `LlamaCore` instance to actually be able to cast on an action. This
 /// contract does not verify that it holds the correct policy when voting and relies on `LlamaCore` to
 /// verify that during submission.
-abstract contract TokenholderCaster is Initializable {
+abstract contract LlamaTokenCaster is Initializable {
   // =========================
   // ======== Structs ========
   // =========================
 
   /// @dev Cast counts and submission data.
   struct CastData {
-    uint96 approvalsFor; // Number of approvals casted for this action. This is the standard approval in `LlamaCore`.
-    uint96 approvalsAbstain; // Number of abstentions casted for this action. This does not exist in `LlamaCore`.
-    uint96 approvalsAgainst; // Number of approvals casted against this action. This does not exist in `LlamaCore`.
-    bool approvalSubmitted; // True if the approvals have been submitted to `LlamaCore, false otherwise.
-    uint96 disapprovalsFor; // Number of disapprovals casted for this action. This is the standard disapproval in
-      // `LlamaCore`.
-    uint96 disapprovalsAbstain; // Number of abstentions casted for this action. This does not exist in `LlamaCore`.
-    uint96 disapprovalsAgainst; // Number of disapprovals casted against this action. This does not exist in
-      // `LlamaCore`.
-    bool disapprovalSubmitted; // True if the disapprovals have been submitted to `LlamaCore`, false otherwise.
-    mapping(address tokenholder => bool) castApproval; // True if tokenholder casted approval, false otherwise.
-    mapping(address tokenholder => bool) castDisapproval; // True if tokenholder casted disapproval, false otherwise.
+    uint96 votesFor; // Number of votes casted for this action.
+    uint96 votesAbstain; // Number of abstentions casted for this action.
+    uint96 votesAgainst; // Number of votes casted against this action.
+    bool approvalSubmitted; // True if the approval was submitted to `LlamaCore, false otherwise.
+    uint96 vetoesFor; // Number of vetoes casted for this action.
+    uint96 vetoesAbstain; // Number of abstentions casted for this action.
+    uint96 vetoesAgainst; // Number of disapprovals casted against this action.
+    bool disapprovalSubmitted; // True if the disapproval has been submitted to `LlamaCore`, false otherwise.
+    mapping(address tokenholder => bool) castVote; // True if tokenholder casted a vote, false otherwise.
+    mapping(address tokenholder => bool) castVeto; // True if tokenholder casted a veto, false otherwise.
   }
 
   // ========================
   // ======== Errors ========
   // ========================
 
-  /// @dev Thrown when a user tries to cast approval but the action has expired.
+  /// @dev Thrown when a user tries to cast a vote but the action has expired.
   error ActionExpired();
 
-  /// @dev Thrown when a user tries to cast approval but the action is not active.
+  /// @dev Thrown when a user tries to cast a vote but the action is not active.
   error ActionNotActive();
 
   /// @dev Thrown when a user tries to cast disapproval but but the action is not in the queuing period.
   error ActionNotQueued();
 
-  /// @dev Thrown when a user tries to cast approval but has already casted.
-  error AlreadyCastApproval();
+  /// @dev Thrown when a user tries to cast a vote but has already casted.
+  error AlreadyCastedVote();
 
   /// @dev Thrown when a user tries to cast approval but the casts have already been submitted to `LlamaCore`.
   error AlreadySubmittedApproval();
 
-  /// @dev Thrown when a user tries to cast disapproval but has already casted.
-  error AlreadyCastDisapproval();
+  /// @dev Thrown when a user tries to cast a veto but has already casted.
+  error AlreadyCastedVeto();
 
   /// @dev Thrown when a user tries to cast disapproval but the casts have already been submitted to `LlamaCore.
   error AlreadySubmittedDisapproval();
 
-  /// @dev Thrown when a user tries to cast (dis)approval but the casting period has ended.
+  /// @dev Thrown when a user tries to cast a vote or veto but the casting period has ended.
   error CastingPeriodOver();
 
   /// @dev Thrown when a user tries to cast (dis)approval but the action cannot be submitted yet.
-  error CantSubmitYet();
+  error CannotSubmitYet();
 
   /// @dev Thrown when a user tries to create an action but the clock mode is not supported.
   error ClockModeNotSupported(string clockMode);
 
-  /// @dev Thrown when a user tries to cast (dis)approval but the (dis)approvals surpass the approvals.
-  error ForDoesNotSurpassAgainst(uint256 approvals, uint256 disapprovals);
+  /// @dev Thrown when a user tries to cast a vote or veto but the against surpasses for.
+  error ForDoesNotSurpassAgainst(uint256 castsFor, uint256 castsAgainst);
 
-  /// @dev Thrown when a user tries to submit approvals but there are not enough approvals.
-  error InsufficientApprovals(uint256 approvals, uint256 threshold);
+  /// @dev Thrown when a user tries to submit an approval but there are not enough votes.
+  error InsufficientVotes(uint256 votes, uint256 threshold);
 
   /// @dev Thrown when a user tries to cast but does not have enough tokens.
   error InsufficientBalance(uint256 balance);
 
-  /// @dev Thrown when an invalid `approvalThreshold` is passed to the constructor.
-  error InvalidMinApprovalPct(uint256 approvalThreshold);
+  /// @dev Thrown when an invalid `voteQuorumPct` is passed to the constructor.
+  error InvalidVoteQuorumPct(uint256 voteQuorumPct);
 
-  /// @dev Thrown when an invalid `disapprovalThreshold` is passed to the constructor.
-  error InvalidMinDisapprovalPct(uint256 disapprovalThreshold);
+  /// @dev Thrown when an invalid `veteQuorumPct` is passed to the constructor.
+  error InvalidVetoQuorumPct(uint256 veteQuorumPct);
 
   /// @dev Thrown when an invalid `llamaCore` address is passed to the constructor.
   error InvalidLlamaCoreAddress();
@@ -110,29 +108,29 @@ abstract contract TokenholderCaster is Initializable {
   // ======== Events ========
   // ========================
 
-  /// @dev Emitted when an approval is cast.
+  /// @dev Emitted when a vote is cast.
   /// @dev This is almost the same as the `ApprovalCast` event from `LlamaCore`, with the addition of the support field.
   /// The two events will be nearly identical, with the `tokenholder` being the main difference. This version will emit
   /// the address of the tokenholder that casted, while the `LlamaCore` version will emit the address of this contract
   /// as the action creator. Additionally, there is no `role` emitted here as all tokenholders are eligible to vote.
-  event ApprovalCast(
+  event VoteCast(
     uint256 id, address indexed tokenholder, uint8 indexed role, uint8 indexed support, uint256 quantity, string reason
   );
 
-  /// @dev Emitted when cast approvals are submitted to the `LlamaCore` contract.
-  event ApprovalsSubmitted(uint256 id, uint96 quantityFor, uint96 quantityAgainst, uint96 quantityAbstain);
+  /// @dev Emitted when a cast approval is submitted to the `LlamaCore` contract.
+  event ApprovalSubmitted(uint256 id, uint96 quantityFor, uint96 quantityAgainst, uint96 quantityAbstain);
 
-  /// @dev Emitted when a disapproval is cast.
+  /// @dev Emitted when a veto is casted.
   /// @dev This is the same as the `DisapprovalCast` event from `LlamaCore`. The two events will be
   /// nearly identical, with the `tokenholder` being the only difference. This version will emit
   /// the address of the tokenholder that casted, while the `LlamaCore` version will emit the
   /// address of this contract as the action creator.
-  event DisapprovalCast(
+  event VetoCast(
     uint256 id, address indexed tokenholder, uint8 indexed role, uint8 indexed support, uint256 quantity, string reason
   );
 
-  /// @dev Emitted when cast approvals are submitted to the `LlamaCore` contract.
-  event DisapprovalsSubmitted(uint256 id, uint96 quantityFor, uint96 quantityAgainst, uint96 quantityAbstain);
+  /// @dev Emitted when a cast disapproval is submitted to the `LlamaCore` contract.
+  event DisapprovalSubmitted(uint256 id, uint96 quantityFor, uint96 quantityAgainst, uint96 quantityAbstain);
   // =================================================
   // ======== Constants and Storage Variables ========
   // =================================================
@@ -147,10 +145,10 @@ abstract contract TokenholderCaster is Initializable {
   ILlamaCore public llamaCore;
 
   /// @notice The minimum % of approvals required to submit approvals to `LlamaCore`.
-  uint256 public minApprovalPct;
+  uint256 public voteQuorumPct;
 
   /// @notice The minimum % of disapprovals required to submit disapprovals to `LlamaCore`.
-  uint256 public minDisapprovalPct;
+  uint256 public vetoQuorumPct;
 
   /// @notice The role used by this contract to cast approvals and disapprovals.
   /// @dev This role is expected to have the ability to force approve and disapprove actions.
@@ -160,14 +158,14 @@ abstract contract TokenholderCaster is Initializable {
   bytes32 internal constant EIP712_DOMAIN_TYPEHASH =
     keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
 
-  /// @notice EIP-712 castApproval typehash.
-  bytes32 internal constant CAST_APPROVAL_BY_SIG_TYPEHASH = keccak256(
-    "CastApproval(address tokenHolder,uint8 support,ActionInfo actionInfo,string reason,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
+  /// @notice EIP-712 castVote typehash.
+  bytes32 internal constant CAST_VOTE_TYPEHASH = keccak256(
+    "CastVote(address tokenHolder,uint8 support,ActionInfo actionInfo,string reason,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
   );
 
-  /// @notice EIP-712 castDisapproval typehash.
-  bytes32 internal constant CAST_DISAPPROVAL_BY_SIG_TYPEHASH = keccak256(
-    "CastDisapproval(address tokenHolder,uint8 role,ActionInfo actionInfo,string reason,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
+  /// @notice EIP-712 castVeto typehash.
+  bytes32 internal constant CAST_VETO_TYPEHASH = keccak256(
+    "CastVeto(address tokenHolder,uint8 role,ActionInfo actionInfo,string reason,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
   );
 
   /// @dev EIP-712 actionInfo typehash.
@@ -180,31 +178,29 @@ abstract contract TokenholderCaster is Initializable {
 
   /// @notice Mapping of tokenholders to function selectors to current nonces for EIP-712 signatures.
   /// @dev This is used to prevent replay attacks by incrementing the nonce for each operation (`createAction`,
-  /// `cancelAction`, `castApproval` and `castDisapproval`) signed by the tokenholders.
+  /// `cancelAction`, `castVote` and `castVeto`) signed by the tokenholders.
   mapping(address tokenholders => mapping(bytes4 selector => uint256 currentNonce)) public nonces;
 
   /// @dev This will be called by the `initialize` of the inheriting contract.
   /// @param _llamaCore The `LlamaCore` contract for this Llama instance.
   /// @param _role The role used by this contract to cast approvals and disapprovals.
-  /// @param _minApprovalPct The minimum % of approvals required to submit approvals to `LlamaCore`.
-  /// @param _minDisapprovalPct The minimum % of disapprovals required to submit disapprovals to `LlamaCore`.
-  function __initializeTokenholderCasterMinimalProxy(
+  /// @param _voteQuorumPct The minimum % of votes required to submit an approval to `LlamaCore`.
+  /// @param _vetoQuorumPct The minimum % of vetoes required to submit a disapproval to `LlamaCore`.
+  function __initializeLlamaTokenCasterMinimalProxy(
     ILlamaCore _llamaCore,
     uint8 _role,
-    uint256 _minApprovalPct,
-    uint256 _minDisapprovalPct
+    uint256 _voteQuorumPct,
+    uint256 _vetoQuorumPct
   ) internal {
     if (_llamaCore.actionsCount() < 0) revert InvalidLlamaCoreAddress();
     if (_role > _llamaCore.policy().numRoles()) revert RoleNotInitialized(_role);
-    if (_minApprovalPct > ONE_HUNDRED_IN_BPS || _minApprovalPct <= 0) revert InvalidMinApprovalPct(_minApprovalPct);
-    if (_minDisapprovalPct > ONE_HUNDRED_IN_BPS || _minDisapprovalPct <= 0) {
-      revert InvalidMinDisapprovalPct(_minDisapprovalPct);
-    }
+    if (_voteQuorumPct > ONE_HUNDRED_IN_BPS || _voteQuorumPct <= 0) revert InvalidVoteQuorumPct(_voteQuorumPct);
+    if (_vetoQuorumPct > ONE_HUNDRED_IN_BPS || _vetoQuorumPct <= 0) revert InvalidVetoQuorumPct(_vetoQuorumPct);
 
     llamaCore = _llamaCore;
     role = _role;
-    minApprovalPct = _minApprovalPct;
-    minDisapprovalPct = _minDisapprovalPct;
+    voteQuorumPct = _voteQuorumPct;
+    vetoQuorumPct = _vetoQuorumPct;
   }
 
   /// @notice How tokenholders add their support of the approval of an action with a reason.
@@ -215,11 +211,11 @@ abstract contract TokenholderCaster is Initializable {
   ///   1 = For
   ///   2 = Abstain, but this is not currently supported.
   /// @param reason The reason given for the approval by the tokenholder.
-  function castApproval(ActionInfo calldata actionInfo, uint8 support, string calldata reason) external {
-    _castApproval(msg.sender, actionInfo, support, reason);
+  function castVote(ActionInfo calldata actionInfo, uint8 support, string calldata reason) external {
+    _castVote(msg.sender, actionInfo, support, reason);
   }
 
-  function castApprovalBySig(
+  function castVoteBySig(
     address caster,
     uint8 support,
     ActionInfo calldata actionInfo,
@@ -228,13 +224,13 @@ abstract contract TokenholderCaster is Initializable {
     bytes32 r,
     bytes32 s
   ) external {
-    bytes32 digest = _getCastApprovalTypedDataHash(caster, support, actionInfo, reason);
+    bytes32 digest = _getCastVoteTypedDataHash(caster, support, actionInfo, reason);
     address signer = ecrecover(digest, v, r, s);
     if (signer == address(0) || signer != caster) revert InvalidSignature();
-    _castApproval(signer, actionInfo, support, reason);
+    _castVote(signer, actionInfo, support, reason);
   }
 
-  /// @notice How tokenholders add their support of the dapproval of an action with a reason.
+  /// @notice How tokenholders add their support of the disapproval of an action with a reason.
   /// @dev Use `""` for `reason` if there is no reason.
   /// @param actionInfo Data required to create an action.
   /// @param support The tokenholder's support of the approval of the action.
@@ -242,11 +238,11 @@ abstract contract TokenholderCaster is Initializable {
   ///   1 = For
   ///   2 = Abstain, but this is not currently supported.
   /// @param reason The reason given for the approval by the tokenholder.
-  function castDisapproval(ActionInfo calldata actionInfo, uint8 support, string calldata reason) external {
-    _castDisapproval(msg.sender, actionInfo, support, reason);
+  function castVeto(ActionInfo calldata actionInfo, uint8 support, string calldata reason) external {
+    _castVeto(msg.sender, actionInfo, support, reason);
   }
 
-  function castDisapprovalBySig(
+  function castVetoBySig(
     address caster,
     uint8 support,
     ActionInfo calldata actionInfo,
@@ -255,16 +251,16 @@ abstract contract TokenholderCaster is Initializable {
     bytes32 r,
     bytes32 s
   ) external {
-    bytes32 digest = _getCastDisapprovalTypedDataHash(caster, support, actionInfo, reason);
+    bytes32 digest = _getCastVetoTypedDataHash(caster, support, actionInfo, reason);
     address signer = ecrecover(digest, v, r, s);
     if (signer == address(0) || signer != caster) revert InvalidSignature();
-    _castDisapproval(signer, actionInfo, support, reason);
+    _castVeto(signer, actionInfo, support, reason);
   }
 
-  /// @notice Submits cast approvals to the `LlamaCore` contract.
+  /// @notice Submits a cast approval to the `LlamaCore` contract.
   /// @param actionInfo Data required to create an action.
   /// @dev this function can be called by anyone
-  function submitApprovals(ActionInfo calldata actionInfo) external {
+  function submitApproval(ActionInfo calldata actionInfo) external {
     Action memory action = llamaCore.getAction(actionInfo.id);
 
     actionInfo.strategy.checkIfApprovalEnabled(actionInfo, address(this), role); // Reverts if not allowed.
@@ -273,7 +269,7 @@ abstract contract TokenholderCaster is Initializable {
     // check to make sure the casting period has ended
     uint256 approvalPeriod = ILlamaRelativeStrategyBase(address(actionInfo.strategy)).approvalPeriod();
     if (block.timestamp < action.creationTime + (approvalPeriod * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS) {
-      revert CantSubmitYet();
+      revert CannotSubmitYet();
     }
 
     if (block.timestamp > action.creationTime + approvalPeriod) revert SubmissionPeriodOver();
@@ -285,22 +281,22 @@ abstract contract TokenholderCaster is Initializable {
     }
 
     uint256 totalSupply = _getPastTotalSupply(action.creationTime - 1);
-    uint96 approvalsFor = casts[actionInfo.id].approvalsFor;
-    uint96 approvalsAgainst = casts[actionInfo.id].approvalsAgainst;
-    uint96 approvalsAbstain = casts[actionInfo.id].approvalsAbstain;
-    uint256 threshold = FixedPointMathLib.mulDivUp(totalSupply, minApprovalPct, ONE_HUNDRED_IN_BPS);
-    if (approvalsFor < threshold) revert InsufficientApprovals(approvalsFor, threshold);
-    if (approvalsFor <= approvalsAgainst) revert ForDoesNotSurpassAgainst(approvalsFor, approvalsAgainst);
+    uint96 votesFor = casts[actionInfo.id].votesFor;
+    uint96 votesAgainst = casts[actionInfo.id].votesAgainst;
+    uint96 votesAbstain = casts[actionInfo.id].votesAbstain;
+    uint256 threshold = FixedPointMathLib.mulDivUp(totalSupply, voteQuorumPct, ONE_HUNDRED_IN_BPS);
+    if (votesFor < threshold) revert InsufficientVotes(votesFor, threshold);
+    if (votesFor <= votesAgainst) revert ForDoesNotSurpassAgainst(votesFor, votesAgainst);
 
     casts[actionInfo.id].approvalSubmitted = true;
     llamaCore.castApproval(role, actionInfo, "");
-    emit ApprovalsSubmitted(actionInfo.id, approvalsFor, approvalsAgainst, approvalsAbstain);
+    emit ApprovalSubmitted(actionInfo.id, votesFor, votesAgainst, votesAbstain);
   }
 
-  /// @notice Submits cast approvals to the `LlamaCore` contract.
+  /// @notice Submits a cast disapproval to the `LlamaCore` contract.
   /// @param actionInfo Data required to create an action.
   /// @dev this function can be called by anyone
-  function submitDisapprovals(ActionInfo calldata actionInfo) external {
+  function submitDisapproval(ActionInfo calldata actionInfo) external {
     Action memory action = llamaCore.getAction(actionInfo.id);
 
     actionInfo.strategy.checkIfDisapprovalEnabled(actionInfo, address(this), role); // Reverts if not allowed.
@@ -309,7 +305,7 @@ abstract contract TokenholderCaster is Initializable {
     uint256 queuingPeriod = ILlamaRelativeStrategyBase(address(actionInfo.strategy)).queuingPeriod();
     // check to make sure the current timestamp is within the submitDisapprovalBuffer 9period
     if (block.timestamp < action.minExecutionTime - (queuingPeriod * ONE_THIRD_IN_BPS) / ONE_HUNDRED_IN_BPS) {
-      revert CantSubmitYet();
+      revert CannotSubmitYet();
     }
     if (block.timestamp >= action.minExecutionTime) revert SubmissionPeriodOver();
     /// @dev only timestamp mode is supported for now
@@ -319,26 +315,24 @@ abstract contract TokenholderCaster is Initializable {
     }
 
     uint256 totalSupply = _getPastTotalSupply(action.creationTime - 1);
-    uint96 disapprovalsFor = casts[actionInfo.id].disapprovalsFor;
-    uint96 disapprovalsAgainst = casts[actionInfo.id].disapprovalsAgainst;
-    uint96 disapprovalsAbstain = casts[actionInfo.id].disapprovalsAbstain;
-    uint256 threshold = FixedPointMathLib.mulDivUp(totalSupply, minDisapprovalPct, ONE_HUNDRED_IN_BPS);
-    if (disapprovalsFor < threshold) revert InsufficientApprovals(disapprovalsFor, threshold);
-    if (disapprovalsFor <= disapprovalsAgainst) revert ForDoesNotSurpassAgainst(disapprovalsFor, disapprovalsAgainst);
+    uint96 vetoesFor = casts[actionInfo.id].vetoesFor;
+    uint96 vetoesAgainst = casts[actionInfo.id].vetoesAgainst;
+    uint96 vetoesAbstain = casts[actionInfo.id].vetoesAbstain;
+    uint256 threshold = FixedPointMathLib.mulDivUp(totalSupply, vetoQuorumPct, ONE_HUNDRED_IN_BPS);
+    if (vetoesFor < threshold) revert InsufficientVotes(vetoesFor, threshold);
+    if (vetoesFor <= vetoesAgainst) revert ForDoesNotSurpassAgainst(vetoesFor, vetoesAgainst);
 
     casts[actionInfo.id].disapprovalSubmitted = true;
     llamaCore.castDisapproval(role, actionInfo, "");
-    emit DisapprovalsSubmitted(actionInfo.id, disapprovalsFor, disapprovalsAgainst, disapprovalsAbstain);
+    emit DisapprovalSubmitted(actionInfo.id, vetoesFor, vetoesAgainst, vetoesAbstain);
   }
 
-  function _castApproval(address caster, ActionInfo calldata actionInfo, uint8 support, string calldata reason)
-    internal
-  {
+  function _castVote(address caster, ActionInfo calldata actionInfo, uint8 support, string calldata reason) internal {
     Action memory action = llamaCore.getAction(actionInfo.id);
 
     actionInfo.strategy.checkIfApprovalEnabled(actionInfo, address(this), role); // Reverts if not allowed.
     if (llamaCore.getActionState(actionInfo) != uint8(ActionState.Active)) revert ActionNotActive();
-    if (casts[actionInfo.id].castApproval[caster]) revert AlreadyCastApproval();
+    if (casts[actionInfo.id].castVote[caster]) revert AlreadyCastedVote();
     if (
       block.timestamp
         > action.creationTime
@@ -349,21 +343,19 @@ abstract contract TokenholderCaster is Initializable {
     uint256 balance = _getPastVotes(caster, action.creationTime - 1);
     _preCastAssertions(balance, support);
 
-    if (support == 0) casts[actionInfo.id].approvalsAgainst += LlamaUtils.toUint96(balance);
-    else if (support == 1) casts[actionInfo.id].approvalsFor += LlamaUtils.toUint96(balance);
-    else if (support == 2) casts[actionInfo.id].approvalsAbstain += LlamaUtils.toUint96(balance);
-    casts[actionInfo.id].castApproval[caster] = true;
-    emit ApprovalCast(actionInfo.id, caster, role, support, balance, reason);
+    if (support == 0) casts[actionInfo.id].votesAgainst += LlamaUtils.toUint96(balance);
+    else if (support == 1) casts[actionInfo.id].votesFor += LlamaUtils.toUint96(balance);
+    else if (support == 2) casts[actionInfo.id].votesAbstain += LlamaUtils.toUint96(balance);
+    casts[actionInfo.id].castVote[caster] = true;
+    emit VoteCast(actionInfo.id, caster, role, support, balance, reason);
   }
 
-  function _castDisapproval(address caster, ActionInfo calldata actionInfo, uint8 support, string calldata reason)
-    internal
-  {
+  function _castVeto(address caster, ActionInfo calldata actionInfo, uint8 support, string calldata reason) internal {
     Action memory action = llamaCore.getAction(actionInfo.id);
 
     actionInfo.strategy.checkIfDisapprovalEnabled(actionInfo, address(this), role); // Reverts if not allowed.
     if (llamaCore.getActionState(actionInfo) != uint8(ActionState.Queued)) revert ActionNotQueued();
-    if (casts[actionInfo.id].castDisapproval[caster]) revert AlreadyCastDisapproval();
+    if (casts[actionInfo.id].castVeto[caster]) revert AlreadyCastedVeto();
     if (
       block.timestamp
         > action.minExecutionTime
@@ -374,11 +366,11 @@ abstract contract TokenholderCaster is Initializable {
     uint256 balance = _getPastVotes(caster, action.creationTime - 1);
     _preCastAssertions(balance, support);
 
-    if (support == 0) casts[actionInfo.id].disapprovalsAgainst += LlamaUtils.toUint96(balance);
-    else if (support == 1) casts[actionInfo.id].disapprovalsFor += LlamaUtils.toUint96(balance);
-    else if (support == 2) casts[actionInfo.id].disapprovalsAbstain += LlamaUtils.toUint96(balance);
-    casts[actionInfo.id].castDisapproval[caster] = true;
-    emit DisapprovalCast(actionInfo.id, caster, role, support, balance, reason);
+    if (support == 0) casts[actionInfo.id].vetoesAgainst += LlamaUtils.toUint96(balance);
+    else if (support == 1) casts[actionInfo.id].vetoesFor += LlamaUtils.toUint96(balance);
+    else if (support == 2) casts[actionInfo.id].vetoesAbstain += LlamaUtils.toUint96(balance);
+    casts[actionInfo.id].castVeto[caster] = true;
+    emit VetoCast(actionInfo.id, caster, role, support, balance, reason);
   }
 
   function _preCastAssertions(uint256 balance, uint8 support) internal view {
@@ -425,15 +417,15 @@ abstract contract TokenholderCaster is Initializable {
 
   /// @dev Returns the hash of the ABI-encoded EIP-712 message for the `CastApproval` domain, which can be used to
   /// recover the signer.
-  function _getCastApprovalTypedDataHash(
+  function _getCastVoteTypedDataHash(
     address tokenholder,
     uint8 support,
     ActionInfo calldata actionInfo,
     string calldata reason
   ) internal returns (bytes32) {
-    bytes32 castApprovalHash = keccak256(
+    bytes32 castVoteHash = keccak256(
       abi.encode(
-        CAST_APPROVAL_BY_SIG_TYPEHASH,
+        CAST_VOTE_TYPEHASH,
         tokenholder,
         support,
         _getActionInfoHash(actionInfo),
@@ -442,20 +434,20 @@ abstract contract TokenholderCaster is Initializable {
       )
     );
 
-    return keccak256(abi.encodePacked("\x19\x01", _getDomainHash(), castApprovalHash));
+    return keccak256(abi.encodePacked("\x19\x01", _getDomainHash(), castVoteHash));
   }
 
   /// @dev Returns the hash of the ABI-encoded EIP-712 message for the `CastDisapproval` domain, which can be used to
   /// recover the signer.
-  function _getCastDisapprovalTypedDataHash(
+  function _getCastVetoTypedDataHash(
     address tokenholder,
     uint8 support,
     ActionInfo calldata actionInfo,
     string calldata reason
   ) internal returns (bytes32) {
-    bytes32 castDisapprovalHash = keccak256(
+    bytes32 castVetoHash = keccak256(
       abi.encode(
-        CAST_DISAPPROVAL_BY_SIG_TYPEHASH,
+        CAST_VETO_TYPEHASH,
         tokenholder,
         support,
         _getActionInfoHash(actionInfo),
@@ -464,7 +456,7 @@ abstract contract TokenholderCaster is Initializable {
       )
     );
 
-    return keccak256(abi.encodePacked("\x19\x01", _getDomainHash(), castDisapprovalHash));
+    return keccak256(abi.encodePacked("\x19\x01", _getDomainHash(), castVetoHash));
   }
 
   /// @dev Returns the hash of `actionInfo`.

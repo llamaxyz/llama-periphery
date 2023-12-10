@@ -2,16 +2,15 @@
 pragma solidity ^0.8.23;
 
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
-import {TokenholderCaster} from "src/token-voting/TokenholderCaster.sol";
-import {ERC721Votes} from "@openzeppelin/token/ERC721/extensions/ERC721Votes.sol";
-import {IERC721} from "@openzeppelin/token/ERC721/IERC721.sol";
+import {LlamaTokenCaster} from "src/token-voting/LlamaTokenCaster.sol";
+import {ERC20Votes} from "@openzeppelin/token/ERC20/extensions/ERC20Votes.sol";
 
-/// @title ERC721TokenholderCaster
+/// @title LlamaERC20TokenCaster
 /// @author Llama (devsdosomething@llama.xyz)
-/// @notice This contract lets holders of a given governance ERC721Votes token cast approvals and disapprovals
-/// on created actions.
-contract ERC721TokenholderCaster is TokenholderCaster {
-  ERC721Votes public token;
+/// @notice This contract lets holders of a given governance `ERC20Votes` token collectively cast an approval or
+/// disapproval on created actions.
+contract LlamaERC20TokenCaster is LlamaTokenCaster {
+  ERC20Votes public token;
 
   /// @dev This contract is deployed as a minimal proxy from the factory's `deployTokenVotingModule` function. The
   /// `_disableInitializers` locks the implementation (logic) contract, preventing any future initialization of it.
@@ -19,24 +18,25 @@ contract ERC721TokenholderCaster is TokenholderCaster {
     _disableInitializers();
   }
 
-  /// @notice Initializes a new `ERC721TokenholderCaster` clone.
+  /// @notice Initializes a new `LlamaERC20TokenCaster` clone.
   /// @dev This function is called by the `deployTokenVotingModule` function in the `LlamaTokenVotingFactory` contract.
   /// The `initializer` modifier ensures that this function can be invoked at most once.
-  /// @param _token The ERC721 token to be used for voting.
+  /// @param _token The ERC20 token to be used for voting.
   /// @param _llamaCore The `LlamaCore` contract for this Llama instance.
   /// @param _role The role used by this contract to cast approvals and disapprovals.
-  /// @param _minApprovalPct The minimum % of approvals required to submit approvals to `LlamaCore`.
-  /// @param _minDisapprovalPct The minimum % of disapprovals required to submit disapprovals to `LlamaCore`.
+  /// @param _voteQuorumPct The minimum % of votes required to submit an approval to `LlamaCore`.
+  /// @param _vetoQuorumPct The minimum % of vetoes required to submit a disapproval to `LlamaCore`.
   function initialize(
-    ERC721Votes _token,
+    ERC20Votes _token,
     ILlamaCore _llamaCore,
     uint8 _role,
-    uint256 _minApprovalPct,
-    uint256 _minDisapprovalPct
+    uint256 _voteQuorumPct,
+    uint256 _vetoQuorumPct
   ) external initializer {
-    __initializeTokenholderCasterMinimalProxy(_llamaCore, _role, _minApprovalPct, _minDisapprovalPct);
+    __initializeLlamaTokenCasterMinimalProxy(_llamaCore, _role, _voteQuorumPct, _vetoQuorumPct);
     token = _token;
-    if (!token.supportsInterface(type(IERC721).interfaceId)) revert InvalidTokenAddress();
+    uint256 totalSupply = token.totalSupply();
+    if (totalSupply == 0) revert InvalidTokenAddress();
   }
 
   function _getPastVotes(address account, uint256 timestamp) internal view virtual override returns (uint256) {
