@@ -355,9 +355,9 @@ contract CastVeto is LlamaERC721TokenCasterTest {
     ActionInfo memory _actionInfo =
       ActionInfo(actionId, coreTeam1, CORE_TEAM_ROLE, tokenVotingStrategy, address(mockProtocol), 0, data);
     vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
-    vm.expectRevert(TokenholderCaster.ActionNotQueued.selector);
+    vm.expectRevert(LlamaTokenCaster.ActionNotQueued.selector);
     vm.startPrank(tokenHolder1);
-    erc721TokenholderCaster.castDisapproval(_actionInfo, 1, "");
+    llamaERC721TokenCaster.castVeto(_actionInfo, 1, "");
   }
 
   function test_RevertsIf_AlreadyCastedVote() public {
@@ -558,16 +558,14 @@ contract SubmitApprovals is LlamaERC721TokenCasterTest {
   }
 
   function test_RevertsIf_ApprovalNotEnabled() public {
-    ERC721TokenholderCaster casterWithWrongRole = ERC721TokenholderCaster(
+    LlamaERC721TokenCaster casterWithWrongRole = LlamaERC721TokenCaster(
       Clones.cloneDeterministic(
-        address(erc721TokenholderCasterLogic), keccak256(abi.encodePacked(address(erc721VotesToken), msg.sender))
+        address(llamaERC721TokenCasterLogic), keccak256(abi.encodePacked(address(erc721VotesToken), msg.sender))
       )
     );
-    casterWithWrongRole.initialize(
-      erc721VotesToken, CORE, madeUpRole, ERC721_MIN_APPROVAL_PCT, ERC721_MIN_DISAPPROVAL_PCT
-    );
+    casterWithWrongRole.initialize(erc721VotesToken, CORE, madeUpRole, ERC721_VOTE_QUORUM_PCT, ERC721_VETO_QUORUM_PCT);
     vm.expectRevert(abi.encodeWithSelector(ILlamaRelativeStrategyBase.InvalidRole.selector, tokenVotingCasterRole));
-    casterWithWrongRole.submitApprovals(actionInfo);
+    casterWithWrongRole.submitApproval(actionInfo);
   }
 
   function test_RevertsIf_AlreadySubmittedApproval() public {
