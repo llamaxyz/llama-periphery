@@ -37,6 +37,8 @@ contract LlamaERC721TokenCaster is LlamaTokenCaster {
     __initializeLlamaTokenCasterMinimalProxy(_llamaCore, _role, _voteQuorumPct, _vetoQuorumPct);
     token = _token;
     if (!token.supportsInterface(type(IERC721).interfaceId)) revert InvalidTokenAddress();
+    uint256 totalSupply = token.getPastTotalSupply(block.timestamp - 1);
+    if (totalSupply == 0) revert InvalidTokenAddress();
   }
 
   function _getPastVotes(address account, uint256 timestamp) internal view virtual override returns (uint256) {

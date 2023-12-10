@@ -33,7 +33,7 @@ contract LlamaERC20TokenActionCreator is LlamaTokenActionCreator {
   {
     __initializeLlamaTokenActionCreatorMinimalProxy(_llamaCore, _role, _creationThreshold);
     token = _token;
-    uint256 totalSupply = token.totalSupply();
+    uint256 totalSupply = token.getPastTotalSupply(block.timestamp - 1);
     if (totalSupply == 0) revert InvalidTokenAddress();
     if (_creationThreshold > totalSupply) revert InvalidCreationThreshold();
   }
