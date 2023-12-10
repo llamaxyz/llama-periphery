@@ -20,10 +20,10 @@ contract LlamaTokenVotingFactory {
   event LlamaERC20TokenHolderActionCreatorCreated(address actionCreator, address indexed token);
   event LlamaERC721TokenHolderActionCreatorCreated(address actionCreator, address indexed token);
   event LlamaERC20TokenHolderCasterCreated(
-    address caster, address indexed token, uint256 minApprovalPct, uint256 minDisapprovalPct
+    address caster, address indexed token, uint256 voteQuorumPct, uint256 vetoQuorumPct
   );
   event LlamaERC721TokenHolderCasterCreated(
-    address caster, address indexed token, uint256 minApprovalPct, uint256 minDisapprovalPct
+    address caster, address indexed token, uint256 voteQuorumPct, uint256 vetoQuorumPct
   );
 
   /// @notice The ERC20 Tokenholder Action Creator (logic) contract.
@@ -51,20 +51,14 @@ contract LlamaTokenVotingFactory {
     ERC721_TOKENHOLDER_CASTER_LOGIC = llamaERC721TokenHolderCasterLogic;
   }
 
-  ///@notice Deploys a token voting module in a single function so it can be deployed in a single llama action.
-  ///@dev This method CAN NOT be used in tandem with `delegateCallDeployTokenVotingModuleWithRoles`. You must use one or
-  /// the other due to the delegateCallDeployTokenVotingModuleWithRoles method requring the contract to be authorized as
-  /// a script.
+  ///@notice Deploys a token voting module in a single function so it can be deployed in a llama action.
   ///@param token The address of the token to be used for voting.
   ///@param isERC20 Whether the token is an ERC20 or ERC721.
-  ///@param actionCreatorRole The role required by the LlamaTokenHolderActionCreator to create an action.
-  ///@param casterRole The role required by the LlamaTokenHolderCaster to cast approvals and disapprovals.
-  ///@param creationThreshold The number of tokens required to create an action (set to 0 if not deploying action
-  /// creator).
-  ///@param minApprovalPct The minimum percentage of tokens required to approve an action (set to 0 if not deploying
-  /// caster).
-  ///@param minDisapprovalPct The minimum percentage of tokens required to disapprove an action (set to 0 if not
-  /// deploying caster).
+  ///@param actionCreatorRole The role required by the `LlamaTokenHolderActionCreator` to create an action.
+  ///@param casterRole The role required by the `LlamaTokenHolderCaster` to cast approvals and disapprovals.
+  ///@param creationThreshold The number of tokens required to create an action
+  ///@param voteQuorumPct The minimum percentage of tokens required to approve an action
+  ///@param vetoQuorumPct The minimum percentage of tokens required to disapprove an action
   function deployTokenVotingModule(
     ILlamaCore llamaCore,
     address token,
@@ -72,24 +66,22 @@ contract LlamaTokenVotingFactory {
     uint8 actionCreatorRole,
     uint8 casterRole,
     uint256 creationThreshold,
-    uint256 minApprovalPct,
-    uint256 minDisapprovalPct
+    uint256 voteQuorumPct,
+    uint256 vetoQuorumPct
   ) external returns (address actionCreator, address caster) {
     if (isERC20) {
       actionCreator = address(
         _deployLlamaERC20TokenHolderActionCreator(ERC20Votes(token), llamaCore, actionCreatorRole, creationThreshold)
       );
       caster = address(
-        _deployLlamaERC20TokenHolderCaster(ERC20Votes(token), llamaCore, casterRole, minApprovalPct, minDisapprovalPct)
+        _deployLlamaERC20TokenHolderCaster(ERC20Votes(token), llamaCore, casterRole, voteQuorumPct, vetoQuorumPct)
       );
     } else {
       actionCreator = address(
         _deployLlamaERC721TokenHolderActionCreator(ERC721Votes(token), llamaCore, actionCreatorRole, creationThreshold)
       );
       caster = address(
-        _deployLlamaERC721TokenHolderCaster(
-          ERC721Votes(token), llamaCore, casterRole, minApprovalPct, minDisapprovalPct
-        )
+        _deployLlamaERC721TokenHolderCaster(ERC721Votes(token), llamaCore, casterRole, voteQuorumPct, vetoQuorumPct)
       );
     }
   }
@@ -132,31 +124,31 @@ contract LlamaTokenVotingFactory {
     ERC20Votes token,
     ILlamaCore llamaCore,
     uint8 role,
-    uint256 minApprovalPct,
-    uint256 minDisapprovalPct
+    uint256 voteQuorumPct,
+    uint256 vetoQuorumPct
   ) internal returns (LlamaERC20TokenHolderCaster caster) {
     caster = LlamaERC20TokenHolderCaster(
       Clones.cloneDeterministic(
         address(ERC20_TOKENHOLDER_CASTER_LOGIC), keccak256(abi.encodePacked(address(token), msg.sender))
       )
     );
-    caster.initialize(token, llamaCore, role, minApprovalPct, minDisapprovalPct);
-    emit LlamaERC20TokenHolderCasterCreated(address(caster), address(token), minApprovalPct, minDisapprovalPct);
+    caster.initialize(token, llamaCore, role, voteQuorumPct, vetoQuorumPct);
+    emit LlamaERC20TokenHolderCasterCreated(address(caster), address(token), voteQuorumPct, vetoQuorumPct);
   }
 
   function _deployLlamaERC721TokenHolderCaster(
     ERC721Votes token,
     ILlamaCore llamaCore,
     uint8 role,
-    uint256 minApprovalPct,
-    uint256 minDisapprovalPct
+    uint256 voteQuorumPct,
+    uint256 vetoQuorumPct
   ) internal returns (LlamaERC721TokenHolderCaster caster) {
     caster = LlamaERC721TokenHolderCaster(
       Clones.cloneDeterministic(
         address(ERC721_TOKENHOLDER_CASTER_LOGIC), keccak256(abi.encodePacked(address(token), msg.sender))
       )
     );
-    caster.initialize(token, llamaCore, role, minApprovalPct, minDisapprovalPct);
-    emit LlamaERC721TokenHolderCasterCreated(address(caster), address(token), minApprovalPct, minDisapprovalPct);
+    caster.initialize(token, llamaCore, role, voteQuorumPct, vetoQuorumPct);
+    emit LlamaERC721TokenHolderCasterCreated(address(caster), address(token), voteQuorumPct, vetoQuorumPct);
   }
 }
