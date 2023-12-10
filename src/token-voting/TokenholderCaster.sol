@@ -336,7 +336,7 @@ abstract contract TokenholderCaster is Initializable {
   {
     Action memory action = llamaCore.getAction(actionInfo.id);
 
-    actionInfo.strategy.checkIfApprovalEnabled(actionInfo, caster, role); // Reverts if not allowed.
+    actionInfo.strategy.checkIfApprovalEnabled(actionInfo, address(this), role); // Reverts if not allowed.
     if (llamaCore.getActionState(actionInfo) != uint8(ActionState.Active)) revert ActionNotActive();
     if (casts[actionInfo.id].castApproval[caster]) revert AlreadyCastApproval();
     if (
@@ -361,7 +361,7 @@ abstract contract TokenholderCaster is Initializable {
   {
     Action memory action = llamaCore.getAction(actionInfo.id);
 
-    actionInfo.strategy.checkIfDisapprovalEnabled(actionInfo, caster, role); // Reverts if not allowed.
+    actionInfo.strategy.checkIfDisapprovalEnabled(actionInfo, address(this), role); // Reverts if not allowed.
     if (llamaCore.getActionState(actionInfo) != uint8(ActionState.Queued)) revert ActionNotQueued();
     if (casts[actionInfo.id].castDisapproval[caster]) revert AlreadyCastDisapproval();
     if (
