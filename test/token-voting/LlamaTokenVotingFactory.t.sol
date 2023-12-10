@@ -9,19 +9,19 @@ import {LlamaTokenVotingTestSetup} from "test/token-voting/LlamaTokenVotingTestS
 
 import {ActionInfo} from "src/lib/Structs.sol";
 import {ILlamaPolicy} from "src/interfaces/ILlamaPolicy.sol";
-import {ERC20TokenholderActionCreator} from "src/token-voting/ERC20TokenholderActionCreator.sol";
-import {ERC20TokenholderCaster} from "src/token-voting/ERC20TokenholderCaster.sol";
-import {ERC721TokenholderActionCreator} from "src/token-voting/ERC721TokenholderActionCreator.sol";
-import {ERC721TokenholderCaster} from "src/token-voting/ERC721TokenholderCaster.sol";
+import {LlamaERC20TokenActionCreator} from "src/token-voting/LlamaERC20TokenActionCreator.sol";
+import {LlamaERC20TokenCaster} from "src/token-voting/LlamaERC20TokenCaster.sol";
+import {LlamaERC721TokenActionCreator} from "src/token-voting/LlamaERC721TokenActionCreator.sol";
+import {LlamaERC721TokenCaster} from "src/token-voting/LlamaERC721TokenCaster.sol";
 import {LlamaTokenVotingFactory} from "src/token-voting/LlamaTokenVotingFactory.sol";
 
 contract LlamaTokenVotingFactoryTest is LlamaTokenVotingTestSetup {
-  event ERC20TokenholderActionCreatorCreated(address actionCreator, address indexed token);
-  event ERC721TokenholderActionCreatorCreated(address actionCreator, address indexed token);
-  event ERC20TokenholderCasterCreated(
+  event LlamaERC20TokenActionCreatorCreated(address actionCreator, address indexed token);
+  event LlamaERC721TokenActionCreatorCreated(address actionCreator, address indexed token);
+  event LlamaERC20TokenCasterCreated(
     address caster, address indexed token, uint256 minApprovalPct, uint256 minDisapprovalPct
   );
-  event ERC721TokenholderCasterCreated(
+  event LlamaERC721TokenCasterCreated(
     address caster, address indexed token, uint256 minApprovalPct, uint256 minDisapprovalPct
   );
   event ActionThresholdSet(uint256 newThreshold);
@@ -40,25 +40,24 @@ contract LlamaTokenVotingFactoryTest is LlamaTokenVotingTestSetup {
 }
 
 contract Constructor is LlamaTokenVotingFactoryTest {
-  function test_SetsERC20TokenholderActionCreatorLogicAddress() public {
+  function test_SetsLlamaERC20TokenActionCreatorLogicAddress() public {
     assertEq(
-      address(tokenVotingFactory.ERC20_TOKENHOLDER_ACTION_CREATOR_LOGIC()), address(erc20TokenholderActionCreatorLogic)
+      address(tokenVotingFactory.ERC20_TOKENHOLDER_ACTION_CREATOR_LOGIC()), address(llamaERC20TokenActionCreatorLogic)
     );
   }
 
-  function test_SetsERC20TokenholderCasterLogicAddress() public {
-    assertEq(address(tokenVotingFactory.ERC20_TOKENHOLDER_CASTER_LOGIC()), address(erc20TokenholderCasterLogic));
+  function test_SetsLlamaERC20TokenCasterLogicAddress() public {
+    assertEq(address(tokenVotingFactory.ERC20_TOKENHOLDER_CASTER_LOGIC()), address(llamaERC20TokenCasterLogic));
   }
 
-  function test_SetsERC721TokenholderActionCreatorLogicAddress() public {
+  function test_SetsLlamaERC721TokenActionCreatorLogicAddress() public {
     assertEq(
-      address(tokenVotingFactory.ERC721_TOKENHOLDER_ACTION_CREATOR_LOGIC()),
-      address(erc721TokenholderActionCreatorLogic)
+      address(tokenVotingFactory.ERC721_TOKENHOLDER_ACTION_CREATOR_LOGIC()), address(llamaERC721TokenActionCreatorLogic)
     );
   }
 
-  function test_SetsERC721TokenholderCasterLogicAddress() public {
-    assertEq(address(tokenVotingFactory.ERC721_TOKENHOLDER_CASTER_LOGIC()), address(erc721TokenholderCasterLogic));
+  function test_SetsLlamaERC721TokenCasterLogicAddress() public {
+    assertEq(address(tokenVotingFactory.ERC721_TOKENHOLDER_CASTER_LOGIC()), address(llamaERC721TokenCasterLogic));
   }
 }
 
@@ -101,16 +100,16 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     ActionInfo memory actionInfo = _setPermissionCreateApproveAndQueueAction(data);
 
     // Compute addresses of ERC20 Token Voting Module
-    ERC20TokenholderActionCreator erc20TokenholderActionCreator = ERC20TokenholderActionCreator(
+    LlamaERC20TokenActionCreator llamaERC20TokenActionCreator = LlamaERC20TokenActionCreator(
       Clones.predictDeterministicAddress(
-        address(erc20TokenholderActionCreatorLogic),
+        address(llamaERC20TokenActionCreatorLogic),
         keccak256(abi.encodePacked(address(erc20VotesToken), address(EXECUTOR))), // salt
         address(tokenVotingFactory) // deployer
       )
     );
-    ERC20TokenholderCaster erc20TokenholderCaster = ERC20TokenholderCaster(
+    LlamaERC20TokenCaster llamaERC20TokenCaster = LlamaERC20TokenCaster(
       Clones.predictDeterministicAddress(
-        address(erc20TokenholderCasterLogic),
+        address(llamaERC20TokenCasterLogic),
         keccak256(abi.encodePacked(address(erc20VotesToken), address(EXECUTOR))), // salt
         address(tokenVotingFactory) // deployer
       )
@@ -120,22 +119,22 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     vm.expectEmit();
     emit ActionThresholdSet(ERC20_CREATION_THRESHOLD);
     vm.expectEmit();
-    emit ERC20TokenholderActionCreatorCreated(address(erc20TokenholderActionCreator), address(erc20VotesToken));
+    emit LlamaERC20TokenActionCreatorCreated(address(llamaERC20TokenActionCreator), address(erc20VotesToken));
     vm.expectEmit();
-    emit ERC20TokenholderCasterCreated(
-      address(erc20TokenholderCaster), address(erc20VotesToken), ERC20_MIN_APPROVAL_PCT, ERC20_MIN_DISAPPROVAL_PCT
+    emit LlamaERC20TokenCasterCreated(
+      address(llamaERC20TokenCaster), address(erc20VotesToken), ERC20_MIN_APPROVAL_PCT, ERC20_MIN_DISAPPROVAL_PCT
     );
     CORE.executeAction(actionInfo);
 
-    assertEq(address(erc20TokenholderActionCreator.token()), address(erc20VotesToken));
-    assertEq(address(erc20TokenholderActionCreator.llamaCore()), address(CORE));
-    assertEq(erc20TokenholderActionCreator.role(), tokenVotingActionCreatorRole);
-    assertEq(erc20TokenholderActionCreator.creationThreshold(), ERC20_CREATION_THRESHOLD);
-    assertEq(address(erc20TokenholderCaster.token()), address(erc20VotesToken));
-    assertEq(address(erc20TokenholderCaster.llamaCore()), address(CORE));
-    assertEq(erc20TokenholderCaster.role(), tokenVotingCasterRole);
-    assertEq(erc20TokenholderCaster.minApprovalPct(), ERC20_MIN_APPROVAL_PCT);
-    assertEq(erc20TokenholderCaster.minDisapprovalPct(), ERC20_MIN_DISAPPROVAL_PCT);
+    assertEq(address(llamaERC20TokenActionCreator.token()), address(erc20VotesToken));
+    assertEq(address(llamaERC20TokenActionCreator.llamaCore()), address(CORE));
+    assertEq(llamaERC20TokenActionCreator.role(), tokenVotingActionCreatorRole);
+    assertEq(llamaERC20TokenActionCreator.creationThreshold(), ERC20_CREATION_THRESHOLD);
+    assertEq(address(llamaERC20TokenCaster.token()), address(erc20VotesToken));
+    assertEq(address(llamaERC20TokenCaster.llamaCore()), address(CORE));
+    assertEq(llamaERC20TokenCaster.role(), tokenVotingCasterRole);
+    assertEq(llamaERC20TokenCaster.minApprovalPct(), ERC20_MIN_APPROVAL_PCT);
+    assertEq(llamaERC20TokenCaster.minDisapprovalPct(), ERC20_MIN_DISAPPROVAL_PCT);
   }
 
   function test_CanDeployERC721TokenVotingModule() public {
@@ -154,16 +153,16 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     ActionInfo memory actionInfo = _setPermissionCreateApproveAndQueueAction(data);
 
     // Compute addresses of ERC721 Token Voting Module
-    ERC721TokenholderActionCreator erc721TokenholderActionCreator = ERC721TokenholderActionCreator(
+    LlamaERC721TokenActionCreator llamaERC721TokenActionCreator = LlamaERC721TokenActionCreator(
       Clones.predictDeterministicAddress(
-        address(erc721TokenholderActionCreatorLogic),
+        address(llamaERC721TokenActionCreatorLogic),
         keccak256(abi.encodePacked(address(erc721VotesToken), address(EXECUTOR))), // salt
         address(tokenVotingFactory) // deployer
       )
     );
-    ERC721TokenholderCaster erc721TokenholderCaster = ERC721TokenholderCaster(
+    LlamaERC721TokenCaster llamaERC721TokenCaster = LlamaERC721TokenCaster(
       Clones.predictDeterministicAddress(
-        address(erc721TokenholderCasterLogic),
+        address(llamaERC721TokenCasterLogic),
         keccak256(abi.encodePacked(address(erc721VotesToken), address(EXECUTOR))), // salt
         address(tokenVotingFactory) // deployer
       )
@@ -173,39 +172,39 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     vm.expectEmit();
     emit ActionThresholdSet(ERC721_CREATION_THRESHOLD);
     vm.expectEmit();
-    emit ERC721TokenholderActionCreatorCreated(address(erc721TokenholderActionCreator), address(erc721VotesToken));
+    emit LlamaERC721TokenActionCreatorCreated(address(llamaERC721TokenActionCreator), address(erc721VotesToken));
     vm.expectEmit();
-    emit ERC721TokenholderCasterCreated(
-      address(erc721TokenholderCaster), address(erc721VotesToken), ERC721_MIN_APPROVAL_PCT, ERC721_MIN_DISAPPROVAL_PCT
+    emit LlamaERC721TokenCasterCreated(
+      address(llamaERC721TokenCaster), address(erc721VotesToken), ERC721_MIN_APPROVAL_PCT, ERC721_MIN_DISAPPROVAL_PCT
     );
     CORE.executeAction(actionInfo);
 
-    assertEq(address(erc721TokenholderActionCreator.token()), address(erc721VotesToken));
-    assertEq(address(erc721TokenholderActionCreator.llamaCore()), address(CORE));
-    assertEq(erc721TokenholderActionCreator.role(), tokenVotingActionCreatorRole);
-    assertEq(erc721TokenholderActionCreator.creationThreshold(), ERC721_CREATION_THRESHOLD);
-    assertEq(address(erc721TokenholderCaster.token()), address(erc721VotesToken));
-    assertEq(address(erc721TokenholderCaster.llamaCore()), address(CORE));
-    assertEq(erc721TokenholderCaster.role(), tokenVotingCasterRole);
-    assertEq(erc721TokenholderCaster.minApprovalPct(), ERC721_MIN_APPROVAL_PCT);
-    assertEq(erc721TokenholderCaster.minDisapprovalPct(), ERC721_MIN_DISAPPROVAL_PCT);
+    assertEq(address(llamaERC721TokenActionCreator.token()), address(erc721VotesToken));
+    assertEq(address(llamaERC721TokenActionCreator.llamaCore()), address(CORE));
+    assertEq(llamaERC721TokenActionCreator.role(), tokenVotingActionCreatorRole);
+    assertEq(llamaERC721TokenActionCreator.creationThreshold(), ERC721_CREATION_THRESHOLD);
+    assertEq(address(llamaERC721TokenCaster.token()), address(erc721VotesToken));
+    assertEq(address(llamaERC721TokenCaster.llamaCore()), address(CORE));
+    assertEq(llamaERC721TokenCaster.role(), tokenVotingCasterRole);
+    assertEq(llamaERC721TokenCaster.minApprovalPct(), ERC721_MIN_APPROVAL_PCT);
+    assertEq(llamaERC721TokenCaster.minDisapprovalPct(), ERC721_MIN_DISAPPROVAL_PCT);
   }
 
   function test_CanBeDeployedByAnyone(address randomCaller) public {
     vm.assume(randomCaller != address(0));
     vm.deal(randomCaller, 1 ether);
 
-    ERC20TokenholderActionCreator erc20TokenholderActionCreator = ERC20TokenholderActionCreator(
+    LlamaERC20TokenActionCreator llamaERC20TokenActionCreator = LlamaERC20TokenActionCreator(
       Clones.predictDeterministicAddress(
-        address(erc20TokenholderActionCreatorLogic),
+        address(llamaERC20TokenActionCreatorLogic),
         keccak256(abi.encodePacked(address(erc20VotesToken), randomCaller)), // salt
         address(tokenVotingFactory) // deployer
       )
     );
 
-    ERC20TokenholderCaster erc20TokenholderCaster = ERC20TokenholderCaster(
+    LlamaERC20TokenCaster llamaERC20TokenCaster = LlamaERC20TokenCaster(
       Clones.predictDeterministicAddress(
-        address(erc20TokenholderCasterLogic),
+        address(llamaERC20TokenCasterLogic),
         keccak256(abi.encodePacked(address(erc20VotesToken), randomCaller)), // salt
         address(tokenVotingFactory) // deployer
       )
@@ -214,10 +213,10 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     vm.expectEmit();
     emit ActionThresholdSet(ERC20_CREATION_THRESHOLD);
     vm.expectEmit();
-    emit ERC20TokenholderActionCreatorCreated(address(erc20TokenholderActionCreator), address(erc20VotesToken));
+    emit LlamaERC20TokenActionCreatorCreated(address(llamaERC20TokenActionCreator), address(erc20VotesToken));
     vm.expectEmit();
-    emit ERC20TokenholderCasterCreated(
-      address(erc20TokenholderCaster), address(erc20VotesToken), ERC20_MIN_APPROVAL_PCT, ERC20_MIN_DISAPPROVAL_PCT
+    emit LlamaERC20TokenCasterCreated(
+      address(llamaERC20TokenCaster), address(erc20VotesToken), ERC20_MIN_APPROVAL_PCT, ERC20_MIN_DISAPPROVAL_PCT
     );
 
     vm.prank(randomCaller);
@@ -232,14 +231,14 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
       ERC20_MIN_DISAPPROVAL_PCT
     );
 
-    assertEq(address(erc20TokenholderActionCreator.token()), address(erc20VotesToken));
-    assertEq(address(erc20TokenholderActionCreator.llamaCore()), address(CORE));
-    assertEq(erc20TokenholderActionCreator.role(), tokenVotingActionCreatorRole);
-    assertEq(erc20TokenholderActionCreator.creationThreshold(), ERC20_CREATION_THRESHOLD);
-    assertEq(address(erc20TokenholderCaster.token()), address(erc20VotesToken));
-    assertEq(address(erc20TokenholderCaster.llamaCore()), address(CORE));
-    assertEq(erc20TokenholderCaster.role(), tokenVotingCasterRole);
-    assertEq(erc20TokenholderCaster.minApprovalPct(), ERC20_MIN_APPROVAL_PCT);
-    assertEq(erc20TokenholderCaster.minDisapprovalPct(), ERC20_MIN_DISAPPROVAL_PCT);
+    assertEq(address(llamaERC20TokenActionCreator.token()), address(erc20VotesToken));
+    assertEq(address(llamaERC20TokenActionCreator.llamaCore()), address(CORE));
+    assertEq(llamaERC20TokenActionCreator.role(), tokenVotingActionCreatorRole);
+    assertEq(llamaERC20TokenActionCreator.creationThreshold(), ERC20_CREATION_THRESHOLD);
+    assertEq(address(llamaERC20TokenCaster.token()), address(erc20VotesToken));
+    assertEq(address(llamaERC20TokenCaster.llamaCore()), address(CORE));
+    assertEq(llamaERC20TokenCaster.role(), tokenVotingCasterRole);
+    assertEq(llamaERC20TokenCaster.minApprovalPct(), ERC20_MIN_APPROVAL_PCT);
+    assertEq(llamaERC20TokenCaster.minDisapprovalPct(), ERC20_MIN_DISAPPROVAL_PCT);
   }
 }

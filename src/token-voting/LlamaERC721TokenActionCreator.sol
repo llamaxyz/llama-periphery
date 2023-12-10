@@ -2,15 +2,15 @@
 pragma solidity ^0.8.23;
 
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
-import {TokenholderActionCreator} from "src/token-voting/TokenholderActionCreator.sol";
+import {LlamaTokenActionCreator} from "src/token-voting/LlamaTokenActionCreator.sol";
 import {ERC721Votes} from "@openzeppelin/token/ERC721/extensions/ERC721Votes.sol";
 import {IERC721} from "@openzeppelin/token/ERC721/IERC721.sol";
 
-/// @title ERC721TokenholderActionCreator
+/// @title LlamaERC721TokenActionCreator
 /// @author Llama (devsdosomething@llama.xyz)
 /// @notice This contract lets holders of a given governance ERC721Votes token create actions on the llama instance if
 /// they hold enough tokens.
-contract ERC721TokenholderActionCreator is TokenholderActionCreator {
+contract LlamaERC721TokenActionCreator is LlamaTokenActionCreator {
   ERC721Votes public token;
 
   /// @dev This contract is deployed as a minimal proxy from the factory's `deployTokenVotingModule` function. The
@@ -19,7 +19,7 @@ contract ERC721TokenholderActionCreator is TokenholderActionCreator {
     _disableInitializers();
   }
 
-  /// @notice Initializes a new `ERC721TokenholderActionCreator` clone.
+  /// @notice Initializes a new `LlamaERC721TokenActionCreator` clone.
   /// @dev This function is called by the `deployTokenVotingModule` function in the `LlamaTokenVotingFactory` contract.
   /// The `initializer` modifier ensures that this function can be invoked at most once.
   /// @param _token The ERC721 token to be used for voting.
@@ -32,7 +32,7 @@ contract ERC721TokenholderActionCreator is TokenholderActionCreator {
     external
     initializer
   {
-    __initializeTokenholderActionCreatorMinimalProxy(_llamaCore, _role, _creationThreshold);
+    __initializeLlamaTokenActionCreatorMinimalProxy(_llamaCore, _role, _creationThreshold);
     token = _token;
     if (!token.supportsInterface(type(IERC721).interfaceId)) revert InvalidTokenAddress();
     uint256 totalSupply = token.getPastTotalSupply(block.timestamp - 1);
