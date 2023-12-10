@@ -49,8 +49,8 @@ abstract contract TokenholderCaster is Initializable {
   /// @dev Thrown when a user tries to cast approval but the action is not active.
   error ActionNotActive();
 
-  /// @dev Thrown when a user tries to cast disapproval but but the action is not approved.
-  error ActionNotApproved();
+  /// @dev Thrown when a user tries to cast disapproval but but the action is not in the queuing period.
+  error ActionNotQueued();
 
   /// @dev Thrown when a user tries to cast approval but has already casted.
   error AlreadyCastApproval();
@@ -267,6 +267,8 @@ abstract contract TokenholderCaster is Initializable {
   function submitApprovals(ActionInfo calldata actionInfo) external {
     Action memory action = llamaCore.getAction(actionInfo.id);
 
+    actionInfo.strategy.checkIfApprovalEnabled(actionInfo, address(this), role); // Reverts if not allowed.
+
     if (casts[actionInfo.id].approvalSubmitted) revert AlreadySubmittedApproval();
     // check to make sure the casting period has ended
     uint256 approvalPeriod = ILlamaRelativeStrategyBase(address(actionInfo.strategy)).approvalPeriod();
@@ -301,7 +303,7 @@ abstract contract TokenholderCaster is Initializable {
   function submitDisapprovals(ActionInfo calldata actionInfo) external {
     Action memory action = llamaCore.getAction(actionInfo.id);
 
-    actionInfo.strategy.checkIfDisapprovalEnabled(actionInfo, msg.sender, role); // Reverts if not allowed.
+    actionInfo.strategy.checkIfDisapprovalEnabled(actionInfo, address(this), role); // Reverts if not allowed.
     if (casts[actionInfo.id].disapprovalSubmitted) revert AlreadySubmittedDisapproval();
 
     uint256 queuingPeriod = ILlamaRelativeStrategyBase(address(actionInfo.strategy)).queuingPeriod();
@@ -360,8 +362,7 @@ abstract contract TokenholderCaster is Initializable {
     Action memory action = llamaCore.getAction(actionInfo.id);
 
     actionInfo.strategy.checkIfDisapprovalEnabled(actionInfo, caster, role); // Reverts if not allowed.
-    if (!actionInfo.strategy.isActionApproved(actionInfo)) revert ActionNotApproved();
-    if (actionInfo.strategy.isActionExpired(actionInfo)) revert ActionExpired();
+    if (llamaCore.getActionState(actionInfo) != uint8(ActionState.Queued)) revert ActionNotQueued();
     if (casts[actionInfo.id].castDisapproval[caster]) revert AlreadyCastDisapproval();
     if (
       block.timestamp
