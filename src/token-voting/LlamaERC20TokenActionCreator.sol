@@ -10,6 +10,7 @@ import {ERC20Votes} from "@openzeppelin/token/ERC20/extensions/ERC20Votes.sol";
 /// @notice This contract lets holders of a specified `ERC20Votes` token create actions on a llama instance if their
 /// token balance is greater than or equal to the creation threshold.
 contract LlamaERC20TokenActionCreator is LlamaTokenActionCreator {
+  /// @notice The ERC20 token to be used for voting.
   ERC20Votes public token;
 
   /// @dev This contract is deployed as a minimal proxy from the factory's `deployTokenVotingModule` function. The
@@ -38,14 +39,17 @@ contract LlamaERC20TokenActionCreator is LlamaTokenActionCreator {
     if (_creationThreshold > totalSupply) revert InvalidCreationThreshold();
   }
 
+  /// @inheritdoc LlamaTokenActionCreator
   function _getPastVotes(address account, uint256 timestamp) internal view virtual override returns (uint256) {
     return token.getPastVotes(account, timestamp);
   }
 
+  /// @inheritdoc LlamaTokenActionCreator
   function _getPastTotalSupply(uint256 timestamp) internal view virtual override returns (uint256) {
     return token.getPastTotalSupply(timestamp);
   }
 
+  /// @inheritdoc LlamaTokenActionCreator
   function _getClockMode() internal view virtual override returns (string memory) {
     return token.CLOCK_MODE();
   }

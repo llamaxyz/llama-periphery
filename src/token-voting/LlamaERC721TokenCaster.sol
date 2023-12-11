@@ -11,6 +11,7 @@ import {IERC721} from "@openzeppelin/token/ERC721/IERC721.sol";
 /// @notice This contract lets holders of a given governance `ERC721Votes` token collectively cast an approval or
 /// disapproval on created actions.
 contract LlamaERC721TokenCaster is LlamaTokenCaster {
+  /// @notice The ERC721 token to be used for voting.
   ERC721Votes public token;
 
   /// @dev This contract is deployed as a minimal proxy from the factory's `deployTokenVotingModule` function. The
@@ -41,14 +42,17 @@ contract LlamaERC721TokenCaster is LlamaTokenCaster {
     if (totalSupply == 0) revert InvalidTokenAddress();
   }
 
+  /// @inheritdoc LlamaTokenCaster
   function _getPastVotes(address account, uint256 timestamp) internal view virtual override returns (uint256) {
     return token.getPastVotes(account, timestamp);
   }
 
+  /// @inheritdoc LlamaTokenCaster
   function _getPastTotalSupply(uint256 timestamp) internal view virtual override returns (uint256) {
     return token.getPastTotalSupply(timestamp);
   }
 
+  /// @inheritdoc LlamaTokenCaster
   function _getClockMode() internal view virtual override returns (string memory) {
     return token.CLOCK_MODE();
   }
