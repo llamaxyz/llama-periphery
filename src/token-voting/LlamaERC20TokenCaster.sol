@@ -39,14 +39,17 @@ contract LlamaERC20TokenCaster is LlamaTokenCaster {
     if (totalSupply == 0) revert InvalidTokenAddress();
   }
 
+  /// @dev Returns the number of votes for a given token holder at a given timestamp.
   function _getPastVotes(address account, uint256 timestamp) internal view virtual override returns (uint256) {
     return token.getPastVotes(account, timestamp);
   }
 
+  /// @dev Returns the total supply of the token at a given timestamp.
   function _getPastTotalSupply(uint256 timestamp) internal view virtual override returns (uint256) {
     return token.getPastTotalSupply(timestamp);
   }
 
+  /// @dev Returns the clock mode of the token (timestamp or blocknumber)
   function _getClockMode() internal view virtual override returns (string memory) {
     return token.CLOCK_MODE();
   }

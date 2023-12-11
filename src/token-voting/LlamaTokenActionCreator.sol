@@ -17,51 +17,9 @@ import {LlamaUtils} from "src/lib/LlamaUtils.sol";
 /// instance's policy encodes what actions this contract is allowed to create, and attempting to create an action that
 /// is not allowed by the policy will result in a revert.
 abstract contract LlamaTokenActionCreator is Initializable {
-  /// @notice The core contract for this Llama instance.
-  ILlamaCore public llamaCore;
-
-  /// @notice The default number of tokens required to create an action.
-  uint256 public creationThreshold;
-
-  /// @notice The role used by this contract to cast approvals and disapprovals.
-  /// @dev This role is expected to have the permissions to create appropriate actions.
-  uint8 public role;
-
-  /// @dev EIP-712 base typehash.
-  bytes32 internal constant EIP712_DOMAIN_TYPEHASH =
-    keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
-
-  /// @dev EIP-712 createAction typehash.
-  bytes32 internal constant CREATE_ACTION_TYPEHASH = keccak256(
-    "CreateAction(address tokenHolder,address strategy,address target,uint256 value,bytes data,string description,uint256 nonce)"
-  );
-
-  /// @dev EIP-712 cancelAction typehash.
-  bytes32 internal constant CANCEL_ACTION_TYPEHASH = keccak256(
-    "CancelAction(address tokenHolder,ActionInfo actionInfo,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
-  );
-
-  /// @dev EIP-712 actionInfo typehash.
-  bytes32 internal constant ACTION_INFO_TYPEHASH = keccak256(
-    "ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
-  );
-
-  /// @notice The address of the tokenholder that created the action.
-  mapping(uint256 => address) public actionCreators;
-
-  /// @notice Mapping of token holder to function selectors to current nonces for EIP-712 signatures.
-  /// @dev This is used to prevent replay attacks by incrementing the nonce for each operation (`createAction`,
-  /// `cancelAction`, `castApproval` and `castDisapproval`) signed by the token holder.
-  mapping(address tokenHolder => mapping(bytes4 selector => uint256 currentNonce)) public nonces;
-
-  /// @dev Emitted when an action is canceled.
-  event ActionCanceled(uint256 id, address indexed creator);
-
-  /// @dev Emitted when an action is created.
-  event ActionCreated(uint256 id, address indexed creator);
-
-  /// @dev Emitted when the default number of tokens required to create an action is changed.
-  event ActionThresholdSet(uint256 newThreshold);
+  // ========================
+  // ======== Errors ========
+  // ========================
 
   /// @dev Thrown when a user tries to create an action but the clock mode is not supported.
   error ClockModeNotSupported(string clockMode);
@@ -90,6 +48,64 @@ abstract contract LlamaTokenActionCreator is Initializable {
   /// @dev Thrown when an invalid `role` is passed to the constructor.
   error RoleNotInitialized(uint8 role);
 
+  // ========================
+  // ======== Events ========
+  // ========================
+
+  /// @dev Emitted when an action is created.
+  event ActionCreated(uint256 id, address indexed creator);
+
+  /// @dev Emitted when an action is canceled.
+  event ActionCanceled(uint256 id, address indexed creator);
+
+  /// @dev Emitted when the default number of tokens required to create an action is changed.
+  event ActionThresholdSet(uint256 newThreshold);
+
+  // =================================================
+  // ======== Constants and Storage Variables ========
+  // =================================================
+
+  /// @dev EIP-712 base typehash.
+  bytes32 internal constant EIP712_DOMAIN_TYPEHASH =
+    keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
+
+  /// @dev EIP-712 createAction typehash.
+  bytes32 internal constant CREATE_ACTION_TYPEHASH = keccak256(
+    "CreateAction(address tokenHolder,address strategy,address target,uint256 value,bytes data,string description,uint256 nonce)"
+  );
+
+  /// @dev EIP-712 cancelAction typehash.
+  bytes32 internal constant CANCEL_ACTION_TYPEHASH = keccak256(
+    "CancelAction(address tokenHolder,ActionInfo actionInfo,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
+  );
+
+  /// @dev EIP-712 actionInfo typehash.
+  bytes32 internal constant ACTION_INFO_TYPEHASH = keccak256(
+    "ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
+  );
+
+  /// @notice The core contract for this Llama instance.
+  ILlamaCore public llamaCore;
+
+  /// @notice The default number of tokens required to create an action.
+  uint256 public creationThreshold;
+
+  /// @notice The role used by this contract to cast approvals and disapprovals.
+  /// @dev This role is expected to have the permissions to create appropriate actions.
+  uint8 public role;
+
+  /// @notice The address of the tokenholder that created the action.
+  mapping(uint256 => address) public actionCreators;
+
+  /// @notice Mapping of token holder to function selectors to current nonces for EIP-712 signatures.
+  /// @dev This is used to prevent replay attacks by incrementing the nonce for each operation (`createAction`,
+  /// `cancelAction`, `castApproval` and `castDisapproval`) signed by the token holder.
+  mapping(address tokenHolder => mapping(bytes4 selector => uint256 currentNonce)) public nonces;
+
+  // ================================
+  // ======== Initialization ========
+  // ================================
+
   /// @dev This will be called by the `initialize` of the inheriting contract.
   /// @param _llamaCore The `LlamaCore` contract for this Llama instance.
   /// @param _role The role used by this contract to cast approvals and disapprovals.
@@ -108,6 +124,12 @@ abstract contract LlamaTokenActionCreator is Initializable {
     role = _role;
     _setActionThreshold(_creationThreshold);
   }
+
+  // ===========================================
+  // ======== External and Public Logic ========
+  // ===========================================
+
+  // -------- Action Lifecycle Management --------
 
   /// @notice Creates an action.
   /// @dev Use `""` for `description` if there is no description.
@@ -180,6 +202,8 @@ abstract contract LlamaTokenActionCreator is Initializable {
     _cancelAction(signer, actionInfo);
   }
 
+  // -------- Instance Management --------
+
   /// @notice Sets the default number of tokens required to create an action.
   /// @param _creationThreshold The number of tokens required to create an action.
   /// @dev This must be in the same decimals as the token.
@@ -189,6 +213,8 @@ abstract contract LlamaTokenActionCreator is Initializable {
     _setActionThreshold(_creationThreshold);
   }
 
+  // -------- User Nonce Management --------
+
   /// @notice Increments the caller's nonce for the given `selector`. This is useful for revoking
   /// signatures that have not been used yet.
   /// @param selector The function selector to increment the nonce for.
@@ -197,6 +223,11 @@ abstract contract LlamaTokenActionCreator is Initializable {
     nonces[msg.sender][selector] = LlamaUtils.uncheckedIncrement(nonces[msg.sender][selector]);
   }
 
+  // ================================
+  // ======== Internal Logic ========
+  // ================================
+
+  /// @dev Creates an action. The creator needs to have sufficient token balance.
   function _createAction(
     address tokenHolder,
     ILlamaStrategy strategy,
@@ -219,19 +250,26 @@ abstract contract LlamaTokenActionCreator is Initializable {
     emit ActionCreated(actionId, tokenHolder);
   }
 
-  function _setActionThreshold(uint256 _creationThreshold) internal {
-    creationThreshold = _creationThreshold;
-    emit ActionThresholdSet(_creationThreshold);
-  }
-
+  /// @dev Cancels an action by its `actionInfo` struct. Only the action creator can cancel.
   function _cancelAction(address creator, ActionInfo calldata actionInfo) internal {
     if (creator != actionCreators[actionInfo.id]) revert OnlyActionCreator();
     llamaCore.cancelAction(actionInfo);
     emit ActionCanceled(actionInfo.id, creator);
   }
 
+  /// @dev Sets the default number of tokens required to create an action.
+  function _setActionThreshold(uint256 _creationThreshold) internal {
+    creationThreshold = _creationThreshold;
+    emit ActionThresholdSet(_creationThreshold);
+  }
+
+  /// @dev Returns the number of votes for a given token holder at a given timestamp.
   function _getPastVotes(address account, uint256 timestamp) internal view virtual returns (uint256) {}
+
+  /// @dev Returns the total supply of the token at a given timestamp.
   function _getPastTotalSupply(uint256 timestamp) internal view virtual returns (uint256) {}
+
+  /// @dev Returns the clock mode of the token (timestamp or blocknumber)
   function _getClockMode() internal view virtual returns (string memory) {}
 
   /// @dev Returns the current nonce for a given tokenHolder and selector, and increments it. Used to prevent

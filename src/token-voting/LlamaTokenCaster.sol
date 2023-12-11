@@ -127,25 +127,6 @@ abstract contract LlamaTokenCaster is Initializable {
   // ======== Constants and Storage Variables ========
   // =================================================
 
-  /// @dev Equivalent to 100%, but in basis points.
-  uint256 internal constant ONE_HUNDRED_IN_BPS = 10_000;
-
-  uint256 internal constant ONE_THIRD_IN_BPS = 3333;
-  uint256 internal constant TWO_THIRDS_IN_BPS = 6667;
-
-  /// @notice The core contract for this Llama instance.
-  ILlamaCore public llamaCore;
-
-  /// @notice The minimum % of approvals required to submit approvals to `LlamaCore`.
-  uint256 public voteQuorumPct;
-
-  /// @notice The minimum % of disapprovals required to submit disapprovals to `LlamaCore`.
-  uint256 public vetoQuorumPct;
-
-  /// @notice The role used by this contract to cast approvals and disapprovals.
-  /// @dev This role is expected to have the ability to force approve and disapprove actions.
-  uint8 public role;
-
   /// @dev EIP-712 base typehash.
   bytes32 internal constant EIP712_DOMAIN_TYPEHASH =
     keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
@@ -165,6 +146,28 @@ abstract contract LlamaTokenCaster is Initializable {
     "ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
   );
 
+  /// @dev Equivalent to 100%, but in basis points.
+  uint256 internal constant ONE_HUNDRED_IN_BPS = 10_000;
+
+  /// @dev Equivalent to 1/3, but in basis points.
+  uint256 internal constant ONE_THIRD_IN_BPS = 3333;
+
+  /// @dev Equivalent to 2/3, but in basis points.
+  uint256 internal constant TWO_THIRDS_IN_BPS = 6667;
+
+  /// @notice The core contract for this Llama instance.
+  ILlamaCore public llamaCore;
+
+  /// @notice The minimum % of approvals required to submit approvals to `LlamaCore`.
+  uint256 public voteQuorumPct;
+
+  /// @notice The minimum % of disapprovals required to submit disapprovals to `LlamaCore`.
+  uint256 public vetoQuorumPct;
+
+  /// @notice The role used by this contract to cast approvals and disapprovals.
+  /// @dev This role is expected to have the ability to force approve and disapprove actions.
+  uint8 public role;
+
   /// @notice Mapping from action ID to the status of existing casts.
   mapping(uint256 actionId => CastData) public casts;
 
@@ -172,6 +175,10 @@ abstract contract LlamaTokenCaster is Initializable {
   /// @dev This is used to prevent replay attacks by incrementing the nonce for each operation (`createAction`,
   /// `cancelAction`, `castVote` and `castVeto`) signed by the tokenholders.
   mapping(address tokenholders => mapping(bytes4 selector => uint256 currentNonce)) public nonces;
+
+  // ================================
+  // ======== Initialization ========
+  // ================================
 
   /// @dev This will be called by the `initialize` of the inheriting contract.
   /// @param _llamaCore The `LlamaCore` contract for this Llama instance.
@@ -195,6 +202,12 @@ abstract contract LlamaTokenCaster is Initializable {
     vetoQuorumPct = _vetoQuorumPct;
     emit QuorumSet(_voteQuorumPct, _vetoQuorumPct);
   }
+
+  // ===========================================
+  // ======== External and Public Logic ========
+  // ===========================================
+
+  // -------- Action Lifecycle Management --------
 
   /// @notice How tokenholders add their support of the approval of an action with a reason.
   /// @dev Use `""` for `reason` if there is no reason.
@@ -319,6 +332,20 @@ abstract contract LlamaTokenCaster is Initializable {
     emit DisapprovalSubmitted(actionInfo.id, msg.sender, vetoesFor, vetoesAgainst, vetoesAbstain);
   }
 
+  // -------- User Nonce Management --------
+
+  /// @notice Increments the caller's nonce for the given `selector`. This is useful for revoking
+  /// signatures that have not been used yet.
+  /// @param selector The function selector to increment the nonce for.
+  function incrementNonce(bytes4 selector) external {
+    // Safety: Can never overflow a uint256 by incrementing.
+    nonces[msg.sender][selector] = LlamaUtils.uncheckedIncrement(nonces[msg.sender][selector]);
+  }
+
+  // ================================
+  // ======== Internal Logic ========
+  // ================================
+
   function _castVote(address caster, ActionInfo calldata actionInfo, uint8 support, string calldata reason) internal {
     Action memory action = llamaCore.getAction(actionInfo.id);
 
@@ -373,16 +400,13 @@ abstract contract LlamaTokenCaster is Initializable {
     if (balance == 0) revert InsufficientBalance(balance);
   }
 
-  /// @notice Increments the caller's nonce for the given `selector`. This is useful for revoking
-  /// signatures that have not been used yet.
-  /// @param selector The function selector to increment the nonce for.
-  function incrementNonce(bytes4 selector) external {
-    // Safety: Can never overflow a uint256 by incrementing.
-    nonces[msg.sender][selector] = LlamaUtils.uncheckedIncrement(nonces[msg.sender][selector]);
-  }
-
+  /// @dev Returns the number of votes for a given token holder at a given timestamp.
   function _getPastVotes(address account, uint256 timestamp) internal view virtual returns (uint256) {}
+
+  /// @dev Returns the total supply of the token at a given timestamp.
   function _getPastTotalSupply(uint256 timestamp) internal view virtual returns (uint256) {}
+
+  /// @dev Returns the clock mode of the token (timestamp or blocknumber)
   function _getClockMode() internal view virtual returns (string memory) {}
 
   /// @dev Returns the current nonce for a given tokenholder and selector, and increments it. Used to prevent
