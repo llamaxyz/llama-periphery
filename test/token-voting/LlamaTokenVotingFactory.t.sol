@@ -106,14 +106,14 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     LlamaERC20TokenActionCreator llamaERC20TokenActionCreator = LlamaERC20TokenActionCreator(
       Clones.predictDeterministicAddress(
         address(llamaERC20TokenActionCreatorLogic),
-        keccak256(abi.encodePacked(address(erc20VotesToken), address(EXECUTOR))), // salt
+        tokenVotingFactory.getNextSalt(address(EXECUTOR), address(CORE), address(erc20VotesToken)), // salt
         address(tokenVotingFactory) // deployer
       )
     );
     LlamaERC20TokenCaster llamaERC20TokenCaster = LlamaERC20TokenCaster(
       Clones.predictDeterministicAddress(
         address(llamaERC20TokenCasterLogic),
-        keccak256(abi.encodePacked(address(erc20VotesToken), address(EXECUTOR))), // salt
+        tokenVotingFactory.getNextSalt(address(EXECUTOR), address(CORE), address(erc20VotesToken)), // salt
         address(tokenVotingFactory) // deployer
       )
     );
@@ -167,14 +167,14 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     LlamaERC721TokenActionCreator llamaERC721TokenActionCreator = LlamaERC721TokenActionCreator(
       Clones.predictDeterministicAddress(
         address(llamaERC721TokenActionCreatorLogic),
-        keccak256(abi.encodePacked(address(erc721VotesToken), address(EXECUTOR))), // salt
+        tokenVotingFactory.getNextSalt(address(EXECUTOR), address(CORE), address(erc721VotesToken)), // salt
         address(tokenVotingFactory) // deployer
       )
     );
     LlamaERC721TokenCaster llamaERC721TokenCaster = LlamaERC721TokenCaster(
       Clones.predictDeterministicAddress(
         address(llamaERC721TokenCasterLogic),
-        keccak256(abi.encodePacked(address(erc721VotesToken), address(EXECUTOR))), // salt
+        tokenVotingFactory.getNextSalt(address(EXECUTOR), address(CORE), address(erc721VotesToken)), // salt
         address(tokenVotingFactory) // deployer
       )
     );
@@ -216,7 +216,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     LlamaERC20TokenActionCreator llamaERC20TokenActionCreator = LlamaERC20TokenActionCreator(
       Clones.predictDeterministicAddress(
         address(llamaERC20TokenActionCreatorLogic),
-        keccak256(abi.encodePacked(address(erc20VotesToken), randomCaller)), // salt
+        tokenVotingFactory.getNextSalt(randomCaller, address(CORE), address(erc20VotesToken)), // salt
         address(tokenVotingFactory) // deployer
       )
     );
@@ -224,7 +224,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     LlamaERC20TokenCaster llamaERC20TokenCaster = LlamaERC20TokenCaster(
       Clones.predictDeterministicAddress(
         address(llamaERC20TokenCasterLogic),
-        keccak256(abi.encodePacked(address(erc20VotesToken), randomCaller)), // salt
+        tokenVotingFactory.getNextSalt(randomCaller, address(CORE), address(erc20VotesToken)), // salt
         address(tokenVotingFactory) // deployer
       )
     );
