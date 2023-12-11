@@ -19,6 +19,12 @@ interface ILlamaStrategy {
   /// @notice Returns the name of the Llama policy that this strategy is registered to.
   function policy() external view returns (ILlamaPolicy);
 
+  /// @notice Returns the approval period of the strategy in seconds.
+  function approvalPeriod() external view returns (uint64);
+
+  /// @notice Returns the queuing period of the strategy in seconds.
+  function queuingPeriod() external view returns (uint64);
+
   // -------- At Strategy Creation --------
 
   /// @notice Initializes a new clone of the strategy.

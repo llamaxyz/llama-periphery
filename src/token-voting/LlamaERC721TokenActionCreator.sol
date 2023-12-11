@@ -13,6 +13,7 @@ import {LlamaTokenVotingTimeManager} from "src/token-voting/time/LlamaTokenVotin
 /// @notice This contract lets holders of a given governance ERC721Votes token create actions on the llama instance if
 /// they hold enough tokens.
 contract LlamaERC721TokenActionCreator is LlamaTokenActionCreator {
+  /// @notice The ERC721 token to be used for voting.
   ERC721Votes public token;
 
   /// @dev This contract is deployed as a minimal proxy from the factory's `deployTokenVotingModule` function. The
@@ -45,14 +46,17 @@ contract LlamaERC721TokenActionCreator is LlamaTokenActionCreator {
     if (_creationThreshold > totalSupply) revert InvalidCreationThreshold();
   }
 
-  function _getPastVotes(address account, uint256 timepoint) internal view virtual override returns (uint256) {
-    return token.getPastVotes(account, timepoint);
+  /// @inheritdoc LlamaTokenActionCreator
+  function _getPastVotes(address account, uint256 timestamp) internal view virtual override returns (uint256) {
+    return token.getPastVotes(account, timestamp);
   }
 
-  function _getPastTotalSupply(uint256 timepoint) internal view virtual override returns (uint256) {
-    return token.getPastTotalSupply(timepoint);
+  /// @inheritdoc LlamaTokenActionCreator
+  function _getPastTotalSupply(uint256 timestamp) internal view virtual override returns (uint256) {
+    return token.getPastTotalSupply(timestamp);
   }
 
+  /// @inheritdoc LlamaTokenActionCreator
   function _getClockMode() internal view virtual override returns (string memory) {
     return token.CLOCK_MODE();
   }

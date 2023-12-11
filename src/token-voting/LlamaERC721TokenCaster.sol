@@ -13,6 +13,7 @@ import {LlamaTokenVotingTimeManager} from "src/token-voting/time/LlamaTokenVotin
 /// disapproval on created actions.
 
 contract LlamaERC721TokenCaster is LlamaTokenCaster {
+  /// @notice The ERC721 token to be used for voting.
   ERC721Votes public token;
 
   /// @dev This contract is deployed as a minimal proxy from the factory's `deployTokenVotingModule` function. The
@@ -44,14 +45,17 @@ contract LlamaERC721TokenCaster is LlamaTokenCaster {
     if (totalSupply == 0) revert InvalidTokenAddress();
   }
 
-  function _getPastVotes(address account, uint256 timepoint) internal view virtual override returns (uint256) {
-    return token.getPastVotes(account, timepoint);
+  /// @inheritdoc LlamaTokenCaster
+  function _getPastVotes(address account, uint256 timestamp) internal view virtual override returns (uint256) {
+    return token.getPastVotes(account, timestamp);
   }
 
-  function _getPastTotalSupply(uint256 timepoint) internal view virtual override returns (uint256) {
-    return token.getPastTotalSupply(timepoint);
+  /// @inheritdoc LlamaTokenCaster
+  function _getPastTotalSupply(uint256 timestamp) internal view virtual override returns (uint256) {
+    return token.getPastTotalSupply(timestamp);
   }
 
+  /// @inheritdoc LlamaTokenCaster
   function _getClockMode() internal view virtual override returns (string memory) {
     return token.CLOCK_MODE();
   }

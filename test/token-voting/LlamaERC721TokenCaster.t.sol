@@ -652,11 +652,7 @@ contract SubmitDisapprovals is LlamaERC721TokenCasterTest {
 
   function test_RevertsIf_AlreadySubmittedDisapproval() public {
     Action memory action = CORE.getAction(actionInfo.id);
-    vm.warp(
-      action.minExecutionTime
-        - (ILlamaRelativeStrategyBase(address(actionInfo.strategy)).queuingPeriod() * ONE_THIRD_IN_BPS)
-          / ONE_HUNDRED_IN_BPS
-    );
+    vm.warp(action.minExecutionTime - (actionInfo.strategy.queuingPeriod() * ONE_THIRD_IN_BPS) / ONE_HUNDRED_IN_BPS);
 
     castVetosFor();
 
