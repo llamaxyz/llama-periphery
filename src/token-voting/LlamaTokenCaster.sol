@@ -47,7 +47,7 @@ abstract contract LlamaTokenCaster is Initializable {
   /// @dev Thrown when a user tries to cast a vote but the action is not active.
   error ActionNotActive();
 
-  /// @dev Thrown when a user tries to cast disapproval but but the action is not in the queuing period.
+  /// @dev Thrown when a user tries to cast a veto but the action is not queued.
   error ActionNotQueued();
 
   /// @dev Thrown when a user tries to cast a vote but has already casted.
