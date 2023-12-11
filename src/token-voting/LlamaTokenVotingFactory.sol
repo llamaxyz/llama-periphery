@@ -20,8 +20,8 @@ contract LlamaTokenVotingFactory {
   event LlamaTokenVotingInstanceCreated(
     address indexed deployer,
     ILlamaCore indexed llamaCore,
-    LlamaTokenVotingTimeManager timeManager,
     address indexed token,
+    LlamaTokenVotingTimeManager timeManager,
     bool isERC20,
     uint8 actionCreatorRole,
     uint8 casterRole,
@@ -101,8 +101,8 @@ contract LlamaTokenVotingFactory {
     emit LlamaTokenVotingInstanceCreated(
       msg.sender,
       llamaCore,
-      timeManager,
       token,
+      timeManager,
       isERC20,
       actionCreatorRole,
       casterRole,

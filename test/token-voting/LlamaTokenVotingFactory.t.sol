@@ -15,12 +15,14 @@ import {LlamaERC20TokenCaster} from "src/token-voting/LlamaERC20TokenCaster.sol"
 import {LlamaERC721TokenActionCreator} from "src/token-voting/LlamaERC721TokenActionCreator.sol";
 import {LlamaERC721TokenCaster} from "src/token-voting/LlamaERC721TokenCaster.sol";
 import {LlamaTokenVotingFactory} from "src/token-voting/LlamaTokenVotingFactory.sol";
+import {LlamaTokenVotingTimeManager} from "src/token-voting/time/LlamaTokenVotingTimeManager.sol";
 
 contract LlamaTokenVotingFactoryTest is LlamaTokenVotingTestSetup {
   event LlamaTokenVotingInstanceCreated(
     address indexed deployer,
     ILlamaCore indexed llamaCore,
     address indexed token,
+    LlamaTokenVotingTimeManager timeManager,
     bool isERC20,
     uint8 actionCreatorRole,
     uint8 casterRole,
@@ -93,6 +95,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
       LlamaTokenVotingFactory.deployTokenVotingModule.selector,
       CORE,
       address(erc20VotesToken),
+      llamaTimestampTimeManager,
       true,
       tokenVotingActionCreatorRole,
       tokenVotingCasterRole,
@@ -128,6 +131,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
       address(EXECUTOR),
       CORE,
       address(erc20VotesToken),
+      llamaTimestampTimeManager,
       true,
       tokenVotingActionCreatorRole,
       tokenVotingCasterRole,
@@ -154,6 +158,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
       LlamaTokenVotingFactory.deployTokenVotingModule.selector,
       CORE,
       address(erc721VotesToken),
+      llamaTimestampTimeManager,
       false,
       tokenVotingActionCreatorRole,
       tokenVotingCasterRole,
@@ -189,6 +194,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
       address(EXECUTOR),
       CORE,
       address(erc721VotesToken),
+      llamaTimestampTimeManager,
       false,
       tokenVotingActionCreatorRole,
       tokenVotingCasterRole,
@@ -238,6 +244,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
       randomCaller,
       CORE,
       address(erc20VotesToken),
+      llamaTimestampTimeManager,
       true,
       tokenVotingActionCreatorRole,
       tokenVotingCasterRole,
