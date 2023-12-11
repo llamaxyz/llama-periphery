@@ -41,9 +41,6 @@ abstract contract LlamaTokenCaster is Initializable {
   // ======== Errors ========
   // ========================
 
-  /// @dev Thrown when a user tries to cast a vote but the action has expired.
-  error ActionExpired();
-
   /// @dev Thrown when a user tries to cast a vote but the action is not active.
   error ActionNotActive();
 
