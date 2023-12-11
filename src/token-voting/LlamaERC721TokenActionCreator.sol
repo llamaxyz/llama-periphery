@@ -11,6 +11,7 @@ import {IERC721} from "@openzeppelin/token/ERC721/IERC721.sol";
 /// @notice This contract lets holders of a given governance ERC721Votes token create actions on the llama instance if
 /// they hold enough tokens.
 contract LlamaERC721TokenActionCreator is LlamaTokenActionCreator {
+  /// @notice The ERC721 token to be used for voting.
   ERC721Votes public token;
 
   /// @dev This contract is deployed as a minimal proxy from the factory's `deployTokenVotingModule` function. The

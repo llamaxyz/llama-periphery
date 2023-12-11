@@ -93,6 +93,7 @@ contract LlamaTokenVotingFactory {
   // ======== Internal Functions ========
   // ====================================
 
+  /// @dev Deploys and initiliazes a new `LlamaERC20TokenActionCreator` clone.
   function _deployLlamaERC20TokenActionCreator(
     ERC20Votes token,
     ILlamaCore llamaCore,
@@ -107,6 +108,7 @@ contract LlamaTokenVotingFactory {
     actionCreator.initialize(token, llamaCore, role, creationThreshold);
   }
 
+  /// @dev Deploys and initiliazes a new `LlamaERC721TokenActionCreator` clone.
   function _deployLlamaERC721TokenActionCreator(
     ERC721Votes token,
     ILlamaCore llamaCore,
@@ -121,6 +123,7 @@ contract LlamaTokenVotingFactory {
     actionCreator.initialize(token, llamaCore, role, creationThreshold);
   }
 
+  /// @dev Deploys and initiliazes a new `LlamaERC20TokenCaster` clone.
   function _deployLlamaERC20TokenCaster(
     ERC20Votes token,
     ILlamaCore llamaCore,
@@ -136,6 +139,7 @@ contract LlamaTokenVotingFactory {
     caster.initialize(token, llamaCore, role, voteQuorumPct, vetoQuorumPct);
   }
 
+  /// @dev Deploys and initiliazes a new `LlamaERC721TokenCaster` clone.
   function _deployLlamaERC721TokenCaster(
     ERC721Votes token,
     ILlamaCore llamaCore,
