@@ -118,6 +118,8 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
       )
     );
 
+    uint256 initialNonce = tokenVotingFactory.nonces(address(EXECUTOR), address(CORE), address(erc20VotesToken));
+
     // Execute call to `deployTokenVotingModule`.
     vm.expectEmit();
     emit ActionThresholdSet(ERC20_CREATION_THRESHOLD);
@@ -146,6 +148,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     assertEq(llamaERC20TokenCaster.role(), tokenVotingCasterRole);
     assertEq(llamaERC20TokenCaster.voteQuorumPct(), ERC20_VOTE_QUORUM_PCT);
     assertEq(llamaERC20TokenCaster.vetoQuorumPct(), ERC20_VETO_QUORUM_PCT);
+    assertEq(tokenVotingFactory.nonces(address(EXECUTOR), address(CORE), address(erc20VotesToken)), initialNonce + 1);
   }
 
   function test_CanDeployERC721TokenVotingModule() public {
@@ -179,6 +182,8 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
       )
     );
 
+    uint256 initialNonce = tokenVotingFactory.nonces(address(EXECUTOR), address(CORE), address(erc721VotesToken));
+
     // Execute call to `deployTokenVotingModule`.
     vm.expectEmit();
     emit ActionThresholdSet(ERC721_CREATION_THRESHOLD);
@@ -207,6 +212,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     assertEq(llamaERC721TokenCaster.role(), tokenVotingCasterRole);
     assertEq(llamaERC721TokenCaster.voteQuorumPct(), ERC721_VOTE_QUORUM_PCT);
     assertEq(llamaERC721TokenCaster.vetoQuorumPct(), ERC721_VETO_QUORUM_PCT);
+    assertEq(tokenVotingFactory.nonces(address(EXECUTOR), address(CORE), address(erc721VotesToken)), initialNonce + 1);
   }
 
   function test_CanBeDeployedByAnyone(address randomCaller) public {
@@ -228,6 +234,8 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
         address(tokenVotingFactory) // deployer
       )
     );
+
+    uint256 initialNonce = tokenVotingFactory.nonces(randomCaller, address(CORE), address(erc20VotesToken));
 
     vm.expectEmit();
     emit ActionThresholdSet(ERC20_CREATION_THRESHOLD);
@@ -267,5 +275,6 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     assertEq(llamaERC20TokenCaster.role(), tokenVotingCasterRole);
     assertEq(llamaERC20TokenCaster.voteQuorumPct(), ERC20_VOTE_QUORUM_PCT);
     assertEq(llamaERC20TokenCaster.vetoQuorumPct(), ERC20_VETO_QUORUM_PCT);
+    assertEq(tokenVotingFactory.nonces(randomCaller, address(CORE), address(erc20VotesToken)), initialNonce + 1);
   }
 }
