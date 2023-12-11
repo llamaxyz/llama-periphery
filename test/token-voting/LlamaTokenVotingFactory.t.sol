@@ -8,6 +8,7 @@ import {Clones} from "@openzeppelin/proxy/Clones.sol";
 import {LlamaTokenVotingTestSetup} from "test/token-voting/LlamaTokenVotingTestSetup.sol";
 
 import {ActionInfo} from "src/lib/Structs.sol";
+import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
 import {ILlamaPolicy} from "src/interfaces/ILlamaPolicy.sol";
 import {LlamaERC20TokenActionCreator} from "src/token-voting/LlamaERC20TokenActionCreator.sol";
 import {LlamaERC20TokenCaster} from "src/token-voting/LlamaERC20TokenCaster.sol";
@@ -16,13 +17,16 @@ import {LlamaERC721TokenCaster} from "src/token-voting/LlamaERC721TokenCaster.so
 import {LlamaTokenVotingFactory} from "src/token-voting/LlamaTokenVotingFactory.sol";
 
 contract LlamaTokenVotingFactoryTest is LlamaTokenVotingTestSetup {
-  event LlamaERC20TokenActionCreatorCreated(address actionCreator, address indexed token);
-  event LlamaERC721TokenActionCreatorCreated(address actionCreator, address indexed token);
-  event LlamaERC20TokenCasterCreated(
-    address caster, address indexed token, uint256 voteQuorumPct, uint256 vetoQuorumPct
-  );
-  event LlamaERC721TokenCasterCreated(
-    address caster, address indexed token, uint256 voteQuorumPct, uint256 vetoQuorumPct
+  event LlamaTokenVotingModuleCreated(
+    address indexed deployer,
+    ILlamaCore indexed llamaCore,
+    address indexed token,
+    bool isERC20,
+    uint8 actionCreatorRole,
+    uint8 casterRole,
+    address llamaTokenActionCreator,
+    address llamaTokenCaster,
+    uint256 chainId
   );
   event ActionThresholdSet(uint256 newThreshold);
 
@@ -117,10 +121,16 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     vm.expectEmit();
     emit ActionThresholdSet(ERC20_CREATION_THRESHOLD);
     vm.expectEmit();
-    emit LlamaERC20TokenActionCreatorCreated(address(llamaERC20TokenActionCreator), address(erc20VotesToken));
-    vm.expectEmit();
-    emit LlamaERC20TokenCasterCreated(
-      address(llamaERC20TokenCaster), address(erc20VotesToken), ERC20_VOTE_QUORUM_PCT, ERC20_VETO_QUORUM_PCT
+    emit LlamaTokenVotingModuleCreated(
+      address(EXECUTOR),
+      CORE,
+      address(erc20VotesToken),
+      true,
+      tokenVotingActionCreatorRole,
+      tokenVotingCasterRole,
+      address(llamaERC20TokenActionCreator),
+      address(llamaERC20TokenCaster),
+      block.chainid
     );
     CORE.executeAction(actionInfo);
 
@@ -170,10 +180,16 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     vm.expectEmit();
     emit ActionThresholdSet(ERC721_CREATION_THRESHOLD);
     vm.expectEmit();
-    emit LlamaERC721TokenActionCreatorCreated(address(llamaERC721TokenActionCreator), address(erc721VotesToken));
-    vm.expectEmit();
-    emit LlamaERC721TokenCasterCreated(
-      address(llamaERC721TokenCaster), address(erc721VotesToken), ERC721_VOTE_QUORUM_PCT, ERC721_VETO_QUORUM_PCT
+    emit LlamaTokenVotingModuleCreated(
+      address(EXECUTOR),
+      CORE,
+      address(erc721VotesToken),
+      false,
+      tokenVotingActionCreatorRole,
+      tokenVotingCasterRole,
+      address(llamaERC721TokenActionCreator),
+      address(llamaERC721TokenCaster),
+      block.chainid
     );
     CORE.executeAction(actionInfo);
 
@@ -211,10 +227,16 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     vm.expectEmit();
     emit ActionThresholdSet(ERC20_CREATION_THRESHOLD);
     vm.expectEmit();
-    emit LlamaERC20TokenActionCreatorCreated(address(llamaERC20TokenActionCreator), address(erc20VotesToken));
-    vm.expectEmit();
-    emit LlamaERC20TokenCasterCreated(
-      address(llamaERC20TokenCaster), address(erc20VotesToken), ERC20_VOTE_QUORUM_PCT, ERC20_VETO_QUORUM_PCT
+    emit LlamaTokenVotingModuleCreated(
+      randomCaller,
+      CORE,
+      address(erc20VotesToken),
+      true,
+      tokenVotingActionCreatorRole,
+      tokenVotingCasterRole,
+      address(llamaERC20TokenActionCreator),
+      address(llamaERC20TokenCaster),
+      block.chainid
     );
 
     vm.prank(randomCaller);
