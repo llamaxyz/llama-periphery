@@ -406,7 +406,7 @@ abstract contract LlamaTokenCaster is Initializable {
   /// @dev Returns the total supply of the token at a given timestamp.
   function _getPastTotalSupply(uint256 timestamp) internal view virtual returns (uint256) {}
 
-  /// @dev Returns the clock mode of the token (timestamp or blocknumber)
+  /// @dev Returns the clock mode of the token (https://eips.ethereum.org/EIPS/eip-6372).
   function _getClockMode() internal view virtual returns (string memory) {}
 
   /// @dev Returns the current nonce for a given tokenholder and selector, and increments it. Used to prevent

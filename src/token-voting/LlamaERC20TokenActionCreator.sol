@@ -38,17 +38,17 @@ contract LlamaERC20TokenActionCreator is LlamaTokenActionCreator {
     if (_creationThreshold > totalSupply) revert InvalidCreationThreshold();
   }
 
-  /// @dev Returns the number of votes for a given token holder at a given timestamp.
+  /// @inheritdoc LlamaTokenActionCreator
   function _getPastVotes(address account, uint256 timestamp) internal view virtual override returns (uint256) {
     return token.getPastVotes(account, timestamp);
   }
 
-  /// @dev Returns the total supply of the token at a given timestamp.
+  /// @inheritdoc LlamaTokenActionCreator
   function _getPastTotalSupply(uint256 timestamp) internal view virtual override returns (uint256) {
     return token.getPastTotalSupply(timestamp);
   }
 
-  /// @dev Returns the clock mode of the token (timestamp or blocknumber)
+  /// @inheritdoc LlamaTokenActionCreator
   function _getClockMode() internal view virtual override returns (string memory) {
     return token.CLOCK_MODE();
   }
