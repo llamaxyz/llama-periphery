@@ -17,17 +17,15 @@ import {LlamaERC721TokenCaster} from "src/token-voting/LlamaERC721TokenCaster.so
 import {LlamaTokenCaster} from "src/token-voting/LlamaTokenCaster.sol";
 
 contract LlamaERC721TokenCasterTest is LlamaTokenVotingTestSetup, LlamaCoreSigUtils {
-  event VoteCast(
-    uint256 id, address indexed policyholder, uint8 indexed role, uint8 indexed support, uint256 quantity, string reason
+  event VoteCast(uint256 id, address indexed tokenholder, uint8 indexed support, uint256 quantity, string reason);
+  event ApprovalSubmitted(
+    uint256 id, address indexed caller, uint96 quantityFor, uint96 quantityAgainst, uint96 quantityAbstain
   );
-
-  event ApprovalSubmitted(uint256 id, uint96 quantityFor, uint96 quantityAgainst, uint96 quantityAbstain);
-
-  event VetoCast(
-    uint256 id, address indexed policyholder, uint8 indexed role, uint8 indexed support, uint256 quantity, string reason
+  event VetoCast(uint256 id, address indexed tokenholder, uint8 indexed support, uint256 quantity, string reason);
+  event DisapprovalSubmitted(
+    uint256 id, address indexed caller, uint96 quantityFor, uint96 quantityAgainst, uint96 quantityAbstain
   );
-
-  event DisapprovalSubmitted(uint256 id, uint96 quantityFor, uint96 quantityAgainst, uint96 quantityAbstain);
+  event QuorumSet(uint256 voteQuorumPct, uint256 vetoQuorumPct);
 
   ActionInfo actionInfo;
   LlamaERC721TokenCaster llamaERC721TokenCaster;
@@ -209,12 +207,7 @@ contract CastVote is LlamaERC721TokenCasterTest {
     support = uint8(bound(support, 0, 2));
     vm.expectEmit();
     emit VoteCast(
-      actionInfo.id,
-      tokenHolder1,
-      tokenVotingCasterRole,
-      support,
-      erc721VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1),
-      ""
+      actionInfo.id, tokenHolder1, support, erc721VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1), ""
     );
     vm.prank(tokenHolder1);
     llamaERC721TokenCaster.castVote(actionInfo, support, "");
@@ -225,7 +218,6 @@ contract CastVote is LlamaERC721TokenCasterTest {
     emit VoteCast(
       actionInfo.id,
       tokenHolder1,
-      tokenVotingCasterRole,
       1,
       erc721VotesToken.getPastVotes(tokenHolder1, erc721VotesToken.clock() - 1),
       "reason"
@@ -259,14 +251,7 @@ contract CastApprovalBySig is LlamaERC721TokenCasterTest {
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
 
     vm.expectEmit();
-    emit VoteCast(
-      actionInfo.id,
-      tokenHolder1,
-      tokenVotingCasterRole,
-      1,
-      erc721VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1),
-      ""
-    );
+    emit VoteCast(actionInfo.id, tokenHolder1, 1, erc721VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1), "");
 
     castVoteBySig(actionInfo, 1, v, r, s);
   }
@@ -389,12 +374,7 @@ contract CastVeto is LlamaERC721TokenCasterTest {
     support = uint8(bound(support, 0, 2));
     vm.expectEmit();
     emit VetoCast(
-      actionInfo.id,
-      tokenHolder1,
-      tokenVotingCasterRole,
-      support,
-      erc721VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1),
-      ""
+      actionInfo.id, tokenHolder1, support, erc721VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1), ""
     );
     vm.prank(tokenHolder1);
     llamaERC721TokenCaster.castVeto(actionInfo, support, "");
@@ -405,7 +385,6 @@ contract CastVeto is LlamaERC721TokenCasterTest {
     emit VetoCast(
       actionInfo.id,
       tokenHolder1,
-      tokenVotingCasterRole,
       1,
       erc721VotesToken.getPastVotes(tokenHolder1, erc721VotesToken.clock() - 1),
       "reason"
@@ -447,12 +426,7 @@ contract CastVetoBySig is LlamaERC721TokenCasterTest {
 
     vm.expectEmit();
     emit VetoCast(
-      actionInfo.id,
-      tokenHolder1,
-      tokenVotingCasterRole,
-      1,
-      erc721VotesToken.getPastVotes(tokenHolder1, erc721VotesToken.clock() - 1),
-      ""
+      actionInfo.id, tokenHolder1, 1, erc721VotesToken.getPastVotes(tokenHolder1, erc721VotesToken.clock() - 1), ""
     );
 
     castVetoBySig(actionInfo, v, r, s);
@@ -515,12 +489,7 @@ contract CastVetoBySig is LlamaERC721TokenCasterTest {
     // First disapproval.
     vm.expectEmit();
     emit VetoCast(
-      actionInfo.id,
-      tokenHolder1,
-      tokenVotingCasterRole,
-      1,
-      erc721VotesToken.getPastVotes(tokenHolder1, erc721VotesToken.clock() - 1),
-      ""
+      actionInfo.id, tokenHolder1, 1, erc721VotesToken.getPastVotes(tokenHolder1, erc721VotesToken.clock() - 1), ""
     );
     castVetoBySig(actionInfo, v, r, s);
     // assertEq(CORE.getAction(actionInfo.id).totalDisapprovals, 1);
@@ -614,7 +583,7 @@ contract SubmitApprovals is LlamaERC721TokenCasterTest {
 
   function test_SubmitsApprovalsCorrectly() public {
     vm.expectEmit();
-    emit ApprovalSubmitted(actionInfo.id, 3, 0, 0);
+    emit ApprovalSubmitted(actionInfo.id, address(this), 3, 0, 0);
     llamaERC721TokenCaster.submitApproval(actionInfo);
   }
 }
@@ -711,7 +680,7 @@ contract SubmitDisapprovals is LlamaERC721TokenCasterTest {
     //TODO why add 1 here?
     vm.warp(block.timestamp + 1 + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
     vm.expectEmit();
-    emit DisapprovalSubmitted(actionInfo.id, 3, 0, 0);
+    emit DisapprovalSubmitted(actionInfo.id, address(this), 3, 0, 0);
     llamaERC721TokenCaster.submitDisapproval(actionInfo);
   }
 }

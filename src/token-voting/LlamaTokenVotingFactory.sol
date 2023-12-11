@@ -15,15 +15,17 @@ import {ERC721Votes} from "@openzeppelin/token/ERC721/extensions/ERC721Votes.sol
 /// @author Llama (devsdosomething@llama.xyz)
 /// @notice This contract lets llama instances deploy a token voting module in a single llama action.
 contract LlamaTokenVotingFactory {
-  error NoModulesDeployed();
-
-  event LlamaERC20TokenActionCreatorCreated(address actionCreator, address indexed token);
-  event LlamaERC721TokenActionCreatorCreated(address actionCreator, address indexed token);
-  event LlamaERC20TokenCasterCreated(
-    address caster, address indexed token, uint256 voteQuorumPct, uint256 vetoQuorumPct
-  );
-  event LlamaERC721TokenCasterCreated(
-    address caster, address indexed token, uint256 voteQuorumPct, uint256 vetoQuorumPct
+  /// @dev Emitted when a new Llama token voting module is created.
+  event LlamaTokenVotingInstanceCreated(
+    address indexed deployer,
+    ILlamaCore indexed llamaCore,
+    address indexed token,
+    bool isERC20,
+    uint8 actionCreatorRole,
+    uint8 casterRole,
+    address llamaTokenActionCreator,
+    address llamaTokenCaster,
+    uint256 chainId
   );
 
   /// @notice The ERC20 Tokenholder Action Creator (logic) contract.
@@ -81,6 +83,10 @@ contract LlamaTokenVotingFactory {
       caster =
         address(_deployLlamaERC721TokenCaster(ERC721Votes(token), llamaCore, casterRole, voteQuorumPct, vetoQuorumPct));
     }
+
+    emit LlamaTokenVotingInstanceCreated(
+      msg.sender, llamaCore, token, isERC20, actionCreatorRole, casterRole, actionCreator, caster, block.chainid
+    );
   }
 
   // ====================================
@@ -99,7 +105,6 @@ contract LlamaTokenVotingFactory {
       )
     );
     actionCreator.initialize(token, llamaCore, role, creationThreshold);
-    emit LlamaERC20TokenActionCreatorCreated(address(actionCreator), address(token));
   }
 
   function _deployLlamaERC721TokenActionCreator(
@@ -114,7 +119,6 @@ contract LlamaTokenVotingFactory {
       )
     );
     actionCreator.initialize(token, llamaCore, role, creationThreshold);
-    emit LlamaERC721TokenActionCreatorCreated(address(actionCreator), address(token));
   }
 
   function _deployLlamaERC20TokenCaster(
@@ -130,7 +134,6 @@ contract LlamaTokenVotingFactory {
       )
     );
     caster.initialize(token, llamaCore, role, voteQuorumPct, vetoQuorumPct);
-    emit LlamaERC20TokenCasterCreated(address(caster), address(token), voteQuorumPct, vetoQuorumPct);
   }
 
   function _deployLlamaERC721TokenCaster(
@@ -146,6 +149,5 @@ contract LlamaTokenVotingFactory {
       )
     );
     caster.initialize(token, llamaCore, role, voteQuorumPct, vetoQuorumPct);
-    emit LlamaERC721TokenCasterCreated(address(caster), address(token), voteQuorumPct, vetoQuorumPct);
   }
 }

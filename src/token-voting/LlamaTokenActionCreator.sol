@@ -58,20 +58,7 @@ abstract contract LlamaTokenActionCreator is Initializable {
   event ActionCanceled(uint256 id, address indexed creator);
 
   /// @dev Emitted when an action is created.
-  /// @dev This is the same as the `ActionCreated` event from `LlamaCore`. The two events will be
-  /// nearly identical, with the `creator` being the only difference. This version will emit the
-  /// address of the tokenholder that created the action, while the `LlamaCore` version will emit
-  /// the address of this contract as the action creator.
-  event ActionCreated(
-    uint256 id,
-    address indexed creator,
-    uint8 role,
-    ILlamaStrategy indexed strategy,
-    address indexed target,
-    uint256 value,
-    bytes data,
-    string description
-  );
+  event ActionCreated(uint256 id, address indexed creator);
 
   /// @dev Emitted when the default number of tokens required to create an action is changed.
   event ActionThresholdSet(uint256 newThreshold);
@@ -229,7 +216,7 @@ abstract contract LlamaTokenActionCreator is Initializable {
 
     actionId = llamaCore.createAction(role, strategy, target, value, data, description);
     actionCreators[actionId] = tokenHolder;
-    emit ActionCreated(actionId, tokenHolder, role, strategy, target, value, data, description);
+    emit ActionCreated(actionId, tokenHolder);
   }
 
   function _setActionThreshold(uint256 _creationThreshold) internal {
