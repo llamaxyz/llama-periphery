@@ -164,7 +164,9 @@ contract CastVote is LlamaERC20TokenCasterTest {
         address(llamaERC20TokenCasterLogic), keccak256(abi.encodePacked(address(erc20VotesToken), msg.sender))
       )
     );
-    casterWithWrongRole.initialize(erc20VotesToken, CORE, llamaTimestampTimeManager, madeUpRole, ERC20_VOTE_QUORUM_PCT, ERC20_VETO_QUORUM_PCT);
+    casterWithWrongRole.initialize(
+      erc20VotesToken, CORE, llamaTimestampTimeManager, madeUpRole, ERC20_VOTE_QUORUM_PCT, ERC20_VETO_QUORUM_PCT
+    );
 
     vm.expectRevert(abi.encodeWithSelector(ILlamaRelativeStrategyBase.InvalidRole.selector, tokenVotingCasterRole));
     casterWithWrongRole.castVote(actionInfo, uint8(VoteType.For), "");
@@ -336,7 +338,9 @@ contract CastVeto is LlamaERC20TokenCasterTest {
         address(llamaERC20TokenCasterLogic), keccak256(abi.encodePacked(address(erc20VotesToken), msg.sender))
       )
     );
-    casterWithWrongRole.initialize(erc20VotesToken, CORE, llamaTimestampTimeManager, madeUpRole, ERC20_VOTE_QUORUM_PCT, ERC20_VETO_QUORUM_PCT);
+    casterWithWrongRole.initialize(
+      erc20VotesToken, CORE, llamaTimestampTimeManager, madeUpRole, ERC20_VOTE_QUORUM_PCT, ERC20_VETO_QUORUM_PCT
+    );
 
     vm.expectRevert(abi.encodeWithSelector(ILlamaRelativeStrategyBase.InvalidRole.selector, tokenVotingCasterRole));
     casterWithWrongRole.castVeto(actionInfo, uint8(VoteType.For), "");
@@ -554,7 +558,9 @@ contract SubmitApprovals is LlamaERC20TokenCasterTest {
         address(llamaERC20TokenCasterLogic), keccak256(abi.encodePacked(address(erc20VotesToken), msg.sender))
       )
     );
-    casterWithWrongRole.initialize(erc20VotesToken, CORE, llamaTimestampTimeManager, madeUpRole, ERC20_VOTE_QUORUM_PCT, ERC20_VETO_QUORUM_PCT);
+    casterWithWrongRole.initialize(
+      erc20VotesToken, CORE, llamaTimestampTimeManager, madeUpRole, ERC20_VOTE_QUORUM_PCT, ERC20_VETO_QUORUM_PCT
+    );
     vm.expectRevert(abi.encodeWithSelector(ILlamaRelativeStrategyBase.InvalidRole.selector, tokenVotingCasterRole));
     casterWithWrongRole.submitApproval(actionInfo);
   }
@@ -635,7 +641,9 @@ contract SubmitDisapprovals is LlamaERC20TokenCasterTest {
         address(llamaERC20TokenCasterLogic), keccak256(abi.encodePacked(address(erc20VotesToken), msg.sender))
       )
     );
-    casterWithWrongRole.initialize(erc20VotesToken, CORE, llamaTimestampTimeManager, madeUpRole, ERC20_VOTE_QUORUM_PCT, ERC20_VETO_QUORUM_PCT);
+    casterWithWrongRole.initialize(
+      erc20VotesToken, CORE, llamaTimestampTimeManager, madeUpRole, ERC20_VOTE_QUORUM_PCT, ERC20_VETO_QUORUM_PCT
+    );
     vm.expectRevert(abi.encodeWithSelector(ILlamaRelativeStrategyBase.InvalidRole.selector, tokenVotingCasterRole));
     casterWithWrongRole.submitDisapproval(actionInfo);
   }
