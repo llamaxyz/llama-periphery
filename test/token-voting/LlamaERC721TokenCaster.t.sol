@@ -348,6 +348,18 @@ contract CastVeto is LlamaERC721TokenCasterTest {
     casterWithWrongRole.castVeto(actionInfo, madeUpRole, "");
   }
 
+  function test_RevertsIf_ActionNotQueued() public {
+    bytes memory data = abi.encodeCall(mockProtocol.pause, (true));
+    vm.prank(coreTeam1);
+    uint256 actionId = CORE.createAction(CORE_TEAM_ROLE, tokenVotingStrategy, address(mockProtocol), 0, data, "");
+    ActionInfo memory _actionInfo =
+      ActionInfo(actionId, coreTeam1, CORE_TEAM_ROLE, tokenVotingStrategy, address(mockProtocol), 0, data);
+    vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
+    vm.expectRevert(LlamaTokenCaster.ActionNotQueued.selector);
+    vm.startPrank(tokenHolder1);
+    llamaERC721TokenCaster.castVeto(_actionInfo, 1, "");
+  }
+
   function test_RevertsIf_AlreadyCastedVote() public {
     vm.startPrank(tokenHolder1);
     llamaERC721TokenCaster.castVeto(actionInfo, 1, "");
@@ -543,6 +555,17 @@ contract SubmitApprovals is LlamaERC721TokenCasterTest {
     vm.assume(notActionInfo.id != actionInfo.id);
     vm.expectRevert();
     llamaERC721TokenCaster.submitApproval(notActionInfo);
+  }
+
+  function test_RevertsIf_ApprovalNotEnabled() public {
+    LlamaERC721TokenCaster casterWithWrongRole = LlamaERC721TokenCaster(
+      Clones.cloneDeterministic(
+        address(llamaERC721TokenCasterLogic), keccak256(abi.encodePacked(address(erc721VotesToken), msg.sender))
+      )
+    );
+    casterWithWrongRole.initialize(erc721VotesToken, CORE, madeUpRole, ERC721_VOTE_QUORUM_PCT, ERC721_VETO_QUORUM_PCT);
+    vm.expectRevert(abi.encodeWithSelector(ILlamaRelativeStrategyBase.InvalidRole.selector, tokenVotingCasterRole));
+    casterWithWrongRole.submitApproval(actionInfo);
   }
 
   function test_RevertsIf_AlreadySubmittedApproval() public {

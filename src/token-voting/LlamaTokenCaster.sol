@@ -41,14 +41,11 @@ abstract contract LlamaTokenCaster is Initializable {
   // ======== Errors ========
   // ========================
 
-  /// @dev Thrown when a user tries to cast a vote but the action has expired.
-  error ActionExpired();
-
   /// @dev Thrown when a user tries to cast a vote but the action is not active.
   error ActionNotActive();
 
-  /// @dev Thrown when a user tries to cast a veto but but the action is not approved.
-  error ActionNotApproved();
+  /// @dev Thrown when a user tries to cast a veto but the action is not queued.
+  error ActionNotQueued();
 
   /// @dev Thrown when a user tries to cast a vote but has already casted.
   error AlreadyCastedVote();
@@ -268,6 +265,7 @@ abstract contract LlamaTokenCaster is Initializable {
   function submitApproval(ActionInfo calldata actionInfo) external {
     Action memory action = llamaCore.getAction(actionInfo.id);
 
+    actionInfo.strategy.checkIfApprovalEnabled(actionInfo, address(this), role); // Reverts if not allowed.
     if (casts[actionInfo.id].approvalSubmitted) revert AlreadySubmittedApproval();
     // check to make sure the casting period has ended
     uint256 approvalPeriod = ILlamaRelativeStrategyBase(address(actionInfo.strategy)).approvalPeriod();
@@ -302,7 +300,7 @@ abstract contract LlamaTokenCaster is Initializable {
   function submitDisapproval(ActionInfo calldata actionInfo) external {
     Action memory action = llamaCore.getAction(actionInfo.id);
 
-    actionInfo.strategy.checkIfDisapprovalEnabled(actionInfo, msg.sender, role); // Reverts if not allowed.
+    actionInfo.strategy.checkIfDisapprovalEnabled(actionInfo, address(this), role); // Reverts if not allowed.
     if (casts[actionInfo.id].disapprovalSubmitted) revert AlreadySubmittedDisapproval();
 
     uint256 queuingPeriod = ILlamaRelativeStrategyBase(address(actionInfo.strategy)).queuingPeriod();
@@ -333,7 +331,7 @@ abstract contract LlamaTokenCaster is Initializable {
   function _castVote(address caster, ActionInfo calldata actionInfo, uint8 support, string calldata reason) internal {
     Action memory action = llamaCore.getAction(actionInfo.id);
 
-    actionInfo.strategy.checkIfApprovalEnabled(actionInfo, caster, role); // Reverts if not allowed.
+    actionInfo.strategy.checkIfApprovalEnabled(actionInfo, address(this), role); // Reverts if not allowed.
     if (llamaCore.getActionState(actionInfo) != uint8(ActionState.Active)) revert ActionNotActive();
     if (casts[actionInfo.id].castVote[caster]) revert AlreadyCastedVote();
     if (
@@ -356,9 +354,8 @@ abstract contract LlamaTokenCaster is Initializable {
   function _castVeto(address caster, ActionInfo calldata actionInfo, uint8 support, string calldata reason) internal {
     Action memory action = llamaCore.getAction(actionInfo.id);
 
-    actionInfo.strategy.checkIfDisapprovalEnabled(actionInfo, caster, role); // Reverts if not allowed.
-    if (!actionInfo.strategy.isActionApproved(actionInfo)) revert ActionNotApproved();
-    if (actionInfo.strategy.isActionExpired(actionInfo)) revert ActionExpired();
+    actionInfo.strategy.checkIfDisapprovalEnabled(actionInfo, address(this), role); // Reverts if not allowed.
+    if (llamaCore.getActionState(actionInfo) != uint8(ActionState.Queued)) revert ActionNotQueued();
     if (casts[actionInfo.id].castVeto[caster]) revert AlreadyCastedVeto();
     if (
       block.timestamp
