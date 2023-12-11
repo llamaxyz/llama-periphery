@@ -7,6 +7,7 @@ import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
 import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
 import {Action, ActionInfo} from "src/lib/Structs.sol";
 import {LlamaUtils} from "src/lib/LlamaUtils.sol";
+import {LlamaTokenVotingTimeManager} from "src/token-voting/time/LlamaTokenVotingTimeManager.sol";
 
 /// @title LlamaTokenActionCreator
 /// @author Llama (devsdosomething@llama.xyz)
@@ -101,6 +102,7 @@ abstract contract LlamaTokenActionCreator is Initializable {
   /// creation threshold of 1000 tokens, pass in 1000e18.
   function __initializeLlamaTokenActionCreatorMinimalProxy(
     ILlamaCore _llamaCore,
+    LlamaTokenVotingTimeManager _timeManager,
     uint8 _role,
     uint256 _creationThreshold
   ) internal {
@@ -108,6 +110,7 @@ abstract contract LlamaTokenActionCreator is Initializable {
     if (_role > _llamaCore.policy().numRoles()) revert RoleNotInitialized(_role);
 
     llamaCore = _llamaCore;
+    timeManager = _timeManager;
     role = _role;
     _setActionThreshold(_creationThreshold);
   }
@@ -188,7 +191,7 @@ abstract contract LlamaTokenActionCreator is Initializable {
   /// @dev This must be in the same decimals as the token.
   function setActionThreshold(uint256 _creationThreshold) external {
     if (msg.sender != address(llamaCore.executor())) revert OnlyLlamaExecutor();
-    if (_creationThreshold > _getPastTotalSupply(block.timestamp - 1)) revert InvalidCreationThreshold();
+    if (_creationThreshold > _getPastTotalSupply(timeManager.currentTimepointMinusOne())) revert InvalidCreationThreshold();
     _setActionThreshold(_creationThreshold);
   }
 

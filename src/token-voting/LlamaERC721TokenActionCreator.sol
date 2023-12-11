@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
-import {LlamaTokenActionCreator} from "src/token-voting/LlamaTokenActionCreator.sol";
 import {ERC721Votes} from "@openzeppelin/token/ERC721/extensions/ERC721Votes.sol";
 import {IERC721} from "@openzeppelin/token/ERC721/IERC721.sol";
+
+import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
+import {LlamaTokenActionCreator} from "src/token-voting/LlamaTokenActionCreator.sol";
+import {LlamaTokenVotingTimeManager} from "src/token-voting/time/LlamaTokenVotingTimeManager.sol";
 
 /// @title LlamaERC721TokenActionCreator
 /// @author Llama (devsdosomething@llama.xyz)
@@ -28,14 +30,14 @@ contract LlamaERC721TokenActionCreator is LlamaTokenActionCreator {
   /// @param _creationThreshold The default number of tokens required to create an action. This must
   /// be in the same decimals as the token. For example, if the token has 18 decimals and you want a
   /// creation threshold of 1000 tokens, pass in 1000e18.
-  function initialize(ERC721Votes _token, ILlamaCore _llamaCore, uint8 _role, uint256 _creationThreshold)
+  function initialize(ERC721Votes _token, ILlamaCore _llamaCore, LlamaTokenVotingTimeManager _timeManager, uint8 _role, uint256 _creationThreshold)
     external
     initializer
   {
-    __initializeLlamaTokenActionCreatorMinimalProxy(_llamaCore, _role, _creationThreshold);
+    __initializeLlamaTokenActionCreatorMinimalProxy(_llamaCore, _timeManager, _role, _creationThreshold);
     token = _token;
     if (!token.supportsInterface(type(IERC721).interfaceId)) revert InvalidTokenAddress();
-    uint256 totalSupply = token.getPastTotalSupply(timeManager.currentTimepointMinusOne());
+    uint256 totalSupply = token.getPastTotalSupply(_timeManager.currentTimepointMinusOne());
     if (totalSupply == 0) revert InvalidTokenAddress();
     if (_creationThreshold > totalSupply) revert InvalidCreationThreshold();
   }

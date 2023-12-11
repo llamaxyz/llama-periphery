@@ -185,6 +185,7 @@ abstract contract LlamaTokenCaster is Initializable {
   /// @param _vetoQuorumPct The minimum % of vetoes required to submit a disapproval to `LlamaCore`.
   function __initializeLlamaTokenCasterMinimalProxy(
     ILlamaCore _llamaCore,
+    LlamaTokenVotingTimeManager _timeManager,
     uint8 _role,
     uint256 _voteQuorumPct,
     uint256 _vetoQuorumPct
@@ -195,6 +196,7 @@ abstract contract LlamaTokenCaster is Initializable {
     if (_vetoQuorumPct > ONE_HUNDRED_IN_BPS || _vetoQuorumPct <= 0) revert InvalidVetoQuorumPct(_vetoQuorumPct);
 
     llamaCore = _llamaCore;
+    timeManager = _timeManager;
     role = _role;
     voteQuorumPct = _voteQuorumPct;
     vetoQuorumPct = _vetoQuorumPct;
@@ -276,8 +278,7 @@ abstract contract LlamaTokenCaster is Initializable {
     if (!timeManager.isClockModeSupported(clockMode)) revert ClockModeNotSupported(clockMode);
 
     //TODO remove me:  uint256 totalSupply = _getPastTotalSupply(action.creationTime - 1);
-    uint256 totalSupply =
-      _getPastTotalSupply(timeManager.timestampToTimepoint(action.creationTime - 1));
+    uint256 totalSupply = _getPastTotalSupply(timeManager.timestampToTimepoint(action.creationTime - 1));
     uint96 votesFor = casts[actionInfo.id].votesFor;
     uint96 votesAgainst = casts[actionInfo.id].votesAgainst;
     uint96 votesAbstain = casts[actionInfo.id].votesAbstain;
@@ -310,7 +311,7 @@ abstract contract LlamaTokenCaster is Initializable {
 
     if (!timeManager.isClockModeSupported(clockMode)) revert ClockModeNotSupported(clockMode);
 
-    uint256 totalSupply = _getPastTotalSupply(timeManager.timestampToTimepoint(action.creationTime - 1)); 
+    uint256 totalSupply = _getPastTotalSupply(timeManager.timestampToTimepoint(action.creationTime - 1));
     uint96 vetoesFor = casts[actionInfo.id].vetoesFor;
     uint96 vetoesAgainst = casts[actionInfo.id].vetoesAgainst;
     uint96 vetoesAbstain = casts[actionInfo.id].vetoesAbstain;
