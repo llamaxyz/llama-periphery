@@ -9,6 +9,7 @@ import {LlamaERC20TokenCaster} from "src/token-voting/LlamaERC20TokenCaster.sol"
 import {LlamaERC721TokenActionCreator} from "src/token-voting/LlamaERC721TokenActionCreator.sol";
 import {LlamaERC721TokenCaster} from "src/token-voting/LlamaERC721TokenCaster.sol";
 import {LlamaTokenVotingFactory} from "src/token-voting/LlamaTokenVotingFactory.sol";
+import {LlamaTimestampTimeManager} from "src/token-voting/time/LlamaTimestampTimeManager.sol";
 
 contract DeployLlamaTokenVotingFactory is Script {
   // Logic contracts.
@@ -19,6 +20,9 @@ contract DeployLlamaTokenVotingFactory is Script {
 
   // Factory contracts.
   LlamaTokenVotingFactory tokenVotingFactory;
+
+  // Time manager contracts.
+  LlamaTimestampTimeManager llamaTimestampTimeManager;
 
   function run() public {
     DeployUtils.print(
@@ -46,6 +50,10 @@ contract DeployLlamaTokenVotingFactory is Script {
     DeployUtils.print(
       string.concat("  LlamaERC721TokenCasterLogic: ", vm.toString(address(llamaERC721TokenCasterLogic)))
     );
+
+    vm.broadcast();
+    llamaTimestampTimeManager = new LlamaTimestampTimeManager();
+    DeployUtils.print(string.concat("  LlamaTimestampTimeManager: ", vm.toString(address(llamaTimestampTimeManager))));
 
     vm.broadcast();
     tokenVotingFactory = new LlamaTokenVotingFactory(

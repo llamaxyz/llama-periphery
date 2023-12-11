@@ -65,8 +65,8 @@ contract LlamaTokenVotingFactory {
   ///@param vetoQuorumPct The minimum percentage of tokens required to disapprove an action.
   function deployTokenVotingModule(
     ILlamaCore llamaCore,
-    LlamaTokenVotingTimeManager timeManager,
     address token,
+    LlamaTokenVotingTimeManager timeManager,
     bool isERC20,
     uint8 actionCreatorRole,
     uint8 casterRole,
@@ -118,8 +118,8 @@ contract LlamaTokenVotingFactory {
 
   function _deployLlamaERC20TokenActionCreator(
     ERC20Votes token,
-    LlamaTokenVotingTimeManager timeManager,
     ILlamaCore llamaCore,
+    LlamaTokenVotingTimeManager timeManager,
     uint8 role,
     uint256 creationThreshold
   ) internal returns (LlamaERC20TokenActionCreator actionCreator) {

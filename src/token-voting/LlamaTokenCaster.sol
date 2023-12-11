@@ -373,7 +373,8 @@ abstract contract LlamaTokenCaster is Initializable {
   function _preCastAssertions(uint256 balance, uint8 support) internal view {
     if (support > uint8(VoteType.Abstain)) revert InvalidSupport(support);
 
-    if (!timeManager.isClockModeSupported(_getClockMode())) revert ClockModeNotSupported(clockMode);
+    string memory clockMode = _getClockMode();
+    if (!timeManager.isClockModeSupported(clockMode)) revert ClockModeNotSupported(clockMode);
 
     if (balance == 0) revert InsufficientBalance(balance);
   }

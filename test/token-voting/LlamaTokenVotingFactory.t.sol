@@ -250,6 +250,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     tokenVotingFactory.deployTokenVotingModule(
       CORE,
       address(erc20VotesToken),
+    llamaTimestampTimeManager,
       true,
       tokenVotingActionCreatorRole,
       tokenVotingCasterRole,
