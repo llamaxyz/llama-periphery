@@ -120,7 +120,7 @@ abstract contract LlamaTokenCaster is Initializable {
   /// @dev Emitted when a cast approval is submitted to the `LlamaCore` contract.
   event ApprovalSubmitted(uint256 id, uint96 quantityFor, uint96 quantityAgainst, uint96 quantityAbstain);
 
-  /// @dev Emitted when a veto is casted.
+  /// @dev Emitted when a veto is cast.
   /// @dev This is the same as the `DisapprovalCast` event from `LlamaCore`. The two events will be
   /// nearly identical, with the `tokenholder` being the only difference. This version will emit
   /// the address of the tokenholder that casted, while the `LlamaCore` version will emit the
@@ -131,6 +131,10 @@ abstract contract LlamaTokenCaster is Initializable {
 
   /// @dev Emitted when a cast disapproval is submitted to the `LlamaCore` contract.
   event DisapprovalSubmitted(uint256 id, uint96 quantityFor, uint96 quantityAgainst, uint96 quantityAbstain);
+
+  /// @dev Emitted when the voting quorum and/or vetoing quorum is set.
+  event QuorumSet(uint256 voteQuorumPct, uint256 vetoQuorumPct);
+
   // =================================================
   // ======== Constants and Storage Variables ========
   // =================================================
@@ -201,6 +205,7 @@ abstract contract LlamaTokenCaster is Initializable {
     role = _role;
     voteQuorumPct = _voteQuorumPct;
     vetoQuorumPct = _vetoQuorumPct;
+    emit QuorumSet(_voteQuorumPct, _vetoQuorumPct);
   }
 
   /// @notice How tokenholders add their support of the approval of an action with a reason.

@@ -29,6 +29,7 @@ contract LlamaTokenVotingFactoryTest is LlamaTokenVotingTestSetup {
     uint256 chainId
   );
   event ActionThresholdSet(uint256 newThreshold);
+  event QuorumSet(uint256 voteQuorumPct, uint256 vetoQuorumPct);
 
   function setUp() public override {
     LlamaTokenVotingTestSetup.setUp();
@@ -121,6 +122,8 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     vm.expectEmit();
     emit ActionThresholdSet(ERC20_CREATION_THRESHOLD);
     vm.expectEmit();
+    emit QuorumSet(ERC20_VOTE_QUORUM_PCT, ERC20_VETO_QUORUM_PCT);
+    vm.expectEmit();
     emit LlamaTokenVotingModuleCreated(
       address(EXECUTOR),
       CORE,
@@ -180,6 +183,8 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     vm.expectEmit();
     emit ActionThresholdSet(ERC721_CREATION_THRESHOLD);
     vm.expectEmit();
+    emit QuorumSet(ERC721_VOTE_QUORUM_PCT, ERC721_VETO_QUORUM_PCT);
+    vm.expectEmit();
     emit LlamaTokenVotingModuleCreated(
       address(EXECUTOR),
       CORE,
@@ -226,6 +231,8 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
 
     vm.expectEmit();
     emit ActionThresholdSet(ERC20_CREATION_THRESHOLD);
+    vm.expectEmit();
+    emit QuorumSet(ERC20_VOTE_QUORUM_PCT, ERC20_VETO_QUORUM_PCT);
     vm.expectEmit();
     emit LlamaTokenVotingModuleCreated(
       randomCaller,
