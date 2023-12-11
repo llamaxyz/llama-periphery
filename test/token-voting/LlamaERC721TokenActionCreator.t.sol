@@ -14,19 +14,8 @@ import {LlamaERC721TokenActionCreator} from "src/token-voting/LlamaERC721TokenAc
 import {LlamaTokenActionCreator} from "src/token-voting/LlamaTokenActionCreator.sol";
 
 contract LlamaERC721TokenActionCreatorTest is LlamaTokenVotingTestSetup, LlamaCoreSigUtils {
-  event ActionCreated(
-    uint256 id,
-    address indexed creator,
-    uint8 role,
-    ILlamaStrategy indexed strategy,
-    address indexed target,
-    uint256 value,
-    bytes data,
-    string description
-  );
-
+  event ActionCreated(uint256 id, address indexed creator);
   event ActionCanceled(uint256 id, address indexed creator);
-
   event ActionThresholdSet(uint256 newThreshold);
 
   LlamaERC721TokenActionCreator llamaERC721TokenActionCreator;
@@ -138,9 +127,7 @@ contract CreateAction is LlamaERC721TokenActionCreatorTest {
     uint256 actionCount = CORE.actionsCount();
 
     vm.expectEmit();
-    emit ActionCreated(
-      actionCount, address(tokenHolder1), tokenVotingActionCreatorRole, STRATEGY, address(mockProtocol), 0, data, ""
-    );
+    emit ActionCreated(actionCount, address(tokenHolder1));
     vm.prank(tokenHolder1);
     uint256 actionId = llamaERC721TokenActionCreator.createAction(STRATEGY, address(mockProtocol), 0, data, "");
 
@@ -196,14 +183,11 @@ contract CreateActionBySig is LlamaERC721TokenActionCreatorTest {
 
   function test_CreatesActionBySig() public {
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(tokenHolder1PrivateKey);
-    bytes memory data = abi.encodeCall(mockProtocol.pause, (true));
 
     uint256 actionCount = CORE.actionsCount();
 
     vm.expectEmit();
-    emit ActionCreated(
-      actionCount, tokenHolder1, tokenVotingActionCreatorRole, STRATEGY, address(mockProtocol), 0, data, ""
-    );
+    emit ActionCreated(actionCount, tokenHolder1);
 
     uint256 actionId = createActionBySig(v, r, s);
     Action memory action = CORE.getAction(actionId);
@@ -216,21 +200,11 @@ contract CreateActionBySig is LlamaERC721TokenActionCreatorTest {
   function test_CreatesActionBySigWithDescription() public {
     (uint8 v, bytes32 r, bytes32 s) =
       createOffchainSignatureWithDescription(tokenHolder1PrivateKey, "# Action 0 \n This is my action.");
-    bytes memory data = abi.encodeCall(mockProtocol.pause, (true));
 
     uint256 actionCount = CORE.actionsCount();
 
     vm.expectEmit();
-    emit ActionCreated(
-      actionCount,
-      tokenHolder1,
-      tokenVotingActionCreatorRole,
-      STRATEGY,
-      address(mockProtocol),
-      0,
-      data,
-      "# Action 0 \n This is my action."
-    );
+    emit ActionCreated(actionCount, tokenHolder1);
 
     uint256 actionId = llamaERC721TokenActionCreator.createActionBySig(
       tokenHolder1,
