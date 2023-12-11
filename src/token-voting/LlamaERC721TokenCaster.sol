@@ -11,6 +11,7 @@ import {LlamaTokenVotingTimeManager} from "src/token-voting/time/LlamaTokenVotin
 /// @author Llama (devsdosomething@llama.xyz)
 /// @notice This contract lets holders of a given governance `ERC721Votes` token collectively cast an approval or
 /// disapproval on created actions.
+
 contract LlamaERC721TokenCaster is LlamaTokenCaster {
   ERC721Votes public token;
 

@@ -75,20 +75,40 @@ contract LlamaTokenVotingFactory {
     uint256 vetoQuorumPct
   ) external returns (address actionCreator, address caster) {
     if (isERC20) {
-      actionCreator =
-        address(_deployLlamaERC20TokenActionCreator(ERC20Votes(token), llamaCore, timeManager, actionCreatorRole, creationThreshold));
-      caster =
-        address(_deployLlamaERC20TokenCaster(ERC20Votes(token), llamaCore, timeManager, casterRole, voteQuorumPct, vetoQuorumPct));
+      actionCreator = address(
+        _deployLlamaERC20TokenActionCreator(
+          ERC20Votes(token), llamaCore, timeManager, actionCreatorRole, creationThreshold
+        )
+      );
+      caster = address(
+        _deployLlamaERC20TokenCaster(
+          ERC20Votes(token), llamaCore, timeManager, casterRole, voteQuorumPct, vetoQuorumPct
+        )
+      );
     } else {
       actionCreator = address(
-        _deployLlamaERC721TokenActionCreator(ERC721Votes(token), llamaCore, timeManager, actionCreatorRole, creationThreshold)
+        _deployLlamaERC721TokenActionCreator(
+          ERC721Votes(token), llamaCore, timeManager, actionCreatorRole, creationThreshold
+        )
       );
-      caster =
-        address(_deployLlamaERC721TokenCaster(ERC721Votes(token), llamaCore, timeManager, casterRole, voteQuorumPct, vetoQuorumPct));
+      caster = address(
+        _deployLlamaERC721TokenCaster(
+          ERC721Votes(token), llamaCore, timeManager, casterRole, voteQuorumPct, vetoQuorumPct
+        )
+      );
     }
 
     emit LlamaTokenVotingInstanceCreated(
-      msg.sender, llamaCore, timeManager, token, isERC20, actionCreatorRole, casterRole, actionCreator, caster, block.chainid
+      msg.sender,
+      llamaCore,
+      timeManager,
+      token,
+      isERC20,
+      actionCreatorRole,
+      casterRole,
+      actionCreator,
+      caster,
+      block.chainid
     );
   }
 

@@ -191,7 +191,9 @@ abstract contract LlamaTokenActionCreator is Initializable {
   /// @dev This must be in the same decimals as the token.
   function setActionThreshold(uint256 _creationThreshold) external {
     if (msg.sender != address(llamaCore.executor())) revert OnlyLlamaExecutor();
-    if (_creationThreshold > _getPastTotalSupply(timeManager.currentTimepointMinusOne())) revert InvalidCreationThreshold();
+    if (_creationThreshold > _getPastTotalSupply(timeManager.currentTimepointMinusOne())) {
+      revert InvalidCreationThreshold();
+    }
     _setActionThreshold(_creationThreshold);
   }
 
