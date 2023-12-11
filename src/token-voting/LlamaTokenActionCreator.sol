@@ -20,6 +20,9 @@ abstract contract LlamaTokenActionCreator is Initializable {
   /// @notice The core contract for this Llama instance.
   ILlamaCore public llamaCore;
 
+  /// @notice The contract that manages the timepoints for this token voting module.
+  LlamaTokenVotingTimeManager public timeManager;
+
   /// @notice The default number of tokens required to create an action.
   uint256 public creationThreshold;
 
@@ -207,11 +210,9 @@ abstract contract LlamaTokenActionCreator is Initializable {
   ) internal returns (uint256 actionId) {
     /// @dev only timestamp mode is supported for now
     string memory clockMode = _getClockMode();
-    if (keccak256(abi.encodePacked(clockMode)) != keccak256(abi.encodePacked("mode=timestamp"))) {
-      revert ClockModeNotSupported(clockMode);
-    }
+    if (!timeManager.isClockModeSupported(clockMode)) revert ClockModeNotSupported(clockMode);
 
-    uint256 balance = _getPastVotes(tokenHolder, block.timestamp - 1);
+    uint256 balance = _getPastVotes(tokenHolder, timeManager.currentTimepointMinusOne());
     if (balance < creationThreshold) revert InsufficientBalance(balance);
 
     actionId = llamaCore.createAction(role, strategy, target, value, data, description);

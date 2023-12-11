@@ -35,17 +35,17 @@ contract LlamaERC721TokenActionCreator is LlamaTokenActionCreator {
     __initializeLlamaTokenActionCreatorMinimalProxy(_llamaCore, _role, _creationThreshold);
     token = _token;
     if (!token.supportsInterface(type(IERC721).interfaceId)) revert InvalidTokenAddress();
-    uint256 totalSupply = token.getPastTotalSupply(block.timestamp - 1);
+    uint256 totalSupply = token.getPastTotalSupply(timeManager.currentTimepointMinusOne());
     if (totalSupply == 0) revert InvalidTokenAddress();
     if (_creationThreshold > totalSupply) revert InvalidCreationThreshold();
   }
 
-  function _getPastVotes(address account, uint256 timestamp) internal view virtual override returns (uint256) {
-    return token.getPastVotes(account, timestamp);
+  function _getPastVotes(address account, uint256 timepoint) internal view virtual override returns (uint256) {
+    return token.getPastVotes(account, timepoint);
   }
 
-  function _getPastTotalSupply(uint256 timestamp) internal view virtual override returns (uint256) {
-    return token.getPastTotalSupply(timestamp);
+  function _getPastTotalSupply(uint256 timepoint) internal view virtual override returns (uint256) {
+    return token.getPastTotalSupply(timepoint);
   }
 
   function _getClockMode() internal view virtual override returns (string memory) {

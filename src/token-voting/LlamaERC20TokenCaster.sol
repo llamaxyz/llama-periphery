@@ -35,16 +35,16 @@ contract LlamaERC20TokenCaster is LlamaTokenCaster {
   ) external initializer {
     __initializeLlamaTokenCasterMinimalProxy(_llamaCore, _role, _voteQuorumPct, _vetoQuorumPct);
     token = _token;
-    uint256 totalSupply = token.getPastTotalSupply(block.timestamp - 1);
+    uint256 totalSupply = token.getPastTotalSupply(timeManager.currentTimepointMinusOne());
     if (totalSupply == 0) revert InvalidTokenAddress();
   }
 
-  function _getPastVotes(address account, uint256 timestamp) internal view virtual override returns (uint256) {
-    return token.getPastVotes(account, timestamp);
+  function _getPastVotes(address account, uint256 timepoint) internal view virtual override returns (uint256) {
+    return token.getPastVotes(account, timepoint);
   }
 
-  function _getPastTotalSupply(uint256 timestamp) internal view virtual override returns (uint256) {
-    return token.getPastTotalSupply(timestamp);
+  function _getPastTotalSupply(uint256 timepoint) internal view virtual override returns (uint256) {
+    return token.getPastTotalSupply(timepoint);
   }
 
   function _getClockMode() internal view virtual override returns (string memory) {
