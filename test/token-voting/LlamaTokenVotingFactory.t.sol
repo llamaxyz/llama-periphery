@@ -17,7 +17,7 @@ import {LlamaERC721TokenCaster} from "src/token-voting/LlamaERC721TokenCaster.so
 import {LlamaTokenVotingFactory} from "src/token-voting/LlamaTokenVotingFactory.sol";
 
 contract LlamaTokenVotingFactoryTest is LlamaTokenVotingTestSetup {
-  event LlamaTokenVotingModuleCreated(
+  event LlamaTokenVotingInstanceCreated(
     address indexed deployer,
     ILlamaCore indexed llamaCore,
     address indexed token,
@@ -124,7 +124,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     vm.expectEmit();
     emit QuorumSet(ERC20_VOTE_QUORUM_PCT, ERC20_VETO_QUORUM_PCT);
     vm.expectEmit();
-    emit LlamaTokenVotingModuleCreated(
+    emit LlamaTokenVotingInstanceCreated(
       address(EXECUTOR),
       CORE,
       address(erc20VotesToken),
@@ -185,7 +185,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     vm.expectEmit();
     emit QuorumSet(ERC721_VOTE_QUORUM_PCT, ERC721_VETO_QUORUM_PCT);
     vm.expectEmit();
-    emit LlamaTokenVotingModuleCreated(
+    emit LlamaTokenVotingInstanceCreated(
       address(EXECUTOR),
       CORE,
       address(erc721VotesToken),
@@ -234,7 +234,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     vm.expectEmit();
     emit QuorumSet(ERC20_VOTE_QUORUM_PCT, ERC20_VETO_QUORUM_PCT);
     vm.expectEmit();
-    emit LlamaTokenVotingModuleCreated(
+    emit LlamaTokenVotingInstanceCreated(
       randomCaller,
       CORE,
       address(erc20VotesToken),

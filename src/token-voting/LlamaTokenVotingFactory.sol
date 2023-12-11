@@ -16,7 +16,7 @@ import {ERC721Votes} from "@openzeppelin/token/ERC721/extensions/ERC721Votes.sol
 /// @notice This contract lets llama instances deploy a token voting module in a single llama action.
 contract LlamaTokenVotingFactory {
   /// @dev Emitted when a new Llama token voting module is created.
-  event LlamaTokenVotingModuleCreated(
+  event LlamaTokenVotingInstanceCreated(
     address indexed deployer,
     ILlamaCore indexed llamaCore,
     address indexed token,
@@ -84,7 +84,7 @@ contract LlamaTokenVotingFactory {
         address(_deployLlamaERC721TokenCaster(ERC721Votes(token), llamaCore, casterRole, voteQuorumPct, vetoQuorumPct));
     }
 
-    emit LlamaTokenVotingModuleCreated(
+    emit LlamaTokenVotingInstanceCreated(
       msg.sender, llamaCore, token, isERC20, actionCreatorRole, casterRole, actionCreator, caster, block.chainid
     );
   }
