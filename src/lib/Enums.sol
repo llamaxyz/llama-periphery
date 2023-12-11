@@ -11,3 +11,10 @@ enum ActionState {
   Expired, // block.timestamp is greater than Action's executionTime + expirationDelay.
   Executed // Action has executed successfully.
 }
+
+/// @dev Possible states of a user cast vote.
+enum VoteType {
+  Against,
+  For,
+  Abstain
+}

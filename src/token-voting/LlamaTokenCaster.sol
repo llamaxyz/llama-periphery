@@ -5,7 +5,7 @@ import {Initializable} from "@openzeppelin/proxy/utils/Initializable.sol";
 
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
-import {ActionState} from "src/lib/Enums.sol";
+import {ActionState, VoteType} from "src/lib/Enums.sol";
 import {LlamaUtils} from "src/lib/LlamaUtils.sol";
 import {Action, ActionInfo} from "src/lib/Structs.sol";
 
@@ -360,9 +360,9 @@ abstract contract LlamaTokenCaster is Initializable {
     uint256 balance = _getPastVotes(caster, action.creationTime - 1);
     _preCastAssertions(balance, support);
 
-    if (support == 0) casts[actionInfo.id].votesAgainst += LlamaUtils.toUint96(balance);
-    else if (support == 1) casts[actionInfo.id].votesFor += LlamaUtils.toUint96(balance);
-    else if (support == 2) casts[actionInfo.id].votesAbstain += LlamaUtils.toUint96(balance);
+    if (support == uint8(VoteType.Against)) casts[actionInfo.id].votesAgainst += LlamaUtils.toUint96(balance);
+    else if (support == uint8(VoteType.For)) casts[actionInfo.id].votesFor += LlamaUtils.toUint96(balance);
+    else if (support == uint8(VoteType.Abstain)) casts[actionInfo.id].votesAbstain += LlamaUtils.toUint96(balance);
     casts[actionInfo.id].castVote[caster] = true;
     emit VoteCast(actionInfo.id, caster, support, balance, reason);
   }
@@ -381,15 +381,15 @@ abstract contract LlamaTokenCaster is Initializable {
     uint256 balance = _getPastVotes(caster, action.creationTime - 1);
     _preCastAssertions(balance, support);
 
-    if (support == 0) casts[actionInfo.id].vetoesAgainst += LlamaUtils.toUint96(balance);
-    else if (support == 1) casts[actionInfo.id].vetoesFor += LlamaUtils.toUint96(balance);
-    else if (support == 2) casts[actionInfo.id].vetoesAbstain += LlamaUtils.toUint96(balance);
+    if (support == uint8(VoteType.Against)) casts[actionInfo.id].vetoesAgainst += LlamaUtils.toUint96(balance);
+    else if (support == uint8(VoteType.For)) casts[actionInfo.id].vetoesFor += LlamaUtils.toUint96(balance);
+    else if (support == uint8(VoteType.Abstain)) casts[actionInfo.id].vetoesAbstain += LlamaUtils.toUint96(balance);
     casts[actionInfo.id].castVeto[caster] = true;
     emit VetoCast(actionInfo.id, caster, support, balance, reason);
   }
 
   function _preCastAssertions(uint256 balance, uint8 support) internal view {
-    if (support > 2) revert InvalidSupport(support);
+    if (support > uint8(VoteType.Abstain)) revert InvalidSupport(support);
 
     /// @dev only timestamp mode is supported for now.
     string memory clockMode = _getClockMode();
