@@ -277,7 +277,6 @@ abstract contract LlamaTokenCaster is Initializable {
 
     if (!timeManager.isClockModeSupported(clockMode)) revert ClockModeNotSupported(clockMode);
 
-    //TODO remove me:  uint256 totalSupply = _getPastTotalSupply(action.creationTime - 1);
     uint256 totalSupply = _getPastTotalSupply(timeManager.timestampToTimepoint(action.creationTime - 1));
     uint96 votesFor = casts[actionInfo.id].votesFor;
     uint96 votesAgainst = casts[actionInfo.id].votesAgainst;
