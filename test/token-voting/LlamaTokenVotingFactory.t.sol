@@ -277,4 +277,101 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     assertEq(llamaERC20TokenCaster.vetoQuorumPct(), ERC20_VETO_QUORUM_PCT);
     assertEq(tokenVotingFactory.nonces(randomCaller, address(CORE), address(erc20VotesToken)), initialNonce + 1);
   }
+
+  function test_CanBeDeployedMoreThanOnceBySameDeployer() public {
+    // Set up action to call `deployTokenVotingModule` with the ERC20 token.
+    bytes memory data = abi.encodeWithSelector(
+      LlamaTokenVotingFactory.deployTokenVotingModule.selector,
+      CORE,
+      address(erc20VotesToken),
+      true,
+      tokenVotingActionCreatorRole,
+      tokenVotingCasterRole,
+      ERC20_CREATION_THRESHOLD,
+      ERC20_VOTE_QUORUM_PCT,
+      ERC20_VETO_QUORUM_PCT
+    );
+
+    /////////////////////
+    // First deployment//
+    /////////////////////
+
+    uint256 firstNonce = tokenVotingFactory.nonces(address(EXECUTOR), address(CORE), address(erc20VotesToken));
+
+    ActionInfo memory actionInfo = _setPermissionCreateApproveAndQueueAction(data);
+
+    // Compute addresses of ERC20 Token Voting Module
+    LlamaERC20TokenActionCreator llamaERC20TokenActionCreator = LlamaERC20TokenActionCreator(
+      Clones.predictDeterministicAddress(
+        address(llamaERC20TokenActionCreatorLogic),
+        tokenVotingFactory.getNextSalt(address(EXECUTOR), address(CORE), address(erc20VotesToken)), // salt
+        address(tokenVotingFactory) // deployer
+      )
+    );
+    LlamaERC20TokenCaster llamaERC20TokenCaster = LlamaERC20TokenCaster(
+      Clones.predictDeterministicAddress(
+        address(llamaERC20TokenCasterLogic),
+        tokenVotingFactory.getNextSalt(address(EXECUTOR), address(CORE), address(erc20VotesToken)), // salt
+        address(tokenVotingFactory) // deployer
+      )
+    );
+
+    // Execute call to `deployTokenVotingModule`.
+    vm.expectEmit();
+    emit LlamaTokenVotingInstanceCreated(
+      address(EXECUTOR),
+      CORE,
+      address(erc20VotesToken),
+      true,
+      tokenVotingActionCreatorRole,
+      tokenVotingCasterRole,
+      address(llamaERC20TokenActionCreator),
+      address(llamaERC20TokenCaster),
+      block.chainid
+    );
+    CORE.executeAction(actionInfo);
+
+    uint256 secondNonce = tokenVotingFactory.nonces(address(EXECUTOR), address(CORE), address(erc20VotesToken));
+    assertEq(secondNonce, firstNonce + 1);
+
+    //////////////////////
+    // Second deployment//
+    //////////////////////
+
+    actionInfo = _setPermissionCreateApproveAndQueueAction(data);
+
+    // Compute addresses of ERC20 Token Voting Module
+    llamaERC20TokenActionCreator = LlamaERC20TokenActionCreator(
+      Clones.predictDeterministicAddress(
+        address(llamaERC20TokenActionCreatorLogic),
+        tokenVotingFactory.getNextSalt(address(EXECUTOR), address(CORE), address(erc20VotesToken)), // salt
+        address(tokenVotingFactory) // deployer
+      )
+    );
+    llamaERC20TokenCaster = LlamaERC20TokenCaster(
+      Clones.predictDeterministicAddress(
+        address(llamaERC20TokenCasterLogic),
+        tokenVotingFactory.getNextSalt(address(EXECUTOR), address(CORE), address(erc20VotesToken)), // salt
+        address(tokenVotingFactory) // deployer
+      )
+    );
+
+    // Execute call to `deployTokenVotingModule`.
+    vm.expectEmit();
+    emit LlamaTokenVotingInstanceCreated(
+      address(EXECUTOR),
+      CORE,
+      address(erc20VotesToken),
+      true,
+      tokenVotingActionCreatorRole,
+      tokenVotingCasterRole,
+      address(llamaERC20TokenActionCreator),
+      address(llamaERC20TokenCaster),
+      block.chainid
+    );
+    CORE.executeAction(actionInfo);
+
+    uint256 thirdNonce = tokenVotingFactory.nonces(address(EXECUTOR), address(CORE), address(erc20VotesToken));
+    assertEq(thirdNonce, secondNonce + 1);
+  }
 }
