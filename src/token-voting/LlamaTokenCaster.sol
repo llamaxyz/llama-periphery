@@ -44,7 +44,7 @@ abstract contract LlamaTokenCaster is Initializable {
   /// @dev Thrown when a user tries to cast a vote but the action is not active.
   error ActionNotActive();
 
-  /// @dev Thrown when a user tries to cast disapproval but but the action is not in the queuing period.
+  /// @dev Thrown when a user tries to cast a veto but the action is not queued.
   error ActionNotQueued();
 
   /// @dev Thrown when a user tries to cast a vote but has already casted.
@@ -261,7 +261,6 @@ abstract contract LlamaTokenCaster is Initializable {
     Action memory action = llamaCore.getAction(actionInfo.id);
 
     actionInfo.strategy.checkIfApprovalEnabled(actionInfo, address(this), role); // Reverts if not allowed.
-
     if (casts[actionInfo.id].approvalSubmitted) revert AlreadySubmittedApproval();
     // check to make sure the casting period has ended
     uint256 approvalPeriod = ILlamaRelativeStrategyBase(address(actionInfo.strategy)).approvalPeriod();
