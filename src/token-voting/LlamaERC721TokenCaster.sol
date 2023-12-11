@@ -52,4 +52,8 @@ contract LlamaERC721TokenCaster is LlamaTokenCaster {
   function _getClockMode() internal view virtual override returns (string memory) {
     return token.CLOCK_MODE();
   }
+
+  function _getSupportedClockMode() internal pure override returns (string memory) {
+    return "mode=timestamp";
+  }
 }

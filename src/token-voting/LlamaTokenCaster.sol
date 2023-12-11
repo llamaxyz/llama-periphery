@@ -274,7 +274,8 @@ abstract contract LlamaTokenCaster is Initializable {
 
     /// @dev only timestamp mode is supported for now.
     string memory clockMode = _getClockMode();
-    if (keccak256(abi.encodePacked(clockMode)) != keccak256(abi.encodePacked("mode=timestamp"))) {
+    string memory supportedClockMode = _getSupportedClockMode();
+    if (keccak256(abi.encodePacked(clockMode)) != keccak256(abi.encodePacked(supportedClockMode))) {
       revert ClockModeNotSupported(clockMode);
     }
 
@@ -308,7 +309,8 @@ abstract contract LlamaTokenCaster is Initializable {
     if (block.timestamp >= action.minExecutionTime) revert SubmissionPeriodOver();
     /// @dev only timestamp mode is supported for now
     string memory clockMode = _getClockMode();
-    if (keccak256(abi.encodePacked(clockMode)) != keccak256(abi.encodePacked("mode=timestamp"))) {
+    string memory supportedClockMode = _getSupportedClockMode();
+    if (keccak256(abi.encodePacked(clockMode)) != keccak256(abi.encodePacked(supportedClockMode))) {
       revert ClockModeNotSupported(clockMode);
     }
 
@@ -377,7 +379,8 @@ abstract contract LlamaTokenCaster is Initializable {
 
     /// @dev only timestamp mode is supported for now.
     string memory clockMode = _getClockMode();
-    if (keccak256(abi.encodePacked(clockMode)) != keccak256(abi.encodePacked("mode=timestamp"))) {
+    string memory supportedClockMode = _getSupportedClockMode();
+    if (keccak256(abi.encodePacked(clockMode)) != keccak256(abi.encodePacked(supportedClockMode))) {
       revert ClockModeNotSupported(clockMode);
     }
 
@@ -395,6 +398,7 @@ abstract contract LlamaTokenCaster is Initializable {
   function _getPastVotes(address account, uint256 timestamp) internal view virtual returns (uint256) {}
   function _getPastTotalSupply(uint256 timestamp) internal view virtual returns (uint256) {}
   function _getClockMode() internal view virtual returns (string memory) {}
+  function _getSupportedClockMode() internal pure virtual returns (string memory) {}
 
   /// @dev Returns the current nonce for a given tokenholder and selector, and increments it. Used to prevent
   /// replay attacks.
