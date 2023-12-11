@@ -18,6 +18,6 @@ contract LlamaTimestampTimeManager is LlamaTokenVotingTimeManager {
 
   /// @inheritdoc LlamaTokenVotingTimeManager
   function isClockModeSupported(string memory clockMode) external pure override returns (bool) {
-    return keccak256(abi.encodePacked(clockMode)) != keccak256(abi.encodePacked("mode=timestamp"));
+    return keccak256(abi.encodePacked(clockMode)) == keccak256(abi.encodePacked("mode=timestamp"));
   }
 }
