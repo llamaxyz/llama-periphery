@@ -106,28 +106,20 @@ abstract contract LlamaTokenCaster is Initializable {
   // ========================
 
   /// @dev Emitted when a vote is cast.
-  /// @dev This is almost the same as the `ApprovalCast` event from `LlamaCore`, with the addition of the support field.
-  /// The two events will be nearly identical, with the `tokenholder` being the main difference. This version will emit
-  /// the address of the tokenholder that casted, while the `LlamaCore` version will emit the address of this contract
-  /// as the action creator. Additionally, there is no `role` emitted here as all tokenholders are eligible to vote.
-  event VoteCast(
-    uint256 id, address indexed tokenholder, uint8 indexed role, uint8 indexed support, uint256 quantity, string reason
-  );
+  event VoteCast(uint256 id, address indexed tokenholder, uint8 indexed support, uint256 quantity, string reason);
 
   /// @dev Emitted when a cast approval is submitted to the `LlamaCore` contract.
-  event ApprovalSubmitted(uint256 id, uint96 quantityFor, uint96 quantityAgainst, uint96 quantityAbstain);
-
-  /// @dev Emitted when a veto is cast.
-  /// @dev This is the same as the `DisapprovalCast` event from `LlamaCore`. The two events will be
-  /// nearly identical, with the `tokenholder` being the only difference. This version will emit
-  /// the address of the tokenholder that casted, while the `LlamaCore` version will emit the
-  /// address of this contract as the action creator.
-  event VetoCast(
-    uint256 id, address indexed tokenholder, uint8 indexed role, uint8 indexed support, uint256 quantity, string reason
+  event ApprovalSubmitted(
+    uint256 id, address indexed caller, uint96 quantityFor, uint96 quantityAgainst, uint96 quantityAbstain
   );
 
+  /// @dev Emitted when a veto is cast.
+  event VetoCast(uint256 id, address indexed tokenholder, uint8 indexed support, uint256 quantity, string reason);
+
   /// @dev Emitted when a cast disapproval is submitted to the `LlamaCore` contract.
-  event DisapprovalSubmitted(uint256 id, uint96 quantityFor, uint96 quantityAgainst, uint96 quantityAbstain);
+  event DisapprovalSubmitted(
+    uint256 id, address indexed caller, uint96 quantityFor, uint96 quantityAgainst, uint96 quantityAbstain
+  );
 
   /// @dev Emitted when the voting quorum and/or vetoing quorum is set.
   event QuorumSet(uint256 voteQuorumPct, uint256 vetoQuorumPct);
@@ -291,7 +283,7 @@ abstract contract LlamaTokenCaster is Initializable {
 
     casts[actionInfo.id].approvalSubmitted = true;
     llamaCore.castApproval(role, actionInfo, "");
-    emit ApprovalSubmitted(actionInfo.id, votesFor, votesAgainst, votesAbstain);
+    emit ApprovalSubmitted(actionInfo.id, msg.sender, votesFor, votesAgainst, votesAbstain);
   }
 
   /// @notice Submits a cast disapproval to the `LlamaCore` contract.
@@ -325,7 +317,7 @@ abstract contract LlamaTokenCaster is Initializable {
 
     casts[actionInfo.id].disapprovalSubmitted = true;
     llamaCore.castDisapproval(role, actionInfo, "");
-    emit DisapprovalSubmitted(actionInfo.id, vetoesFor, vetoesAgainst, vetoesAbstain);
+    emit DisapprovalSubmitted(actionInfo.id, msg.sender, vetoesFor, vetoesAgainst, vetoesAbstain);
   }
 
   function _castVote(address caster, ActionInfo calldata actionInfo, uint8 support, string calldata reason) internal {
@@ -348,7 +340,7 @@ abstract contract LlamaTokenCaster is Initializable {
     else if (support == 1) casts[actionInfo.id].votesFor += LlamaUtils.toUint96(balance);
     else if (support == 2) casts[actionInfo.id].votesAbstain += LlamaUtils.toUint96(balance);
     casts[actionInfo.id].castVote[caster] = true;
-    emit VoteCast(actionInfo.id, caster, role, support, balance, reason);
+    emit VoteCast(actionInfo.id, caster, support, balance, reason);
   }
 
   function _castVeto(address caster, ActionInfo calldata actionInfo, uint8 support, string calldata reason) internal {
@@ -371,7 +363,7 @@ abstract contract LlamaTokenCaster is Initializable {
     else if (support == 1) casts[actionInfo.id].vetoesFor += LlamaUtils.toUint96(balance);
     else if (support == 2) casts[actionInfo.id].vetoesAbstain += LlamaUtils.toUint96(balance);
     casts[actionInfo.id].castVeto[caster] = true;
-    emit VetoCast(actionInfo.id, caster, role, support, balance, reason);
+    emit VetoCast(actionInfo.id, caster, support, balance, reason);
   }
 
   function _preCastAssertions(uint256 balance, uint8 support) internal view {
