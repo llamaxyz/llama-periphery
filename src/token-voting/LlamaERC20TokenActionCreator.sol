@@ -45,13 +45,13 @@ contract LlamaERC20TokenActionCreator is LlamaTokenActionCreator {
   }
 
   /// @inheritdoc LlamaTokenActionCreator
-  function _getPastVotes(address account, uint256 timestamp) internal view virtual override returns (uint256) {
-    return token.getPastVotes(account, timestamp);
+  function _getPastVotes(address account, uint256 timepoint) internal view virtual override returns (uint256) {
+    return token.getPastVotes(account, timepoint);
   }
 
   /// @inheritdoc LlamaTokenActionCreator
-  function _getPastTotalSupply(uint256 timestamp) internal view virtual override returns (uint256) {
-    return token.getPastTotalSupply(timestamp);
+  function _getPastTotalSupply(uint256 timepoint) internal view virtual override returns (uint256) {
+    return token.getPastTotalSupply(timepoint);
   }
 
   /// @inheritdoc LlamaTokenActionCreator

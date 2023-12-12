@@ -398,10 +398,10 @@ abstract contract LlamaTokenCaster is Initializable {
   }
 
   /// @dev Returns the number of votes for a given token holder at a given timestamp.
-  function _getPastVotes(address account, uint256 timestamp) internal view virtual returns (uint256) {}
+  function _getPastVotes(address account, uint256 timepoint) internal view virtual returns (uint256) {}
 
   /// @dev Returns the total supply of the token at a given timestamp.
-  function _getPastTotalSupply(uint256 timestamp) internal view virtual returns (uint256) {}
+  function _getPastTotalSupply(uint256 timepoint) internal view virtual returns (uint256) {}
 
   /// @dev Returns the clock mode of the token (https://eips.ethereum.org/EIPS/eip-6372).
   function _getClockMode() internal view virtual returns (string memory) {}
