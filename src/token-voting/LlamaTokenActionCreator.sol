@@ -275,12 +275,6 @@ abstract contract LlamaTokenActionCreator is Initializable {
     }
   }
 
-  /// @dev Converts the timestamp to the appropriate timepoint.
-  function _timestampToTimepoint(uint256 timestamp) internal view returns (uint256) {
-    if (_isClockModeTimestamp()) return timestamp;
-    return clockAdapter.timestampToTimepoint(timestamp);
-  }
-
   /// @dev Returns the current timepoint minus one.
   function _currentTimepointMinusOne() internal view returns (uint256) {
     if (_isClockModeTimestamp()) return block.timestamp - 1;
