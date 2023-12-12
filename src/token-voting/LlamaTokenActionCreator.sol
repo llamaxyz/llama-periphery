@@ -243,7 +243,7 @@ abstract contract LlamaTokenActionCreator is Initializable {
     string memory description
   ) internal returns (uint256 actionId) {
     /// @dev only timestamp mode is supported for now
-    _isClockModeSupported();
+    _isClockModeSupported(); // reverts if clock mode is not supported
 
     uint256 balance = _getPastVotes(tokenHolder, _currentTimepointMinusOne());
     if (balance < creationThreshold) revert InsufficientBalance(balance);
@@ -266,6 +266,7 @@ abstract contract LlamaTokenActionCreator is Initializable {
     emit ActionThresholdSet(_creationThreshold);
   }
 
+  ///@dev Reverts if the clock mode is not supported.
   function _isClockModeSupported() internal view {
     if (!_isClockModeTimestamp()) {
       string memory clockMode = _getClockMode();
@@ -274,16 +275,19 @@ abstract contract LlamaTokenActionCreator is Initializable {
     }
   }
 
+  /// @dev Converts the timestamp to the appropriate timepoint.
   function _timestampToTimepoint(uint256 timestamp) internal view returns (uint256) {
     if (_isClockModeTimestamp()) return timestamp;
     return timeManager.timestampToTimepoint(timestamp);
   }
 
+  /// @dev Returns the current timepoint minus one.
   function _currentTimepointMinusOne() internal view returns (uint256) {
     if (_isClockModeTimestamp()) return block.timestamp - 1;
     return timeManager.currentTimepointMinusOne();
   }
 
+  // Returns true if the clock mode is timestamp
   function _isClockModeTimestamp() internal view returns (bool) {
     string memory clockMode = _getClockMode();
     if (keccak256(abi.encodePacked(clockMode)) == keccak256(abi.encodePacked("mode=timestamp"))) return true;

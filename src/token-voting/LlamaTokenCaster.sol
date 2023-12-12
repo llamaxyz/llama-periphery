@@ -285,7 +285,7 @@ abstract contract LlamaTokenCaster is Initializable {
 
     if (block.timestamp > action.creationTime + approvalPeriod) revert SubmissionPeriodOver();
 
-    _isClockModeSupported();
+    _isClockModeSupported(); // reverts if clock mode is not supported
 
     uint256 totalSupply = _getPastTotalSupply(_timestampToTimepoint(action.creationTime - 1));
     uint96 votesFor = casts[actionInfo.id].votesFor;
@@ -316,7 +316,7 @@ abstract contract LlamaTokenCaster is Initializable {
     }
     if (block.timestamp >= action.minExecutionTime) revert SubmissionPeriodOver();
 
-    _isClockModeSupported();
+    _isClockModeSupported(); // reverts if clock mode is not supported
 
     uint256 totalSupply = _getPastTotalSupply(_timestampToTimepoint(action.creationTime - 1));
     uint96 vetoesFor = casts[actionInfo.id].vetoesFor;
@@ -390,11 +390,12 @@ abstract contract LlamaTokenCaster is Initializable {
   function _preCastAssertions(uint256 balance, uint8 support) internal view {
     if (support > uint8(VoteType.Abstain)) revert InvalidSupport(support);
 
-    _isClockModeSupported();
+    _isClockModeSupported(); // reverts if clock mode is not supported
 
     if (balance == 0) revert InsufficientBalance(balance);
   }
 
+  /// @dev reverts if the clock mode is not supported
   function _isClockModeSupported() internal view {
     if (!_isClockModeTimestamp()) {
       string memory clockMode = _getClockMode();
@@ -403,16 +404,19 @@ abstract contract LlamaTokenCaster is Initializable {
     }
   }
 
+  /// @dev Returns the timestamp or timepoint depending on the clock mode.
   function _timestampToTimepoint(uint256 timestamp) internal view returns (uint256) {
     if (_isClockModeTimestamp()) return timestamp;
     return timeManager.timestampToTimepoint(timestamp);
   }
 
+  /// @dev Returns the current timepoint minus one.
   function _currentTimepointMinusOne() internal view returns (uint256) {
     if (_isClockModeTimestamp()) return block.timestamp - 1;
     return timeManager.currentTimepointMinusOne();
   }
 
+  /// @dev Returns true if the clock mode is timestamp.
   function _isClockModeTimestamp() internal view returns (bool) {
     string memory clockMode = _getClockMode();
     if (keccak256(abi.encodePacked(clockMode)) == keccak256(abi.encodePacked("mode=timestamp"))) return true;
