@@ -21,6 +21,7 @@ contract LlamaTokenVotingFactory {
     address indexed deployer,
     ILlamaCore indexed llamaCore,
     address indexed token,
+    uint256 nonce,
     bool isERC20,
     uint8 actionCreatorRole,
     uint8 casterRole,
@@ -41,12 +42,6 @@ contract LlamaTokenVotingFactory {
   /// @notice The ERC721 Tokenholder Caster (logic) contract.
   LlamaERC721TokenCaster public immutable ERC721_TOKEN_CASTER_LOGIC;
 
-  /// @notice Mapping of deployer to Llama core to token to current nonce.
-  /// @dev This nonce is used in the salt of the deterministic deployment of the token voting module below. It ensures
-  /// that multiple token voting modules can be deployed deterministically for a given (deployer, Llama core, token)
-  /// triplet.
-  mapping(address deployer => mapping(address llamaCore => mapping(address token => uint256 nonce))) public nonces;
-
   /// @dev Set the logic contracts used to deploy Token Voting modules.
   constructor(
     LlamaERC20TokenActionCreator llamaERC20TokenActionCreatorLogic,
@@ -61,7 +56,9 @@ contract LlamaTokenVotingFactory {
   }
 
   ///@notice Deploys a token voting module in a single function so it can be deployed in a llama action.
+  ///@param llamaCore The address of the Llama core.
   ///@param token The address of the token to be used for voting.
+  ///@param nonce The nonce to be used in the salt of the deterministic deployment.
   ///@param isERC20 Whether the token is an ERC20 or ERC721.
   ///@param actionCreatorRole The role required by the `LlamaTokenActionCreator` to create an action.
   ///@param casterRole The role required by the `LlamaTokenCaster` to cast approvals and disapprovals.
@@ -71,6 +68,7 @@ contract LlamaTokenVotingFactory {
   function deployTokenVotingModule(
     ILlamaCore llamaCore,
     address token,
+    uint256 nonce,
     bool isERC20,
     uint8 actionCreatorRole,
     uint8 casterRole,
@@ -79,32 +77,24 @@ contract LlamaTokenVotingFactory {
     uint256 vetoQuorumPct
   ) external returns (address actionCreator, address caster) {
     if (isERC20) {
-      actionCreator =
-        address(_deployLlamaERC20TokenActionCreator(ERC20Votes(token), llamaCore, actionCreatorRole, creationThreshold));
-      caster =
-        address(_deployLlamaERC20TokenCaster(ERC20Votes(token), llamaCore, casterRole, voteQuorumPct, vetoQuorumPct));
+      actionCreator = address(
+        _deployLlamaERC20TokenActionCreator(ERC20Votes(token), llamaCore, nonce, actionCreatorRole, creationThreshold)
+      );
+      caster = address(
+        _deployLlamaERC20TokenCaster(ERC20Votes(token), llamaCore, nonce, casterRole, voteQuorumPct, vetoQuorumPct)
+      );
     } else {
       actionCreator = address(
-        _deployLlamaERC721TokenActionCreator(ERC721Votes(token), llamaCore, actionCreatorRole, creationThreshold)
+        _deployLlamaERC721TokenActionCreator(ERC721Votes(token), llamaCore, nonce, actionCreatorRole, creationThreshold)
       );
-      caster =
-        address(_deployLlamaERC721TokenCaster(ERC721Votes(token), llamaCore, casterRole, voteQuorumPct, vetoQuorumPct));
+      caster = address(
+        _deployLlamaERC721TokenCaster(ERC721Votes(token), llamaCore, nonce, casterRole, voteQuorumPct, vetoQuorumPct)
+      );
     }
 
-    _incrementNonce(msg.sender, address(llamaCore), token);
-
     emit LlamaTokenVotingInstanceCreated(
-      msg.sender, llamaCore, token, isERC20, actionCreatorRole, casterRole, actionCreator, caster, block.chainid
+      msg.sender, llamaCore, token, nonce, isERC20, actionCreatorRole, casterRole, actionCreator, caster, block.chainid
     );
-  }
-
-  /// @notice Returns the next salt for a given deployer, Llama core, token and current unused nonce.
-  /// @param deployer The address of the deployer.
-  /// @param llamaCore The address of the Llama core.
-  /// @param token The address of the token.
-  /// @return The next salt to be used.
-  function getNextSalt(address deployer, address llamaCore, address token) public view returns (bytes32) {
-    return keccak256(abi.encodePacked(deployer, llamaCore, token, nonces[deployer][llamaCore][token]));
   }
 
   // ====================================
@@ -115,12 +105,14 @@ contract LlamaTokenVotingFactory {
   function _deployLlamaERC20TokenActionCreator(
     ERC20Votes token,
     ILlamaCore llamaCore,
+    uint256 nonce,
     uint8 role,
     uint256 creationThreshold
   ) internal returns (LlamaERC20TokenActionCreator actionCreator) {
     actionCreator = LlamaERC20TokenActionCreator(
       Clones.cloneDeterministic(
-        address(ERC20_TOKEN_ACTION_CREATOR_LOGIC), getNextSalt(msg.sender, address(llamaCore), address(token))
+        address(ERC20_TOKEN_ACTION_CREATOR_LOGIC),
+        keccak256(abi.encodePacked(msg.sender, address(llamaCore), address(token), nonce))
       )
     );
     actionCreator.initialize(token, llamaCore, role, creationThreshold);
@@ -130,12 +122,14 @@ contract LlamaTokenVotingFactory {
   function _deployLlamaERC721TokenActionCreator(
     ERC721Votes token,
     ILlamaCore llamaCore,
+    uint256 nonce,
     uint8 role,
     uint256 creationThreshold
   ) internal returns (LlamaERC721TokenActionCreator actionCreator) {
     actionCreator = LlamaERC721TokenActionCreator(
       Clones.cloneDeterministic(
-        address(ERC721_TOKEN_ACTION_CREATOR_LOGIC), getNextSalt(msg.sender, address(llamaCore), address(token))
+        address(ERC721_TOKEN_ACTION_CREATOR_LOGIC),
+        keccak256(abi.encodePacked(msg.sender, address(llamaCore), address(token), nonce))
       )
     );
     actionCreator.initialize(token, llamaCore, role, creationThreshold);
@@ -145,13 +139,15 @@ contract LlamaTokenVotingFactory {
   function _deployLlamaERC20TokenCaster(
     ERC20Votes token,
     ILlamaCore llamaCore,
+    uint256 nonce,
     uint8 role,
     uint256 voteQuorumPct,
     uint256 vetoQuorumPct
   ) internal returns (LlamaERC20TokenCaster caster) {
     caster = LlamaERC20TokenCaster(
       Clones.cloneDeterministic(
-        address(ERC20_TOKEN_CASTER_LOGIC), getNextSalt(msg.sender, address(llamaCore), address(token))
+        address(ERC20_TOKEN_CASTER_LOGIC),
+        keccak256(abi.encodePacked(msg.sender, address(llamaCore), address(token), nonce))
       )
     );
     caster.initialize(token, llamaCore, role, voteQuorumPct, vetoQuorumPct);
@@ -161,21 +157,17 @@ contract LlamaTokenVotingFactory {
   function _deployLlamaERC721TokenCaster(
     ERC721Votes token,
     ILlamaCore llamaCore,
+    uint256 nonce,
     uint8 role,
     uint256 voteQuorumPct,
     uint256 vetoQuorumPct
   ) internal returns (LlamaERC721TokenCaster caster) {
     caster = LlamaERC721TokenCaster(
       Clones.cloneDeterministic(
-        address(ERC721_TOKEN_CASTER_LOGIC), getNextSalt(msg.sender, address(llamaCore), address(token))
+        address(ERC721_TOKEN_CASTER_LOGIC),
+        keccak256(abi.encodePacked(msg.sender, address(llamaCore), address(token), nonce))
       )
     );
     caster.initialize(token, llamaCore, role, voteQuorumPct, vetoQuorumPct);
-  }
-
-  /// @dev Increments the nonce for a given deployer, Llama core and token.
-  function _incrementNonce(address deployer, address llamaCore, address token) internal {
-    // Safety: Can never overflow a uint256 by incrementing.
-    nonces[deployer][llamaCore][token] = LlamaUtils.uncheckedIncrement(nonces[deployer][llamaCore][token]);
   }
 }
