@@ -88,6 +88,9 @@ abstract contract LlamaTokenActionCreator is Initializable {
   /// @notice The core contract for this Llama instance.
   ILlamaCore public llamaCore;
 
+  /// @notice The contract that manages the timepoints for this token voting module.
+  LlamaTokenVotingTimeManager public timeManager;
+
   /// @notice The default number of tokens required to create an action.
   uint256 public creationThreshold;
 
