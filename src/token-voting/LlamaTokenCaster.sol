@@ -285,11 +285,9 @@ abstract contract LlamaTokenCaster is Initializable {
 
     if (block.timestamp > action.creationTime + approvalPeriod) revert SubmissionPeriodOver();
 
-    string memory clockMode = _getClockMode();
+    _isClockModeSupported();
 
-    if (!timeManager.isClockModeSupported(clockMode)) revert ClockModeNotSupported(clockMode);
-
-    uint256 totalSupply = _getPastTotalSupply(timeManager.timestampToTimepoint(action.creationTime - 1));
+    uint256 totalSupply = _getPastTotalSupply(_timestampToTimepoint(action.creationTime - 1));
     uint96 votesFor = casts[actionInfo.id].votesFor;
     uint96 votesAgainst = casts[actionInfo.id].votesAgainst;
     uint96 votesAbstain = casts[actionInfo.id].votesAbstain;
@@ -318,11 +316,9 @@ abstract contract LlamaTokenCaster is Initializable {
     }
     if (block.timestamp >= action.minExecutionTime) revert SubmissionPeriodOver();
 
-    string memory clockMode = _getClockMode();
+    _isClockModeSupported();
 
-    if (!timeManager.isClockModeSupported(clockMode)) revert ClockModeNotSupported(clockMode);
-
-    uint256 totalSupply = _getPastTotalSupply(timeManager.timestampToTimepoint(action.creationTime - 1));
+    uint256 totalSupply = _getPastTotalSupply(_timestampToTimepoint(action.creationTime - 1));
     uint96 vetoesFor = casts[actionInfo.id].vetoesFor;
     uint96 vetoesAgainst = casts[actionInfo.id].vetoesAgainst;
     uint96 vetoesAbstain = casts[actionInfo.id].vetoesAbstain;
@@ -360,7 +356,7 @@ abstract contract LlamaTokenCaster is Initializable {
         > action.creationTime + (actionInfo.strategy.approvalPeriod() * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS
     ) revert CastingPeriodOver();
 
-    uint256 balance = _getPastVotes(caster, timeManager.timestampToTimepoint(action.creationTime - 1));
+    uint256 balance = _getPastVotes(caster, _timestampToTimepoint(action.creationTime - 1));
     _preCastAssertions(balance, support);
 
     if (support == uint8(VoteType.Against)) casts[actionInfo.id].votesAgainst += LlamaUtils.toUint96(balance);
@@ -381,7 +377,7 @@ abstract contract LlamaTokenCaster is Initializable {
         > action.minExecutionTime - (actionInfo.strategy.queuingPeriod() * ONE_THIRD_IN_BPS) / ONE_HUNDRED_IN_BPS
     ) revert CastingPeriodOver();
 
-    uint256 balance = _getPastVotes(caster, timeManager.timestampToTimepoint(action.creationTime - 1));
+    uint256 balance = _getPastVotes(caster, _timestampToTimepoint(action.creationTime - 1));
     _preCastAssertions(balance, support);
 
     if (support == uint8(VoteType.Against)) casts[actionInfo.id].vetoesAgainst += LlamaUtils.toUint96(balance);
@@ -394,10 +390,23 @@ abstract contract LlamaTokenCaster is Initializable {
   function _preCastAssertions(uint256 balance, uint8 support) internal view {
     if (support > uint8(VoteType.Abstain)) revert InvalidSupport(support);
 
-    string memory clockMode = _getClockMode();
-    if (!timeManager.isClockModeSupported(clockMode)) revert ClockModeNotSupported(clockMode);
+    _isClockModeSupported();
 
     if (balance == 0) revert InsufficientBalance(balance);
+  }
+
+  function _isClockModeSupported() internal view {
+    string memory clockMode = _getClockMode();
+    if (keccak256(abi.encodePacked(clockMode)) != keccak256(abi.encodePacked("mode=timestamp"))) {
+      bool supported = timeManager.isClockModeSupported(clockMode);
+      if (!supported) revert ClockModeNotSupported(clockMode);
+    }
+  }
+
+  function _timestampToTimepoint(uint256 timestamp) internal view returns (uint256) {
+    string memory clockMode = _getClockMode();
+    if (keccak256(abi.encodePacked(clockMode)) == keccak256(abi.encodePacked("mode=timestamp"))) return timestamp;
+    else return timeManager.timestampToTimepoint(timestamp);
   }
 
   /// @dev Returns the number of votes for a given token holder at a given timestamp.
