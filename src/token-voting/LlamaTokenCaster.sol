@@ -335,6 +335,11 @@ abstract contract LlamaTokenCaster is Initializable {
     emit DisapprovalSubmitted(actionInfo.id, msg.sender, vetoesFor, vetoesAgainst, vetoesAbstain);
   }
 
+  // -------- Instance Management --------
+
+  /// @notice Sets the voting quorum and vetoing quorum.
+  /// @param _voteQuorumPct The minimum % of votes required to submit an approval to `LlamaCore`.
+  /// @param _vetoQuorumPct The minimum % of vetoes required to submit a disapproval to `LlamaCore`.
   function setQuorumPct(uint256 _voteQuorumPct, uint256 _vetoQuorumPct) external {
     if (msg.sender != llamaCore.executor()) revert OnlyLlamaExecutor();
     if (_voteQuorumPct > ONE_HUNDRED_IN_BPS || _voteQuorumPct <= 0) revert InvalidVoteQuorumPct(_voteQuorumPct);
