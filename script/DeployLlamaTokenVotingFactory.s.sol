@@ -52,10 +52,6 @@ contract DeployLlamaTokenVotingFactory is Script {
     );
 
     vm.broadcast();
-    llamaTimestampTimeManager = new LlamaTimestampTimeManager();
-    DeployUtils.print(string.concat("  LlamaTimestampTimeManager: ", vm.toString(address(llamaTimestampTimeManager))));
-
-    vm.broadcast();
     tokenVotingFactory = new LlamaTokenVotingFactory(
       llamaERC20TokenActionCreatorLogic,
       llamaERC20TokenCasterLogic,
@@ -63,5 +59,9 @@ contract DeployLlamaTokenVotingFactory is Script {
       llamaERC721TokenCasterLogic
     );
     DeployUtils.print(string.concat("  LlamaTokenVotingFactory: ", vm.toString(address(tokenVotingFactory))));
+
+    vm.broadcast();
+    llamaTimestampTimeManager = new LlamaTimestampTimeManager();
+    DeployUtils.print(string.concat("  LlamaTimestampTimeManager: ", vm.toString(address(llamaTimestampTimeManager))));
   }
 }
