@@ -22,7 +22,7 @@ contract LlamaTokenVotingFactoryTest is LlamaTokenVotingTestSetup {
     address indexed deployer,
     ILlamaCore indexed llamaCore,
     address indexed token,
-    ILlamaTokenClockAdapter timeManager,
+    ILlamaTokenClockAdapter clockAdapter,
     uint256 nonce,
     bool isERC20,
     uint8 actionCreatorRole,

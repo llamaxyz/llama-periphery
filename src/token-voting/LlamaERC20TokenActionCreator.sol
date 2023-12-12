@@ -33,11 +33,11 @@ contract LlamaERC20TokenActionCreator is LlamaTokenActionCreator {
   function initialize(
     ERC20Votes _token,
     ILlamaCore _llamaCore,
-    ILlamaTokenClockAdapter _timeManager,
+    ILlamaTokenClockAdapter _clockAdapter,
     uint8 _role,
     uint256 _creationThreshold
   ) external initializer {
-    __initializeLlamaTokenActionCreatorMinimalProxy(_llamaCore, _timeManager, _role, _creationThreshold);
+    __initializeLlamaTokenActionCreatorMinimalProxy(_llamaCore, _clockAdapter, _role, _creationThreshold);
     token = _token;
     uint256 totalSupply = token.getPastTotalSupply(_currentTimepointMinusOne());
     if (totalSupply == 0) revert InvalidTokenAddress();

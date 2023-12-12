@@ -32,12 +32,12 @@ contract LlamaERC20TokenCaster is LlamaTokenCaster {
   function initialize(
     ERC20Votes _token,
     ILlamaCore _llamaCore,
-    ILlamaTokenClockAdapter _timeManager,
+    ILlamaTokenClockAdapter _clockAdapter,
     uint8 _role,
     uint256 _voteQuorumPct,
     uint256 _vetoQuorumPct
   ) external initializer {
-    __initializeLlamaTokenCasterMinimalProxy(_llamaCore, _timeManager, _role, _voteQuorumPct, _vetoQuorumPct);
+    __initializeLlamaTokenCasterMinimalProxy(_llamaCore, _clockAdapter, _role, _voteQuorumPct, _vetoQuorumPct);
     token = _token;
     uint256 totalSupply = token.getPastTotalSupply(_currentTimepointMinusOne());
     if (totalSupply == 0) revert InvalidTokenAddress();

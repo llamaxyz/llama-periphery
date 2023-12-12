@@ -160,7 +160,7 @@ abstract contract LlamaTokenCaster is Initializable {
   ILlamaCore public llamaCore;
 
   /// @notice The contract that manages the timepoints for this token voting module.
-  ILlamaTokenClockAdapter public timeManager;
+  ILlamaTokenClockAdapter public clockAdapter;
 
   /// @notice The minimum % of approvals required to submit approvals to `LlamaCore`.
   uint256 public voteQuorumPct;
@@ -191,7 +191,7 @@ abstract contract LlamaTokenCaster is Initializable {
   /// @param _vetoQuorumPct The minimum % of vetoes required to submit a disapproval to `LlamaCore`.
   function __initializeLlamaTokenCasterMinimalProxy(
     ILlamaCore _llamaCore,
-    ILlamaTokenClockAdapter _timeManager,
+    ILlamaTokenClockAdapter _clockAdapter,
     uint8 _role,
     uint256 _voteQuorumPct,
     uint256 _vetoQuorumPct
@@ -202,7 +202,7 @@ abstract contract LlamaTokenCaster is Initializable {
     if (_vetoQuorumPct > ONE_HUNDRED_IN_BPS || _vetoQuorumPct <= 0) revert InvalidVetoQuorumPct(_vetoQuorumPct);
 
     llamaCore = _llamaCore;
-    timeManager = _timeManager;
+    clockAdapter = _clockAdapter;
     role = _role;
     voteQuorumPct = _voteQuorumPct;
     vetoQuorumPct = _vetoQuorumPct;
@@ -399,7 +399,7 @@ abstract contract LlamaTokenCaster is Initializable {
   function _isClockModeSupported() internal view {
     if (!_isClockModeTimestamp()) {
       string memory clockMode = _getClockMode();
-      bool supported = timeManager.isClockModeSupported(clockMode);
+      bool supported = clockAdapter.isClockModeSupported(clockMode);
       if (!supported) revert ClockModeNotSupported(clockMode);
     }
   }
@@ -407,13 +407,13 @@ abstract contract LlamaTokenCaster is Initializable {
   /// @dev Returns the timestamp or timepoint depending on the clock mode.
   function _timestampToTimepoint(uint256 timestamp) internal view returns (uint256) {
     if (_isClockModeTimestamp()) return timestamp;
-    return timeManager.timestampToTimepoint(timestamp);
+    return clockAdapter.timestampToTimepoint(timestamp);
   }
 
   /// @dev Returns the current timepoint minus one.
   function _currentTimepointMinusOne() internal view returns (uint256) {
     if (_isClockModeTimestamp()) return block.timestamp - 1;
-    return timeManager.currentTimepointMinusOne();
+    return clockAdapter.currentTimepointMinusOne();
   }
 
   /// @dev Returns true if the clock mode is timestamp.

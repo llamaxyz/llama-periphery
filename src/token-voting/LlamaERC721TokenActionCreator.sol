@@ -34,11 +34,11 @@ contract LlamaERC721TokenActionCreator is LlamaTokenActionCreator {
   function initialize(
     ERC721Votes _token,
     ILlamaCore _llamaCore,
-    ILlamaTokenClockAdapter _timeManager,
+    ILlamaTokenClockAdapter _clockAdapter,
     uint8 _role,
     uint256 _creationThreshold
   ) external initializer {
-    __initializeLlamaTokenActionCreatorMinimalProxy(_llamaCore, _timeManager, _role, _creationThreshold);
+    __initializeLlamaTokenActionCreatorMinimalProxy(_llamaCore, _clockAdapter, _role, _creationThreshold);
     token = _token;
     if (!token.supportsInterface(type(IERC721).interfaceId)) revert InvalidTokenAddress();
     uint256 totalSupply = token.getPastTotalSupply(_currentTimepointMinusOne());

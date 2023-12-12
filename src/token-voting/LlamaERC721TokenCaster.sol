@@ -33,12 +33,12 @@ contract LlamaERC721TokenCaster is LlamaTokenCaster {
   function initialize(
     ERC721Votes _token,
     ILlamaCore _llamaCore,
-    ILlamaTokenClockAdapter _timeManager,
+    ILlamaTokenClockAdapter _clockAdapter,
     uint8 _role,
     uint256 _voteQuorumPct,
     uint256 _vetoQuorumPct
   ) external initializer {
-    __initializeLlamaTokenCasterMinimalProxy(_llamaCore, _timeManager, _role, _voteQuorumPct, _vetoQuorumPct);
+    __initializeLlamaTokenCasterMinimalProxy(_llamaCore, _clockAdapter, _role, _voteQuorumPct, _vetoQuorumPct);
     token = _token;
     if (!token.supportsInterface(type(IERC721).interfaceId)) revert InvalidTokenAddress();
     uint256 totalSupply = token.getPastTotalSupply(_currentTimepointMinusOne());

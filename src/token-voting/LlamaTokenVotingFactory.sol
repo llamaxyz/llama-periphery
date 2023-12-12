@@ -21,7 +21,7 @@ contract LlamaTokenVotingFactory {
     address indexed deployer,
     ILlamaCore indexed llamaCore,
     address indexed token,
-    ILlamaTokenClockAdapter timeManager,
+    ILlamaTokenClockAdapter clockAdapter,
     uint256 nonce,
     bool isERC20,
     uint8 actionCreatorRole,
@@ -69,7 +69,7 @@ contract LlamaTokenVotingFactory {
   function deployTokenVotingModule(
     ILlamaCore llamaCore,
     address token,
-    ILlamaTokenClockAdapter timeManager,
+    ILlamaTokenClockAdapter clockAdapter,
     uint256 nonce,
     bool isERC20,
     uint8 actionCreatorRole,
@@ -81,23 +81,23 @@ contract LlamaTokenVotingFactory {
     if (isERC20) {
       actionCreator = address(
         _deployLlamaERC20TokenActionCreator(
-          ERC20Votes(token), llamaCore, timeManager, nonce, actionCreatorRole, creationThreshold
+          ERC20Votes(token), llamaCore, clockAdapter, nonce, actionCreatorRole, creationThreshold
         )
       );
       caster = address(
         _deployLlamaERC20TokenCaster(
-          ERC20Votes(token), llamaCore, timeManager, nonce, casterRole, voteQuorumPct, vetoQuorumPct
+          ERC20Votes(token), llamaCore, clockAdapter, nonce, casterRole, voteQuorumPct, vetoQuorumPct
         )
       );
     } else {
       actionCreator = address(
         _deployLlamaERC721TokenActionCreator(
-          ERC721Votes(token), llamaCore, timeManager, nonce, actionCreatorRole, creationThreshold
+          ERC721Votes(token), llamaCore, clockAdapter, nonce, actionCreatorRole, creationThreshold
         )
       );
       caster = address(
         _deployLlamaERC721TokenCaster(
-          ERC721Votes(token), llamaCore, timeManager, nonce, casterRole, voteQuorumPct, vetoQuorumPct
+          ERC721Votes(token), llamaCore, clockAdapter, nonce, casterRole, voteQuorumPct, vetoQuorumPct
         )
       );
     }
@@ -106,7 +106,7 @@ contract LlamaTokenVotingFactory {
       msg.sender,
       llamaCore,
       token,
-      timeManager,
+      clockAdapter,
       nonce,
       isERC20,
       actionCreatorRole,
@@ -125,7 +125,7 @@ contract LlamaTokenVotingFactory {
   function _deployLlamaERC20TokenActionCreator(
     ERC20Votes token,
     ILlamaCore llamaCore,
-    ILlamaTokenClockAdapter timeManager,
+    ILlamaTokenClockAdapter clockAdapter,
     uint256 nonce,
     uint8 role,
     uint256 creationThreshold
@@ -136,14 +136,14 @@ contract LlamaTokenVotingFactory {
         keccak256(abi.encodePacked(msg.sender, address(llamaCore), address(token), nonce))
       )
     );
-    actionCreator.initialize(token, llamaCore, timeManager, role, creationThreshold);
+    actionCreator.initialize(token, llamaCore, clockAdapter, role, creationThreshold);
   }
 
   /// @dev Deploys and initiliazes a new `LlamaERC721TokenActionCreator` clone.
   function _deployLlamaERC721TokenActionCreator(
     ERC721Votes token,
     ILlamaCore llamaCore,
-    ILlamaTokenClockAdapter timeManager,
+    ILlamaTokenClockAdapter clockAdapter,
     uint256 nonce,
     uint8 role,
     uint256 creationThreshold
@@ -154,14 +154,14 @@ contract LlamaTokenVotingFactory {
         keccak256(abi.encodePacked(msg.sender, address(llamaCore), address(token), nonce))
       )
     );
-    actionCreator.initialize(token, llamaCore, timeManager, role, creationThreshold);
+    actionCreator.initialize(token, llamaCore, clockAdapter, role, creationThreshold);
   }
 
   /// @dev Deploys and initiliazes a new `LlamaERC20TokenCaster` clone.
   function _deployLlamaERC20TokenCaster(
     ERC20Votes token,
     ILlamaCore llamaCore,
-    ILlamaTokenClockAdapter timeManager,
+    ILlamaTokenClockAdapter clockAdapter,
     uint256 nonce,
     uint8 role,
     uint256 voteQuorumPct,
@@ -173,14 +173,14 @@ contract LlamaTokenVotingFactory {
         keccak256(abi.encodePacked(msg.sender, address(llamaCore), address(token), nonce))
       )
     );
-    caster.initialize(token, llamaCore, timeManager, role, voteQuorumPct, vetoQuorumPct);
+    caster.initialize(token, llamaCore, clockAdapter, role, voteQuorumPct, vetoQuorumPct);
   }
 
   /// @dev Deploys and initiliazes a new `LlamaERC721TokenCaster` clone.
   function _deployLlamaERC721TokenCaster(
     ERC721Votes token,
     ILlamaCore llamaCore,
-    ILlamaTokenClockAdapter timeManager,
+    ILlamaTokenClockAdapter clockAdapter,
     uint256 nonce,
     uint8 role,
     uint256 voteQuorumPct,
@@ -192,6 +192,6 @@ contract LlamaTokenVotingFactory {
         keccak256(abi.encodePacked(msg.sender, address(llamaCore), address(token), nonce))
       )
     );
-    caster.initialize(token, llamaCore, timeManager, role, voteQuorumPct, vetoQuorumPct);
+    caster.initialize(token, llamaCore, clockAdapter, role, voteQuorumPct, vetoQuorumPct);
   }
 }
