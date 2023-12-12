@@ -94,6 +94,9 @@ abstract contract LlamaTokenCaster is Initializable {
   /// @dev Thrown when an invalid `support` value is used when casting.
   error InvalidSupport(uint8 support);
 
+  /// @dev Thrown when an address other than the `LlamaExecutor` tries to call a function.
+  error OnlyLlamaExecutor();
+
   /// @dev Thrown when an invalid `role` is passed to the constructor.
   error RoleNotInitialized(uint8 role);
 
@@ -330,6 +333,15 @@ abstract contract LlamaTokenCaster is Initializable {
     casts[actionInfo.id].disapprovalSubmitted = true;
     llamaCore.castDisapproval(role, actionInfo, "");
     emit DisapprovalSubmitted(actionInfo.id, msg.sender, vetoesFor, vetoesAgainst, vetoesAbstain);
+  }
+
+  function setQuorumPct(uint256 _voteQuorumPct, uint256 _vetoQuorumPct) external {
+    if (msg.sender != llamaCore.executor()) revert OnlyLlamaExecutor();
+    if (_voteQuorumPct > ONE_HUNDRED_IN_BPS || _voteQuorumPct <= 0) revert InvalidVoteQuorumPct(_voteQuorumPct);
+    if (_vetoQuorumPct > ONE_HUNDRED_IN_BPS || _vetoQuorumPct <= 0) revert InvalidVetoQuorumPct(_vetoQuorumPct);
+    voteQuorumPct = _voteQuorumPct;
+    vetoQuorumPct = _vetoQuorumPct;
+    emit QuorumSet(_voteQuorumPct, _vetoQuorumPct);
   }
 
   // -------- User Nonce Management --------
