@@ -128,28 +128,6 @@ abstract contract LlamaTokenCaster is Initializable {
   // ======== Constants and Storage Variables ========
   // =================================================
 
-  /// @dev Equivalent to 100%, but in basis points.
-  uint256 internal constant ONE_HUNDRED_IN_BPS = 10_000;
-
-  uint256 internal constant ONE_THIRD_IN_BPS = 3333;
-  uint256 internal constant TWO_THIRDS_IN_BPS = 6667;
-
-  /// @notice The core contract for this Llama instance.
-  ILlamaCore public llamaCore;
-
-  /// @notice The contract that manages the timepoints for this token voting module.
-  LlamaTokenVotingTimeManager public timeManager;
-
-  /// @notice The minimum % of approvals required to submit approvals to `LlamaCore`.
-  uint256 public voteQuorumPct;
-
-  /// @notice The minimum % of disapprovals required to submit disapprovals to `LlamaCore`.
-  uint256 public vetoQuorumPct;
-
-  /// @notice The role used by this contract to cast approvals and disapprovals.
-  /// @dev This role is expected to have the ability to force approve and disapprove actions.
-  uint8 public role;
-
   /// @dev EIP-712 base typehash.
   bytes32 internal constant EIP712_DOMAIN_TYPEHASH =
     keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
@@ -168,6 +146,31 @@ abstract contract LlamaTokenCaster is Initializable {
   bytes32 internal constant ACTION_INFO_TYPEHASH = keccak256(
     "ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
   );
+
+  /// @dev Equivalent to 100%, but in basis points.
+  uint256 internal constant ONE_HUNDRED_IN_BPS = 10_000;
+
+  /// @dev Equivalent to 1/3, but in basis points.
+  uint256 internal constant ONE_THIRD_IN_BPS = 3333;
+
+  /// @dev Equivalent to 2/3, but in basis points.
+  uint256 internal constant TWO_THIRDS_IN_BPS = 6667;
+
+  /// @notice The core contract for this Llama instance.
+  ILlamaCore public llamaCore;
+
+  /// @notice The contract that manages the timepoints for this token voting module.
+  LlamaTokenVotingTimeManager public timeManager;
+
+  /// @notice The minimum % of approvals required to submit approvals to `LlamaCore`.
+  uint256 public voteQuorumPct;
+
+  /// @notice The minimum % of disapprovals required to submit disapprovals to `LlamaCore`.
+  uint256 public vetoQuorumPct;
+
+  /// @notice The role used by this contract to cast approvals and disapprovals.
+  /// @dev This role is expected to have the ability to force approve and disapprove actions.
+  uint8 public role;
 
   /// @notice Mapping from action ID to the status of existing casts.
   mapping(uint256 actionId => CastData) public casts;
