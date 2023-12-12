@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-/// @title LlamaTokenVotingTimeManager
+/// @title ILlamaTokenClockAdapter
 /// @author Llama (devsdosomething@llama.xyz)
-/// @notice This contract provides a base contract and interface for time modules to inherit that works with the Llama
-/// token voting module.
+/// @notice This contract provides an interface for adapters to inherit that works with Llama token voting.
 interface ILlamaTokenClockAdapter {
   /// @notice returns the most recent timepoint in the past.
   function currentTimepointMinusOne() external view returns (uint256 timepoint);
