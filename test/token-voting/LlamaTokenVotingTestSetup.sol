@@ -10,7 +10,7 @@ import {LlamaPeripheryTestSetup} from "test/LlamaPeripheryTestSetup.sol";
 
 import {DeployLlamaTokenVotingFactory} from "script/DeployLlamaTokenVotingFactory.s.sol";
 
-import {Action, ActionInfo, PermissionData} from "src/lib/Structs.sol";
+import {ActionInfo} from "src/lib/Structs.sol";
 import {ILlamaPolicy} from "src/interfaces/ILlamaPolicy.sol";
 import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
 import {ILlamaRelativeStrategyBase} from "src/interfaces/ILlamaRelativeStrategyBase.sol";
@@ -19,7 +19,6 @@ import {LlamaERC20TokenActionCreator} from "src/token-voting/LlamaERC20TokenActi
 import {LlamaERC20TokenCaster} from "src/token-voting/LlamaERC20TokenCaster.sol";
 import {LlamaERC721TokenActionCreator} from "src/token-voting/LlamaERC721TokenActionCreator.sol";
 import {LlamaERC721TokenCaster} from "src/token-voting/LlamaERC721TokenCaster.sol";
-import {LlamaTokenVotingTimeManager} from "src/token-voting/time/LlamaTokenVotingTimeManager.sol";
 
 contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenVotingFactory {
   // Percentages
@@ -101,7 +100,7 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
     (address llamaERC20TokenActionCreator, address llamaERC20TokenCaster) = tokenVotingFactory.deployTokenVotingModule(
       CORE,
       address(erc20VotesToken),
-      llamaTimestampTimeManager,
+      llamaTimeManager,
       true,
       tokenVotingActionCreatorRole,
       tokenVotingCasterRole,
@@ -128,7 +127,7 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
     (address llamaERC721TokenActionCreator, address llamaERC721TokenCaster) = tokenVotingFactory.deployTokenVotingModule(
       CORE,
       address(erc721VotesToken),
-      llamaTimestampTimeManager,
+      llamaTimeManager,
       false,
       tokenVotingActionCreatorRole,
       tokenVotingCasterRole,

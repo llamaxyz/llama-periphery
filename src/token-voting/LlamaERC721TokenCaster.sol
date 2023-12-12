@@ -5,8 +5,8 @@ import {ERC721Votes} from "@openzeppelin/token/ERC721/extensions/ERC721Votes.sol
 import {IERC721} from "@openzeppelin/token/ERC721/IERC721.sol";
 
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
+import {ILlamaTokenVotingTimeManager} from "src/interfaces/ILlamaTokenVotingTimeManager.sol";
 import {LlamaTokenCaster} from "src/token-voting/LlamaTokenCaster.sol";
-import {LlamaTokenVotingTimeManager} from "src/token-voting/time/LlamaTokenVotingTimeManager.sol";
 /// @title LlamaERC721TokenCaster
 /// @author Llama (devsdosomething@llama.xyz)
 /// @notice This contract lets holders of a given governance `ERC721Votes` token collectively cast an approval or
@@ -33,7 +33,7 @@ contract LlamaERC721TokenCaster is LlamaTokenCaster {
   function initialize(
     ERC721Votes _token,
     ILlamaCore _llamaCore,
-    LlamaTokenVotingTimeManager _timeManager,
+    ILlamaTokenVotingTimeManager _timeManager,
     uint8 _role,
     uint256 _voteQuorumPct,
     uint256 _vetoQuorumPct
@@ -41,7 +41,7 @@ contract LlamaERC721TokenCaster is LlamaTokenCaster {
     __initializeLlamaTokenCasterMinimalProxy(_llamaCore, _timeManager, _role, _voteQuorumPct, _vetoQuorumPct);
     token = _token;
     if (!token.supportsInterface(type(IERC721).interfaceId)) revert InvalidTokenAddress();
-    uint256 totalSupply = token.getPastTotalSupply(_timeManager.currentTimepointMinusOne());
+    uint256 totalSupply = token.getPastTotalSupply(_currentTimepointMinusOne());
     if (totalSupply == 0) revert InvalidTokenAddress();
   }
 

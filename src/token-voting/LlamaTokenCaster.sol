@@ -5,10 +5,10 @@ import {Initializable} from "@openzeppelin/proxy/utils/Initializable.sol";
 
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
+import {ILlamaTokenVotingTimeManager} from "src/interfaces/ILlamaTokenVotingTimeManager.sol";
 import {ActionState, VoteType} from "src/lib/Enums.sol";
 import {LlamaUtils} from "src/lib/LlamaUtils.sol";
 import {Action, ActionInfo} from "src/lib/Structs.sol";
-import {LlamaTokenVotingTimeManager} from "src/token-voting/time/LlamaTokenVotingTimeManager.sol";
 
 /// @title LlamaTokenCaster
 /// @author Llama (devsdosomething@llama.xyz)
@@ -160,7 +160,7 @@ abstract contract LlamaTokenCaster is Initializable {
   ILlamaCore public llamaCore;
 
   /// @notice The contract that manages the timepoints for this token voting module.
-  LlamaTokenVotingTimeManager public timeManager;
+  ILlamaTokenVotingTimeManager public timeManager;
 
   /// @notice The minimum % of approvals required to submit approvals to `LlamaCore`.
   uint256 public voteQuorumPct;
@@ -191,7 +191,7 @@ abstract contract LlamaTokenCaster is Initializable {
   /// @param _vetoQuorumPct The minimum % of vetoes required to submit a disapproval to `LlamaCore`.
   function __initializeLlamaTokenCasterMinimalProxy(
     ILlamaCore _llamaCore,
-    LlamaTokenVotingTimeManager _timeManager,
+    ILlamaTokenVotingTimeManager _timeManager,
     uint8 _role,
     uint256 _voteQuorumPct,
     uint256 _vetoQuorumPct
@@ -396,17 +396,27 @@ abstract contract LlamaTokenCaster is Initializable {
   }
 
   function _isClockModeSupported() internal view {
-    string memory clockMode = _getClockMode();
-    if (keccak256(abi.encodePacked(clockMode)) != keccak256(abi.encodePacked("mode=timestamp"))) {
+    if (!_isClockModeTimestamp()) {
+      string memory clockMode = _getClockMode();
       bool supported = timeManager.isClockModeSupported(clockMode);
       if (!supported) revert ClockModeNotSupported(clockMode);
     }
   }
 
   function _timestampToTimepoint(uint256 timestamp) internal view returns (uint256) {
-    string memory clockMode = _getClockMode();
-    if (keccak256(abi.encodePacked(clockMode)) == keccak256(abi.encodePacked("mode=timestamp"))) return timestamp;
+    if (_isClockModeTimestamp()) return timestamp;
     else return timeManager.timestampToTimepoint(timestamp);
+  }
+
+  function _currentTimepointMinusOne() internal view returns (uint256) {
+    if (_isClockModeTimestamp()) return block.timestamp - 1;
+    else return timeManager.currentTimepointMinusOne();
+  }
+
+  function _isClockModeTimestamp() internal view returns (bool) {
+    string memory clockMode = _getClockMode();
+    if (keccak256(abi.encodePacked(clockMode)) == keccak256(abi.encodePacked("mode=timestamp"))) return true;
+    else return false;
   }
 
   /// @dev Returns the number of votes for a given token holder at a given timestamp.

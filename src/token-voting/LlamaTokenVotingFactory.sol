@@ -6,11 +6,11 @@ import {ERC20Votes} from "@openzeppelin/token/ERC20/extensions/ERC20Votes.sol";
 import {ERC721Votes} from "@openzeppelin/token/ERC721/extensions/ERC721Votes.sol";
 
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
+import {ILlamaTokenVotingTimeManager} from "src/interfaces/ILlamaTokenVotingTimeManager.sol";
 import {LlamaERC20TokenActionCreator} from "src/token-voting/LlamaERC20TokenActionCreator.sol";
 import {LlamaERC20TokenCaster} from "src/token-voting/LlamaERC20TokenCaster.sol";
 import {LlamaERC721TokenActionCreator} from "src/token-voting/LlamaERC721TokenActionCreator.sol";
 import {LlamaERC721TokenCaster} from "src/token-voting/LlamaERC721TokenCaster.sol";
-import {LlamaTokenVotingTimeManager} from "src/token-voting/time/LlamaTokenVotingTimeManager.sol";
 
 /// @title LlamaTokenVotingFactory
 /// @author Llama (devsdosomething@llama.xyz)
@@ -21,7 +21,7 @@ contract LlamaTokenVotingFactory {
     address indexed deployer,
     ILlamaCore indexed llamaCore,
     address indexed token,
-    LlamaTokenVotingTimeManager timeManager,
+    ILlamaTokenVotingTimeManager timeManager,
     bool isERC20,
     uint8 actionCreatorRole,
     uint8 casterRole,
@@ -66,7 +66,7 @@ contract LlamaTokenVotingFactory {
   function deployTokenVotingModule(
     ILlamaCore llamaCore,
     address token,
-    LlamaTokenVotingTimeManager timeManager,
+    ILlamaTokenVotingTimeManager timeManager,
     bool isERC20,
     uint8 actionCreatorRole,
     uint8 casterRole,
@@ -120,7 +120,7 @@ contract LlamaTokenVotingFactory {
   function _deployLlamaERC20TokenActionCreator(
     ERC20Votes token,
     ILlamaCore llamaCore,
-    LlamaTokenVotingTimeManager timeManager,
+    ILlamaTokenVotingTimeManager timeManager,
     uint8 role,
     uint256 creationThreshold
   ) internal returns (LlamaERC20TokenActionCreator actionCreator) {
@@ -136,7 +136,7 @@ contract LlamaTokenVotingFactory {
   function _deployLlamaERC721TokenActionCreator(
     ERC721Votes token,
     ILlamaCore llamaCore,
-    LlamaTokenVotingTimeManager timeManager,
+    ILlamaTokenVotingTimeManager timeManager,
     uint8 role,
     uint256 creationThreshold
   ) internal returns (LlamaERC721TokenActionCreator actionCreator) {
@@ -152,7 +152,7 @@ contract LlamaTokenVotingFactory {
   function _deployLlamaERC20TokenCaster(
     ERC20Votes token,
     ILlamaCore llamaCore,
-    LlamaTokenVotingTimeManager timeManager,
+    ILlamaTokenVotingTimeManager timeManager,
     uint8 role,
     uint256 voteQuorumPct,
     uint256 vetoQuorumPct
@@ -169,7 +169,7 @@ contract LlamaTokenVotingFactory {
   function _deployLlamaERC721TokenCaster(
     ERC721Votes token,
     ILlamaCore llamaCore,
-    LlamaTokenVotingTimeManager timeManager,
+    ILlamaTokenVotingTimeManager timeManager,
     uint8 role,
     uint256 voteQuorumPct,
     uint256 vetoQuorumPct

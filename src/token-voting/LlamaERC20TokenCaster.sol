@@ -4,8 +4,8 @@ pragma solidity ^0.8.23;
 import {ERC20Votes} from "@openzeppelin/token/ERC20/extensions/ERC20Votes.sol";
 
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
+import {ILlamaTokenVotingTimeManager} from "src/interfaces/ILlamaTokenVotingTimeManager.sol";
 import {LlamaTokenCaster} from "src/token-voting/LlamaTokenCaster.sol";
-import {LlamaTokenVotingTimeManager} from "src/token-voting/time/LlamaTokenVotingTimeManager.sol";
 
 /// @title LlamaERC20TokenCaster
 /// @author Llama (devsdosomething@llama.xyz)
@@ -32,14 +32,14 @@ contract LlamaERC20TokenCaster is LlamaTokenCaster {
   function initialize(
     ERC20Votes _token,
     ILlamaCore _llamaCore,
-    LlamaTokenVotingTimeManager _timeManager,
+    ILlamaTokenVotingTimeManager _timeManager,
     uint8 _role,
     uint256 _voteQuorumPct,
     uint256 _vetoQuorumPct
   ) external initializer {
     __initializeLlamaTokenCasterMinimalProxy(_llamaCore, _timeManager, _role, _voteQuorumPct, _vetoQuorumPct);
     token = _token;
-    uint256 totalSupply = token.getPastTotalSupply(_timeManager.currentTimepointMinusOne());
+    uint256 totalSupply = token.getPastTotalSupply(_currentTimepointMinusOne());
     if (totalSupply == 0) revert InvalidTokenAddress();
   }
 

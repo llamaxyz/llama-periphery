@@ -4,8 +4,8 @@ pragma solidity ^0.8.23;
 import {ERC20Votes} from "@openzeppelin/token/ERC20/extensions/ERC20Votes.sol";
 
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
+import {ILlamaTokenVotingTimeManager} from "src/interfaces/ILlamaTokenVotingTimeManager.sol";
 import {LlamaTokenActionCreator} from "src/token-voting/LlamaTokenActionCreator.sol";
-import {LlamaTokenVotingTimeManager} from "src/token-voting/time/LlamaTokenVotingTimeManager.sol";
 
 /// @title LlamaERC20TokenActionCreator
 /// @author Llama (devsdosomething@llama.xyz)
@@ -33,13 +33,13 @@ contract LlamaERC20TokenActionCreator is LlamaTokenActionCreator {
   function initialize(
     ERC20Votes _token,
     ILlamaCore _llamaCore,
-    LlamaTokenVotingTimeManager _timeManager,
+    ILlamaTokenVotingTimeManager _timeManager,
     uint8 _role,
     uint256 _creationThreshold
   ) external initializer {
     __initializeLlamaTokenActionCreatorMinimalProxy(_llamaCore, _timeManager, _role, _creationThreshold);
     token = _token;
-    uint256 totalSupply = token.getPastTotalSupply(_timeManager.currentTimepointMinusOne());
+    uint256 totalSupply = token.getPastTotalSupply(_currentTimepointMinusOne());
     if (totalSupply == 0) revert InvalidTokenAddress();
     if (_creationThreshold > totalSupply) revert InvalidCreationThreshold();
   }

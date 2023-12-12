@@ -5,7 +5,7 @@ pragma solidity ^0.8.23;
 /// @author Llama (devsdosomething@llama.xyz)
 /// @notice This contract provides a base contract and interface for time modules to inherit that works with the Llama
 /// token voting module.
-interface LlamaTokenVotingTimeManager {
+interface ILlamaTokenVotingTimeManager {
   /// @notice returns the most recent timepoint in the past.
   function currentTimepointMinusOne() external view returns (uint256 timepoint);
   /// @notice converts a timestamp to a timepoint units.

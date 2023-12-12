@@ -4,12 +4,12 @@ pragma solidity 0.8.23;
 import {Script} from "forge-std/Script.sol";
 
 import {DeployUtils} from "script/DeployUtils.sol";
+import {ILlamaTokenVotingTimeManager} from "src/interfaces/ILlamaTokenVotingTimeManager.sol";
 import {LlamaERC20TokenActionCreator} from "src/token-voting/LlamaERC20TokenActionCreator.sol";
 import {LlamaERC20TokenCaster} from "src/token-voting/LlamaERC20TokenCaster.sol";
 import {LlamaERC721TokenActionCreator} from "src/token-voting/LlamaERC721TokenActionCreator.sol";
 import {LlamaERC721TokenCaster} from "src/token-voting/LlamaERC721TokenCaster.sol";
 import {LlamaTokenVotingFactory} from "src/token-voting/LlamaTokenVotingFactory.sol";
-import {LlamaTimestampTimeManager} from "src/token-voting/time/LlamaTimestampTimeManager.sol";
 
 contract DeployLlamaTokenVotingFactory is Script {
   // Logic contracts.
@@ -22,7 +22,7 @@ contract DeployLlamaTokenVotingFactory is Script {
   LlamaTokenVotingFactory tokenVotingFactory;
 
   // Time manager contracts.
-  LlamaTimestampTimeManager llamaTimestampTimeManager;
+  ILlamaTokenVotingTimeManager llamaTimeManager;
 
   function run() public {
     DeployUtils.print(
@@ -60,8 +60,6 @@ contract DeployLlamaTokenVotingFactory is Script {
     );
     DeployUtils.print(string.concat("  LlamaTokenVotingFactory: ", vm.toString(address(tokenVotingFactory))));
 
-    vm.broadcast();
-    llamaTimestampTimeManager = new LlamaTimestampTimeManager();
-    DeployUtils.print(string.concat("  LlamaTimestampTimeManager: ", vm.toString(address(llamaTimestampTimeManager))));
+    // Deploy the timestamp managers here when we develop them.
   }
 }
