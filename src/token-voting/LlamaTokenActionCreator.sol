@@ -276,18 +276,18 @@ abstract contract LlamaTokenActionCreator is Initializable {
 
   function _timestampToTimepoint(uint256 timestamp) internal view returns (uint256) {
     if (_isClockModeTimestamp()) return timestamp;
-    else return timeManager.timestampToTimepoint(timestamp);
+    return timeManager.timestampToTimepoint(timestamp);
   }
 
   function _currentTimepointMinusOne() internal view returns (uint256) {
     if (_isClockModeTimestamp()) return block.timestamp - 1;
-    else return timeManager.currentTimepointMinusOne();
+    return timeManager.currentTimepointMinusOne();
   }
 
   function _isClockModeTimestamp() internal view returns (bool) {
     string memory clockMode = _getClockMode();
     if (keccak256(abi.encodePacked(clockMode)) == keccak256(abi.encodePacked("mode=timestamp"))) return true;
-    else return false;
+    return false;
   }
 
   /// @dev Returns the number of votes for a given token holder at a given timestamp.
