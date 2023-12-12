@@ -100,7 +100,7 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
     (address llamaERC20TokenActionCreator, address llamaERC20TokenCaster) = tokenVotingFactory.deployTokenVotingModule(
       CORE,
       address(erc20VotesToken),
-      llamaTimeManager,
+      llamaTokenClockAdapter,
       0,
       true,
       tokenVotingActionCreatorRole,
@@ -128,7 +128,7 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
     (address llamaERC721TokenActionCreator, address llamaERC721TokenCaster) = tokenVotingFactory.deployTokenVotingModule(
       CORE,
       address(erc721VotesToken),
-      llamaTimeManager,
+      llamaTokenClockAdapter,
       0,
       false,
       tokenVotingActionCreatorRole,

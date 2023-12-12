@@ -5,7 +5,7 @@ import {Initializable} from "@openzeppelin/proxy/utils/Initializable.sol";
 
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
 import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
-import {ILlamaTokenVotingTimeManager} from "src/interfaces/ILlamaTokenVotingTimeManager.sol";
+import {ILlamaTokenClockAdapter} from "src/interfaces/ILlamaTokenClockAdapter.sol";
 import {Action, ActionInfo} from "src/lib/Structs.sol";
 import {LlamaUtils} from "src/lib/LlamaUtils.sol";
 
@@ -89,7 +89,7 @@ abstract contract LlamaTokenActionCreator is Initializable {
   ILlamaCore public llamaCore;
 
   /// @notice The contract that manages the timepoints for this token voting module.
-  ILlamaTokenVotingTimeManager public timeManager;
+  ILlamaTokenClockAdapter public timeManager;
 
   /// @notice The default number of tokens required to create an action.
   uint256 public creationThreshold;
@@ -118,7 +118,7 @@ abstract contract LlamaTokenActionCreator is Initializable {
   /// creation threshold of 1000 tokens, pass in 1000e18.
   function __initializeLlamaTokenActionCreatorMinimalProxy(
     ILlamaCore _llamaCore,
-    ILlamaTokenVotingTimeManager _timeManager,
+    ILlamaTokenClockAdapter _timeManager,
     uint8 _role,
     uint256 _creationThreshold
   ) internal {

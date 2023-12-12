@@ -5,7 +5,7 @@ import {ERC721Votes} from "@openzeppelin/token/ERC721/extensions/ERC721Votes.sol
 import {IERC721} from "@openzeppelin/token/ERC721/IERC721.sol";
 
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
-import {ILlamaTokenVotingTimeManager} from "src/interfaces/ILlamaTokenVotingTimeManager.sol";
+import {ILlamaTokenClockAdapter} from "src/interfaces/ILlamaTokenClockAdapter.sol";
 import {LlamaTokenCaster} from "src/token-voting/LlamaTokenCaster.sol";
 /// @title LlamaERC721TokenCaster
 /// @author Llama (devsdosomething@llama.xyz)
@@ -33,7 +33,7 @@ contract LlamaERC721TokenCaster is LlamaTokenCaster {
   function initialize(
     ERC721Votes _token,
     ILlamaCore _llamaCore,
-    ILlamaTokenVotingTimeManager _timeManager,
+    ILlamaTokenClockAdapter _timeManager,
     uint8 _role,
     uint256 _voteQuorumPct,
     uint256 _vetoQuorumPct

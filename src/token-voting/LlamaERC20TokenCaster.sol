@@ -4,7 +4,7 @@ pragma solidity ^0.8.23;
 import {ERC20Votes} from "@openzeppelin/token/ERC20/extensions/ERC20Votes.sol";
 
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
-import {ILlamaTokenVotingTimeManager} from "src/interfaces/ILlamaTokenVotingTimeManager.sol";
+import {ILlamaTokenClockAdapter} from "src/interfaces/ILlamaTokenClockAdapter.sol";
 import {LlamaTokenCaster} from "src/token-voting/LlamaTokenCaster.sol";
 
 /// @title LlamaERC20TokenCaster
@@ -32,7 +32,7 @@ contract LlamaERC20TokenCaster is LlamaTokenCaster {
   function initialize(
     ERC20Votes _token,
     ILlamaCore _llamaCore,
-    ILlamaTokenVotingTimeManager _timeManager,
+    ILlamaTokenClockAdapter _timeManager,
     uint8 _role,
     uint256 _voteQuorumPct,
     uint256 _vetoQuorumPct

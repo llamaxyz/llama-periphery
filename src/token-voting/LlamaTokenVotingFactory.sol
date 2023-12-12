@@ -6,7 +6,7 @@ import {ERC20Votes} from "@openzeppelin/token/ERC20/extensions/ERC20Votes.sol";
 import {ERC721Votes} from "@openzeppelin/token/ERC721/extensions/ERC721Votes.sol";
 
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
-import {ILlamaTokenVotingTimeManager} from "src/interfaces/ILlamaTokenVotingTimeManager.sol";
+import {ILlamaTokenClockAdapter} from "src/interfaces/ILlamaTokenClockAdapter.sol";
 import {LlamaERC20TokenActionCreator} from "src/token-voting/LlamaERC20TokenActionCreator.sol";
 import {LlamaERC20TokenCaster} from "src/token-voting/LlamaERC20TokenCaster.sol";
 import {LlamaERC721TokenActionCreator} from "src/token-voting/LlamaERC721TokenActionCreator.sol";
@@ -21,7 +21,7 @@ contract LlamaTokenVotingFactory {
     address indexed deployer,
     ILlamaCore indexed llamaCore,
     address indexed token,
-    ILlamaTokenVotingTimeManager timeManager,
+    ILlamaTokenClockAdapter timeManager,
     uint256 nonce,
     bool isERC20,
     uint8 actionCreatorRole,
@@ -69,7 +69,7 @@ contract LlamaTokenVotingFactory {
   function deployTokenVotingModule(
     ILlamaCore llamaCore,
     address token,
-    ILlamaTokenVotingTimeManager timeManager,
+    ILlamaTokenClockAdapter timeManager,
     uint256 nonce,
     bool isERC20,
     uint8 actionCreatorRole,
@@ -125,7 +125,7 @@ contract LlamaTokenVotingFactory {
   function _deployLlamaERC20TokenActionCreator(
     ERC20Votes token,
     ILlamaCore llamaCore,
-    ILlamaTokenVotingTimeManager timeManager,
+    ILlamaTokenClockAdapter timeManager,
     uint256 nonce,
     uint8 role,
     uint256 creationThreshold
@@ -143,7 +143,7 @@ contract LlamaTokenVotingFactory {
   function _deployLlamaERC721TokenActionCreator(
     ERC721Votes token,
     ILlamaCore llamaCore,
-    ILlamaTokenVotingTimeManager timeManager,
+    ILlamaTokenClockAdapter timeManager,
     uint256 nonce,
     uint8 role,
     uint256 creationThreshold
@@ -161,7 +161,7 @@ contract LlamaTokenVotingFactory {
   function _deployLlamaERC20TokenCaster(
     ERC20Votes token,
     ILlamaCore llamaCore,
-    ILlamaTokenVotingTimeManager timeManager,
+    ILlamaTokenClockAdapter timeManager,
     uint256 nonce,
     uint8 role,
     uint256 voteQuorumPct,
@@ -180,7 +180,7 @@ contract LlamaTokenVotingFactory {
   function _deployLlamaERC721TokenCaster(
     ERC721Votes token,
     ILlamaCore llamaCore,
-    ILlamaTokenVotingTimeManager timeManager,
+    ILlamaTokenClockAdapter timeManager,
     uint256 nonce,
     uint8 role,
     uint256 voteQuorumPct,
