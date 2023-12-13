@@ -6,10 +6,10 @@ pragma solidity ^0.8.23;
 /// @notice This contract provides an interface for clock adapters. Clock adapters enable voting tokens that don't use
 /// timestamp-based checkpointing to work with the Llama token voting module.
 interface ILlamaTokenClockAdapter {
-  /// @notice returns the most recent timepoint in the past.
+  /// @notice Returns the most recent timepoint in the past.
   function currentTimepointMinusOne() external view returns (uint256 timepoint);
 
-  /// @notice converts a timestamp to timepoint units.
+  /// @notice Converts a timestamp to timepoint units.
   /// @param timestamp The timestamp to convert.
   function timestampToTimepoint(uint256 timestamp) external view returns (uint256 timepoint);
 
