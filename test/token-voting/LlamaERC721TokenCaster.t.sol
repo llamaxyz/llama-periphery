@@ -25,7 +25,7 @@ contract LlamaERC721TokenCasterTest is LlamaTokenVotingTestSetup, LlamaCoreSigUt
   event DisapprovalSubmitted(
     uint256 id, address indexed caller, uint96 quantityFor, uint96 quantityAgainst, uint96 quantityAbstain
   );
-  event QuorumSet(uint256 voteQuorumPct, uint256 vetoQuorumPct);
+  event QuorumSet(uint16 voteQuorumPct, uint16 vetoQuorumPct);
 
   ActionInfo actionInfo;
   LlamaERC721TokenCaster llamaERC721TokenCaster;
@@ -726,9 +726,9 @@ contract SetQuorumPct is LlamaERC721TokenCasterTest {
     vm.stopPrank();
   }
 
-  function test_SetsQuorumPctCorrectly(uint256 _voteQuorum, uint256 _vetoQuorum) public {
-    _voteQuorum = bound(_voteQuorum, 1, ONE_HUNDRED_IN_BPS);
-    _vetoQuorum = bound(_vetoQuorum, 1, ONE_HUNDRED_IN_BPS);
+  function test_SetsQuorumPctCorrectly(uint16 _voteQuorum, uint16 _vetoQuorum) public {
+    _voteQuorum = uint16(bound(_voteQuorum, 1, ONE_HUNDRED_IN_BPS));
+    _vetoQuorum = uint16(bound(_vetoQuorum, 1, ONE_HUNDRED_IN_BPS));
     vm.expectEmit();
     emit QuorumSet(_voteQuorum, _vetoQuorum);
     vm.prank(address(EXECUTOR));

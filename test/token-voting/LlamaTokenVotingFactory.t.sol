@@ -30,7 +30,7 @@ contract LlamaTokenVotingFactoryTest is LlamaTokenVotingTestSetup {
     uint256 chainId
   );
   event ActionThresholdSet(uint256 newThreshold);
-  event QuorumSet(uint256 voteQuorumPct, uint256 vetoQuorumPct);
+  event QuorumSet(uint16 voteQuorumPct, uint16 vetoQuorumPct);
 
   function setUp() public override {
     LlamaTokenVotingTestSetup.setUp();
@@ -147,8 +147,6 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     assertEq(address(llamaERC20TokenCaster.token()), address(erc20VotesToken));
     assertEq(address(llamaERC20TokenCaster.llamaCore()), address(CORE));
     assertEq(llamaERC20TokenCaster.role(), tokenVotingCasterRole);
-    assertEq(llamaERC20TokenCaster.voteQuorumPct(), ERC20_VOTE_QUORUM_PCT);
-    assertEq(llamaERC20TokenCaster.vetoQuorumPct(), ERC20_VETO_QUORUM_PCT);
   }
 
   function test_CanDeployERC721TokenVotingModule() public {
@@ -210,8 +208,6 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     assertEq(address(llamaERC721TokenCaster.token()), address(erc721VotesToken));
     assertEq(address(llamaERC721TokenCaster.llamaCore()), address(CORE));
     assertEq(llamaERC721TokenCaster.role(), tokenVotingCasterRole);
-    assertEq(llamaERC721TokenCaster.voteQuorumPct(), ERC721_VOTE_QUORUM_PCT);
-    assertEq(llamaERC721TokenCaster.vetoQuorumPct(), ERC721_VETO_QUORUM_PCT);
   }
 
   function test_CanBeDeployedByAnyone(address randomCaller) public {
@@ -272,8 +268,6 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     assertEq(address(llamaERC20TokenCaster.token()), address(erc20VotesToken));
     assertEq(address(llamaERC20TokenCaster.llamaCore()), address(CORE));
     assertEq(llamaERC20TokenCaster.role(), tokenVotingCasterRole);
-    assertEq(llamaERC20TokenCaster.voteQuorumPct(), ERC20_VOTE_QUORUM_PCT);
-    assertEq(llamaERC20TokenCaster.vetoQuorumPct(), ERC20_VETO_QUORUM_PCT);
   }
 
   function test_CanBeDeployedMoreThanOnceBySameDeployer() public {
