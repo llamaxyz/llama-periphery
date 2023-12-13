@@ -347,6 +347,17 @@ abstract contract LlamaTokenCaster is Initializable {
     emit QuorumSet(_voteQuorumPct, _vetoQuorumPct);
   }
 
+  /// @notice Sets the casting / submission period ratio
+  /// @dev `_castingPeriodPct` + `_submissionPeriodPct` must be equal to `ONE_HUNDRED_IN_BPS`
+  /// @param _castingPeriodPct The minimum % of votes required to submit an approval to `LlamaCore`.
+  /// @param _submissionPeriodPct The minimum % of vetoes required to submit a disapproval to `LlamaCore`.
+  function setCastingAndSubmissionPeriodRatio(uint16 _castingPeriodPct, uint16 _submissionPeriodPct) external {
+    if (msg.sender != llamaCore.executor()) revert OnlyLlamaExecutor();
+    if (_castingPeriodPct + _submissionPeriodPct != ONE_HUNDRED_IN_BPS) revert InvalidSubmissionRatio(_castingPeriodPct, _submissionPeriodPct);
+    // quorumCheckpoints.push(_voteQuorumPct, _vetoQuorumPct);
+    // emit QuorumSet(_voteQuorumPct, _vetoQuorumPct);
+  }
+
   // -------- User Nonce Management --------
 
   /// @notice Increments the caller's nonce for the given `selector`. This is useful for revoking
