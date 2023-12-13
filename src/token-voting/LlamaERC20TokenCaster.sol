@@ -4,7 +4,7 @@ pragma solidity ^0.8.23;
 import {ERC20Votes} from "@openzeppelin/token/ERC20/extensions/ERC20Votes.sol";
 
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
-import {ILlamaTokenClockAdapter} from "src/interfaces/ILlamaTokenClockAdapter.sol";
+import {ILlamaTokenClockAdapter} from "src/token-voting/ILlamaTokenClockAdapter.sol";
 import {LlamaTokenCaster} from "src/token-voting/LlamaTokenCaster.sol";
 
 /// @title LlamaERC20TokenCaster

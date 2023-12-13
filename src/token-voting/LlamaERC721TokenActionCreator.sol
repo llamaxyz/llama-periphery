@@ -5,7 +5,7 @@ import {ERC721Votes} from "@openzeppelin/token/ERC721/extensions/ERC721Votes.sol
 import {IERC721} from "@openzeppelin/token/ERC721/IERC721.sol";
 
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
-import {ILlamaTokenClockAdapter} from "src/interfaces/ILlamaTokenClockAdapter.sol";
+import {ILlamaTokenClockAdapter} from "src/token-voting/ILlamaTokenClockAdapter.sol";
 import {LlamaTokenActionCreator} from "src/token-voting/LlamaTokenActionCreator.sol";
 
 /// @title LlamaERC721TokenActionCreator
