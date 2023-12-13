@@ -16,14 +16,14 @@ contract LlamaERC721TokenActionCreator is LlamaTokenActionCreator {
   /// @notice The ERC721 token to be used for voting.
   ERC721Votes public token;
 
-  /// @dev This contract is deployed as a minimal proxy from the factory's `deployTokenVotingModule` function. The
+  /// @dev This contract is deployed as a minimal proxy from the factory's `deploy` function. The
   /// `_disableInitializers` locks the implementation (logic) contract, preventing any future initialization of it.
   constructor() {
     _disableInitializers();
   }
 
   /// @notice Initializes a new `LlamaERC721TokenActionCreator` clone.
-  /// @dev This function is called by the `deployTokenVotingModule` function in the `LlamaTokenVotingFactory` contract.
+  /// @dev This function is called by the `deploy` function in the `LlamaTokenVotingFactory` contract.
   /// The `initializer` modifier ensures that this function can be invoked at most once.
   /// @param _token The ERC721 token to be used for voting.
   /// @param _llamaCore The `LlamaCore` contract for this Llama instance.

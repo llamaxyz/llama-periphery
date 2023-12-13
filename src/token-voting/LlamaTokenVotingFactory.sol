@@ -66,7 +66,7 @@ contract LlamaTokenVotingFactory {
   ///@param creationThreshold The number of tokens required to create an action.
   ///@param voteQuorumPct The minimum percentage of tokens required to approve an action.
   ///@param vetoQuorumPct The minimum percentage of tokens required to disapprove an action.
-  function deployTokenVotingModule(
+  function deploy(
     ILlamaCore llamaCore,
     address token,
     ILlamaTokenClockAdapter clockAdapter,

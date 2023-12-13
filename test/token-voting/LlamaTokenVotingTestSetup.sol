@@ -102,7 +102,7 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
   {
     vm.startPrank(address(EXECUTOR));
     // Deploy Token Voting Module
-    (address llamaERC20TokenActionCreator, address llamaERC20TokenCaster) = tokenVotingFactory.deployTokenVotingModule(
+    (address llamaERC20TokenActionCreator, address llamaERC20TokenCaster) = tokenVotingFactory.deploy(
       CORE,
       address(erc20VotesToken),
       LLAMA_TOKEN_TIMESTAMP_ADAPTER,
@@ -130,7 +130,7 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
   {
     vm.startPrank(address(EXECUTOR));
     // Deploy Token Voting Module
-    (address llamaERC721TokenActionCreator, address llamaERC721TokenCaster) = tokenVotingFactory.deployTokenVotingModule(
+    (address llamaERC721TokenActionCreator, address llamaERC721TokenCaster) = tokenVotingFactory.deploy(
       CORE,
       address(erc721VotesToken),
       LLAMA_TOKEN_TIMESTAMP_ADAPTER,
