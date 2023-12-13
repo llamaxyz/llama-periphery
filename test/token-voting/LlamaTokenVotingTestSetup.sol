@@ -37,6 +37,10 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
   uint256 public constant ERC721_VOTE_QUORUM_PCT = 1000;
   uint256 public constant ERC721_VETO_QUORUM_PCT = 1000;
 
+  // When deploying a token-voting module with timestamp checkpointing on the token, we pass in address(0) for the clock
+  // adapter.
+  ILlamaTokenClockAdapter constant LLAMA_TOKEN_TIMESTAMP_ADAPTER = ILlamaTokenClockAdapter(address(0));
+
   // Votes Tokens
   MockERC20Votes public erc20VotesToken;
   MockERC721Votes public erc721VotesToken;
@@ -58,9 +62,6 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
   address notTokenHolder;
   uint256 notTokenHolderPrivateKey;
 
-  // Time manager contracts.
-  // When deploying a token voting module with timestamp checkpointing on the token, we pass in address(0) for the clock adapter.
-  ILlamaTokenClockAdapter constant LLAMA_TOKEN_CLOCK_ADAPTER = ILlamaTokenClockAdapter(address(0)); 
   function setUp() public virtual override {
     LlamaPeripheryTestSetup.setUp();
 
@@ -104,7 +105,7 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
     (address llamaERC20TokenActionCreator, address llamaERC20TokenCaster) = tokenVotingFactory.deployTokenVotingModule(
       CORE,
       address(erc20VotesToken),
-      LLAMA_TOKEN_CLOCK_ADAPTER,
+      LLAMA_TOKEN_TIMESTAMP_ADAPTER,
       0,
       true,
       tokenVotingActionCreatorRole,
@@ -132,7 +133,7 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
     (address llamaERC721TokenActionCreator, address llamaERC721TokenCaster) = tokenVotingFactory.deployTokenVotingModule(
       CORE,
       address(erc721VotesToken),
-      LLAMA_TOKEN_CLOCK_ADAPTER,
+      LLAMA_TOKEN_TIMESTAMP_ADAPTER,
       0,
       false,
       tokenVotingActionCreatorRole,
