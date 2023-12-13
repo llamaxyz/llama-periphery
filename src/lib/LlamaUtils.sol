@@ -8,6 +8,12 @@ library LlamaUtils {
   /// @dev Thrown when a value cannot be safely casted to a smaller type.
   error UnsafeCast(uint256 n);
 
+  /// @dev Reverts if `n` does not fit in a `uint16`.
+  function toUint16(uint256 n) internal pure returns (uint16) {
+    if (n > type(uint16).max) revert UnsafeCast(n);
+    return uint16(n);
+  }
+
   /// @dev Reverts if `n` does not fit in a `uint64`.
   function toUint64(uint256 n) internal pure returns (uint64) {
     if (n > type(uint64).max) revert UnsafeCast(n);
@@ -18,6 +24,12 @@ library LlamaUtils {
   function toUint96(uint256 n) internal pure returns (uint96) {
     if (n > type(uint96).max) revert UnsafeCast(n);
     return uint96(n);
+  }
+
+  /// @dev Reverts if `n` does not fit in a `uint224`.
+  function toUint224(uint256 n) internal pure returns (uint224) {
+    if (n > type(uint224).max) revert UnsafeCast(n);
+    return uint224(n);
   }
 
   /// @dev Increments a `uint256` without checking for overflow.

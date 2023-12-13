@@ -13,30 +13,36 @@ import {LlamaUtils} from "src/lib/LlamaUtils.sol";
  *
  * @dev This was created by modifying then running the OpenZeppelin `Checkpoints.js` script, which generated a version
  * of this library that uses a 64 bit `timestamp` and 96 bit `quantity` field in the `Checkpoint` struct. The struct
- * was then modified to add a 64 bit `expiration` field. For simplicity, safe cast and math methods were inlined from
+ * was then modified to add two uint16 quorum fields. For simplicity, safe cast and math methods were inlined from
  * the OpenZeppelin versions at the same commit. We disable forge-fmt for this file to simplify diffing against the
  * original OpenZeppelin version: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/d00acef4059807535af0bd0dd0ddf619747a044b/contracts/utils/Checkpoints.sol
  */
-library PolicyholderCheckpoints {
+library QuorumCheckpoints {
     struct History {
         Checkpoint[] _checkpoints;
     }
 
     struct Checkpoint {
-        uint64 timestamp;
-        uint64 expiration;
-        uint96 quantity;
+        uint224 timestamp;
+        uint16 voteQuorumPct;
+        uint16 vetoQuorumPct;
     }
 
+    //     struct Checkpoint {
+    //     uint64 timestamp;
+    //     uint64 expiration;
+    //     uint96 quantity;
+    // }
+
     /**
-     * @dev Returns the quantity at a given block timestamp. If a checkpoint is not available at that time, the closest
+     * @dev Returns the quorums at a given block timestamp. If a checkpoint is not available at that time, the closest
      * one before it is returned, or zero otherwise. Similar to {upperLookup} but optimized for the case when the
      * searched checkpoint is probably "recent", defined as being among the last sqrt(N) checkpoints where N is the
      * timestamp of checkpoints.
      */
-    function getAtProbablyRecentTimestamp(History storage self, uint256 timestamp) internal view returns (uint96) {
+    function getAtProbablyRecentTimestamp(History storage self, uint256 timestamp) internal view returns (uint16, uint16) {
         require(timestamp < block.timestamp, "PolicyholderCheckpoints: timestamp is not in the past");
-        uint64 _timestamp = LlamaUtils.toUint64(timestamp);
+        uint224 _timestamp = LlamaUtils.toUint224(timestamp);
 
         uint256 len = self._checkpoints.length;
 
@@ -54,44 +60,48 @@ library PolicyholderCheckpoints {
 
         uint256 pos = _upperBinaryLookup(self._checkpoints, _timestamp, low, high);
 
-        return pos == 0 ? 0 : _unsafeAccess(self._checkpoints, pos - 1).quantity;
+        if (pos == 0) return (0, 0);
+        Checkpoint memory ckpt = _unsafeAccess(self._checkpoints, pos - 1);
+        return (ckpt.voteQuorumPct, ckpt.vetoQuorumPct);
     }
 
     /**
-     * @dev Pushes a `quantity` and `expiration` onto a History so that it is stored as the checkpoint for the current
+     * @dev Pushes a `voteQuorumPct` and `vetoQuorumPct` onto a History so that it is stored as the checkpoint for the current
      * `timestamp`.
      *
-     * Returns previous quantity and new quantity.
+     * Returns previous quorum and new quorum.
      *
-     * @dev Note that the order of the `expiration` and `quantity` parameters is reversed from the ordering used
-     * everywhere else in this file. The struct and other methods have the order as `(expiration, quantity)` but this
-     * method has it as `(quantity, expiration)`. As a result, use caution when editing this method to avoid
+     * @dev Note that the order of the `voteQuorumPct` and `vetoQuorumPct` parameters is reversed from the ordering used
+     * everywhere else in this file. The struct and other methods have the order as `(voteQuorumPct, vetoQuorumPct)` but this
+     * method has it as `(voteQuorumPct, vetoQuorumPct)`. As a result, use caution when editing this method to avoid
      * accidentally introducing a bug or breaking change.
      */
-    function push(History storage self, uint256 quantity, uint256 expiration) internal returns (uint96, uint96) {
-        return _insert(self._checkpoints, LlamaUtils.toUint64(block.timestamp), LlamaUtils.toUint64(expiration), LlamaUtils.toUint96(quantity));
+    function push(History storage self, uint256 vetoQuorumPct, uint256 voteQuorumPct) internal returns (uint16, uint16) {
+        return _insert(self._checkpoints, LlamaUtils.toUint224(block.timestamp), LlamaUtils.toUint16(voteQuorumPct), LlamaUtils.toUint16(vetoQuorumPct));
     }
 
     /**
-     * @dev Returns the quantity in the most recent checkpoint, or zero if there are no checkpoints.
+     * @dev Returns the quorum in the most recent checkpoint, or zero if there are no checkpoints.
      */
-    function latest(History storage self) internal view returns (uint96) {
+    function latest(History storage self) internal view returns (uint16, uint16) {
         uint256 pos = self._checkpoints.length;
-        return pos == 0 ? 0 : _unsafeAccess(self._checkpoints, pos - 1).quantity;
+        if (pos == 0) return (0, 0);
+        Checkpoint memory ckpt = _unsafeAccess(self._checkpoints, pos - 1);
+        return (ckpt.voteQuorumPct, ckpt.vetoQuorumPct);
     }
 
     /**
      * @dev Returns whether there is a checkpoint in the structure (i.e. it is not empty), and if so the timestamp and
-     * quantity in the most recent checkpoint.
+     * quorum in the most recent checkpoint.
      */
     function latestCheckpoint(History storage self)
         internal
         view
         returns (
             bool exists,
-            uint64 timestamp,
-            uint64 expiration,
-            uint96 quantity
+            uint224 timestamp,
+            uint16 voteQuorumPct,
+            uint16 vetoQuorumPct
         )
     {
         uint256 pos = self._checkpoints.length;
@@ -99,7 +109,7 @@ library PolicyholderCheckpoints {
             return (false, 0, 0, 0);
         } else {
             Checkpoint memory ckpt = _unsafeAccess(self._checkpoints, pos - 1);
-            return (true, ckpt.timestamp, ckpt.expiration, ckpt.quantity);
+            return (true, ckpt.timestamp, ckpt.voteQuorumPct, ckpt.vetoQuorumPct);
         }
     }
 
@@ -111,15 +121,15 @@ library PolicyholderCheckpoints {
     }
 
     /**
-     * @dev Pushes a (`timestamp`, `expiration`, `quantity`) pair into an ordered list of checkpoints, either by inserting a new
+     * @dev Pushes a (`timestamp`, `voteQuorumPct`, `vetoQuorumPct`) pair into an ordered list of checkpoints, either by inserting a new
      * checkpoint, or by updating the last one.
      */
     function _insert(
         Checkpoint[] storage self,
-        uint64 timestamp,
-        uint64 expiration,
-        uint96 quantity
-    ) private returns (uint96, uint96) {
+        uint224 timestamp,
+        uint16 voteQuorumPct,
+        uint16 vetoQuorumPct
+    ) private returns (uint16, uint16) {
         uint256 pos = self.length;
 
         if (pos > 0) {
@@ -132,15 +142,15 @@ library PolicyholderCheckpoints {
             // Update or push new checkpoint
             if (last.timestamp == timestamp) {
                 Checkpoint storage ckpt = _unsafeAccess(self, pos - 1);
-                ckpt.quantity = quantity;
-                ckpt.expiration = expiration;
+                ckpt.voteQuorumPct = voteQuorumPct;
+                ckpt.vetoQuorumPct = vetoQuorumPct;
             } else {
-                self.push(Checkpoint({timestamp: timestamp, expiration: expiration, quantity: quantity}));
+                self.push(Checkpoint({timestamp: timestamp, voteQuorumPct: voteQuorumPct, vetoQuorumPct: vetoQuorumPct}));
             }
-            return (last.quantity, quantity);
+            return (last.vetoQuorumPct, vetoQuorumPct);
         } else {
-            self.push(Checkpoint({timestamp: timestamp, expiration: expiration, quantity: quantity}));
-            return (0, quantity);
+            self.push(Checkpoint({timestamp: timestamp, voteQuorumPct: voteQuorumPct, vetoQuorumPct: vetoQuorumPct}));
+            return (0, vetoQuorumPct);
         }
     }
 
@@ -153,7 +163,7 @@ library PolicyholderCheckpoints {
      */
     function _upperBinaryLookup(
         Checkpoint[] storage self,
-        uint64 timestamp,
+        uint224 timestamp,
         uint256 low,
         uint256 high
     ) private view returns (uint256) {
@@ -177,7 +187,7 @@ library PolicyholderCheckpoints {
      */
     function _lowerBinaryLookup(
         Checkpoint[] storage self,
-        uint64 timestamp,
+        uint224 timestamp,
         uint256 low,
         uint256 high
     ) private view returns (uint256) {

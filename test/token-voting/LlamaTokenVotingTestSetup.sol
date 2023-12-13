@@ -28,13 +28,13 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
 
   // ERC20 Token Voting Constants.
   uint256 public constant ERC20_CREATION_THRESHOLD = 500_000e18;
-  uint256 public constant ERC20_VOTE_QUORUM_PCT = 1000;
-  uint256 public constant ERC20_VETO_QUORUM_PCT = 1000;
+  uint16 public constant ERC20_VOTE_QUORUM_PCT = 1000;
+  uint16 public constant ERC20_VETO_QUORUM_PCT = 1000;
 
   // ERC721 Token Voting Constants.
   uint256 public constant ERC721_CREATION_THRESHOLD = 1;
-  uint256 public constant ERC721_VOTE_QUORUM_PCT = 1000;
-  uint256 public constant ERC721_VETO_QUORUM_PCT = 1000;
+  uint16 public constant ERC721_VOTE_QUORUM_PCT = 1000;
+  uint16 public constant ERC721_VETO_QUORUM_PCT = 1000;
 
   // Votes Tokens
   MockERC20Votes public erc20VotesToken;

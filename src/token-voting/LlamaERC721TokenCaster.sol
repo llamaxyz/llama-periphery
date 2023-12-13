@@ -32,8 +32,8 @@ contract LlamaERC721TokenCaster is LlamaTokenCaster {
     ERC721Votes _token,
     ILlamaCore _llamaCore,
     uint8 _role,
-    uint256 _voteQuorumPct,
-    uint256 _vetoQuorumPct
+    uint16 _voteQuorumPct,
+    uint16 _vetoQuorumPct
   ) external initializer {
     __initializeLlamaTokenCasterMinimalProxy(_llamaCore, _role, _voteQuorumPct, _vetoQuorumPct);
     token = _token;
