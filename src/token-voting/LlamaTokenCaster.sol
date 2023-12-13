@@ -289,7 +289,7 @@ abstract contract LlamaTokenCaster is Initializable {
     uint96 votesFor = casts[actionInfo.id].votesFor;
     uint96 votesAgainst = casts[actionInfo.id].votesAgainst;
     uint96 votesAbstain = casts[actionInfo.id].votesAbstain;
-    (uint16 voteQuorumPct, ) = quorumCheckpoints.getAtProbablyRecentTimestamp(action.creationTime - 1);
+    (uint16 voteQuorumPct,) = quorumCheckpoints.getAtProbablyRecentTimestamp(action.creationTime - 1);
     uint256 threshold = FixedPointMathLib.mulDivUp(totalSupply, voteQuorumPct, ONE_HUNDRED_IN_BPS);
     if (votesFor < threshold) revert InsufficientVotes(votesFor, threshold);
     if (votesFor <= votesAgainst) revert ForDoesNotSurpassAgainst(votesFor, votesAgainst);
