@@ -7,7 +7,7 @@ pragma solidity ^0.8.23;
 interface ILlamaTokenClockAdapter {
   /// @notice returns the most recent timepoint in the past.
   function currentTimepointMinusOne() external view returns (uint256 timepoint);
-  /// @notice converts a timestamp to a timepoint units.
+  /// @notice converts a timestamp to timepoint units.
   /// @param timestamp The timestamp to convert.
   function timestampToTimepoint(uint256 timestamp) external view returns (uint256 timepoint);
   /// @notice returns true if the clock mode is supported.
