@@ -5,6 +5,7 @@ import {Initializable} from "@openzeppelin/proxy/utils/Initializable.sol";
 
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
 import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
+import {ILlamaTokenClockAdapter} from "src/token-voting/ILlamaTokenClockAdapter.sol";
 import {Action, ActionInfo} from "src/lib/Structs.sol";
 import {LlamaUtils} from "src/lib/LlamaUtils.sol";
 
@@ -87,6 +88,9 @@ abstract contract LlamaTokenActionCreator is Initializable {
   /// @notice The core contract for this Llama instance.
   ILlamaCore public llamaCore;
 
+  /// @notice The contract that manages the timepoints for this token voting module.
+  ILlamaTokenClockAdapter public clockAdapter;
+
   /// @notice The default number of tokens required to create an action.
   uint256 public creationThreshold;
 
@@ -114,6 +118,7 @@ abstract contract LlamaTokenActionCreator is Initializable {
   /// creation threshold of 1000 tokens, pass in 1000e18.
   function __initializeLlamaTokenActionCreatorMinimalProxy(
     ILlamaCore _llamaCore,
+    ILlamaTokenClockAdapter _clockAdapter,
     uint8 _role,
     uint256 _creationThreshold
   ) internal {
@@ -121,6 +126,7 @@ abstract contract LlamaTokenActionCreator is Initializable {
     if (_role > _llamaCore.policy().numRoles()) revert RoleNotInitialized(_role);
 
     llamaCore = _llamaCore;
+    clockAdapter = _clockAdapter;
     role = _role;
     _setActionThreshold(_creationThreshold);
   }
@@ -209,7 +215,7 @@ abstract contract LlamaTokenActionCreator is Initializable {
   /// @dev This must be in the same decimals as the token.
   function setActionThreshold(uint256 _creationThreshold) external {
     if (msg.sender != address(llamaCore.executor())) revert OnlyLlamaExecutor();
-    if (_creationThreshold > _getPastTotalSupply(block.timestamp - 1)) revert InvalidCreationThreshold();
+    if (_creationThreshold > _getPastTotalSupply(_currentTimepointMinusOne())) revert InvalidCreationThreshold();
     _setActionThreshold(_creationThreshold);
   }
 
@@ -237,12 +243,9 @@ abstract contract LlamaTokenActionCreator is Initializable {
     string memory description
   ) internal returns (uint256 actionId) {
     /// @dev only timestamp mode is supported for now
-    string memory clockMode = _getClockMode();
-    if (keccak256(abi.encodePacked(clockMode)) != keccak256(abi.encodePacked("mode=timestamp"))) {
-      revert ClockModeNotSupported(clockMode);
-    }
+    _isClockModeSupported(); // reverts if clock mode is not supported
 
-    uint256 balance = _getPastVotes(tokenHolder, block.timestamp - 1);
+    uint256 balance = _getPastVotes(tokenHolder, _currentTimepointMinusOne());
     if (balance < creationThreshold) revert InsufficientBalance(balance);
 
     actionId = llamaCore.createAction(role, strategy, target, value, data, description);
@@ -263,11 +266,33 @@ abstract contract LlamaTokenActionCreator is Initializable {
     emit ActionThresholdSet(_creationThreshold);
   }
 
+  ///@dev Reverts if the clock mode is not supported.
+  function _isClockModeSupported() internal view {
+    if (!_isClockModeTimestamp()) {
+      string memory clockMode = _getClockMode();
+      bool supported = clockAdapter.isClockModeSupported(clockMode);
+      if (!supported) revert ClockModeNotSupported(clockMode);
+    }
+  }
+
+  /// @dev Returns the current timepoint minus one.
+  function _currentTimepointMinusOne() internal view returns (uint256) {
+    if (_isClockModeTimestamp()) return block.timestamp - 1;
+    return clockAdapter.currentTimepointMinusOne();
+  }
+
+  // Returns true if the clock mode is timestamp
+  function _isClockModeTimestamp() internal view returns (bool) {
+    string memory clockMode = _getClockMode();
+    if (keccak256(abi.encodePacked(clockMode)) == keccak256(abi.encodePacked("mode=timestamp"))) return true;
+    return false;
+  }
+
   /// @dev Returns the number of votes for a given token holder at a given timestamp.
-  function _getPastVotes(address account, uint256 timestamp) internal view virtual returns (uint256) {}
+  function _getPastVotes(address account, uint256 timepoint) internal view virtual returns (uint256) {}
 
   /// @dev Returns the total supply of the token at a given timestamp.
-  function _getPastTotalSupply(uint256 timestamp) internal view virtual returns (uint256) {}
+  function _getPastTotalSupply(uint256 timepoint) internal view virtual returns (uint256) {}
 
   /// @dev Returns the clock mode of the token (https://eips.ethereum.org/EIPS/eip-6372).
   function _getClockMode() internal view virtual returns (string memory) {}

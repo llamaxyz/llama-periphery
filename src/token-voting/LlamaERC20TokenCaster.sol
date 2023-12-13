@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
-import {LlamaTokenCaster} from "src/token-voting/LlamaTokenCaster.sol";
 import {ERC20Votes} from "@openzeppelin/token/ERC20/extensions/ERC20Votes.sol";
+
+import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
+import {ILlamaTokenClockAdapter} from "src/token-voting/ILlamaTokenClockAdapter.sol";
+import {LlamaTokenCaster} from "src/token-voting/LlamaTokenCaster.sol";
 
 /// @title LlamaERC20TokenCaster
 /// @author Llama (devsdosomething@llama.xyz)
@@ -30,24 +32,25 @@ contract LlamaERC20TokenCaster is LlamaTokenCaster {
   function initialize(
     ERC20Votes _token,
     ILlamaCore _llamaCore,
+    ILlamaTokenClockAdapter _clockAdapter,
     uint8 _role,
     uint256 _voteQuorumPct,
     uint256 _vetoQuorumPct
   ) external initializer {
-    __initializeLlamaTokenCasterMinimalProxy(_llamaCore, _role, _voteQuorumPct, _vetoQuorumPct);
+    __initializeLlamaTokenCasterMinimalProxy(_llamaCore, _clockAdapter, _role, _voteQuorumPct, _vetoQuorumPct);
     token = _token;
-    uint256 totalSupply = token.getPastTotalSupply(block.timestamp - 1);
+    uint256 totalSupply = token.getPastTotalSupply(_currentTimepointMinusOne());
     if (totalSupply == 0) revert InvalidTokenAddress();
   }
 
   /// @inheritdoc LlamaTokenCaster
-  function _getPastVotes(address account, uint256 timestamp) internal view virtual override returns (uint256) {
-    return token.getPastVotes(account, timestamp);
+  function _getPastVotes(address account, uint256 timepoint) internal view virtual override returns (uint256) {
+    return token.getPastVotes(account, timepoint);
   }
 
   /// @inheritdoc LlamaTokenCaster
-  function _getPastTotalSupply(uint256 timestamp) internal view virtual override returns (uint256) {
-    return token.getPastTotalSupply(timestamp);
+  function _getPastTotalSupply(uint256 timepoint) internal view virtual override returns (uint256) {
+    return token.getPastTotalSupply(timepoint);
   }
 
   /// @inheritdoc LlamaTokenCaster

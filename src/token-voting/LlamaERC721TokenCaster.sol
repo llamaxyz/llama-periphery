@@ -1,15 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
-import {LlamaTokenCaster} from "src/token-voting/LlamaTokenCaster.sol";
 import {ERC721Votes} from "@openzeppelin/token/ERC721/extensions/ERC721Votes.sol";
 import {IERC721} from "@openzeppelin/token/ERC721/IERC721.sol";
 
+import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
+import {ILlamaTokenClockAdapter} from "src/token-voting/ILlamaTokenClockAdapter.sol";
+import {LlamaTokenCaster} from "src/token-voting/LlamaTokenCaster.sol";
 /// @title LlamaERC721TokenCaster
 /// @author Llama (devsdosomething@llama.xyz)
 /// @notice This contract lets holders of a given governance `ERC721Votes` token collectively cast an approval or
 /// disapproval on created actions.
+
 contract LlamaERC721TokenCaster is LlamaTokenCaster {
   /// @notice The ERC721 token to be used for voting.
   ERC721Votes public token;
@@ -31,25 +33,26 @@ contract LlamaERC721TokenCaster is LlamaTokenCaster {
   function initialize(
     ERC721Votes _token,
     ILlamaCore _llamaCore,
+    ILlamaTokenClockAdapter _clockAdapter,
     uint8 _role,
     uint256 _voteQuorumPct,
     uint256 _vetoQuorumPct
   ) external initializer {
-    __initializeLlamaTokenCasterMinimalProxy(_llamaCore, _role, _voteQuorumPct, _vetoQuorumPct);
+    __initializeLlamaTokenCasterMinimalProxy(_llamaCore, _clockAdapter, _role, _voteQuorumPct, _vetoQuorumPct);
     token = _token;
     if (!token.supportsInterface(type(IERC721).interfaceId)) revert InvalidTokenAddress();
-    uint256 totalSupply = token.getPastTotalSupply(block.timestamp - 1);
+    uint256 totalSupply = token.getPastTotalSupply(_currentTimepointMinusOne());
     if (totalSupply == 0) revert InvalidTokenAddress();
   }
 
   /// @inheritdoc LlamaTokenCaster
-  function _getPastVotes(address account, uint256 timestamp) internal view virtual override returns (uint256) {
-    return token.getPastVotes(account, timestamp);
+  function _getPastVotes(address account, uint256 timepoint) internal view virtual override returns (uint256) {
+    return token.getPastVotes(account, timepoint);
   }
 
   /// @inheritdoc LlamaTokenCaster
-  function _getPastTotalSupply(uint256 timestamp) internal view virtual override returns (uint256) {
-    return token.getPastTotalSupply(timestamp);
+  function _getPastTotalSupply(uint256 timepoint) internal view virtual override returns (uint256) {
+    return token.getPastTotalSupply(timepoint);
   }
 
   /// @inheritdoc LlamaTokenCaster

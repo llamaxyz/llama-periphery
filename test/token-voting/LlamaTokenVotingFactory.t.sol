@@ -10,6 +10,7 @@ import {LlamaTokenVotingTestSetup} from "test/token-voting/LlamaTokenVotingTestS
 import {ActionInfo} from "src/lib/Structs.sol";
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
 import {ILlamaPolicy} from "src/interfaces/ILlamaPolicy.sol";
+import {ILlamaTokenClockAdapter} from "src/token-voting/ILlamaTokenClockAdapter.sol";
 import {LlamaERC20TokenActionCreator} from "src/token-voting/LlamaERC20TokenActionCreator.sol";
 import {LlamaERC20TokenCaster} from "src/token-voting/LlamaERC20TokenCaster.sol";
 import {LlamaERC721TokenActionCreator} from "src/token-voting/LlamaERC721TokenActionCreator.sol";
@@ -21,6 +22,7 @@ contract LlamaTokenVotingFactoryTest is LlamaTokenVotingTestSetup {
     address indexed deployer,
     ILlamaCore indexed llamaCore,
     address indexed token,
+    ILlamaTokenClockAdapter clockAdapter,
     uint256 nonce,
     bool isERC20,
     uint8 actionCreatorRole,
@@ -94,6 +96,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
       LlamaTokenVotingFactory.deployTokenVotingModule.selector,
       CORE,
       address(erc20VotesToken),
+      LLAMA_TOKEN_TIMESTAMP_ADAPTER,
       0,
       true,
       tokenVotingActionCreatorRole,
@@ -130,6 +133,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
       address(EXECUTOR),
       CORE,
       address(erc20VotesToken),
+      LLAMA_TOKEN_TIMESTAMP_ADAPTER,
       0,
       true,
       tokenVotingActionCreatorRole,
@@ -157,6 +161,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
       LlamaTokenVotingFactory.deployTokenVotingModule.selector,
       CORE,
       address(erc721VotesToken),
+      LLAMA_TOKEN_TIMESTAMP_ADAPTER,
       0,
       false,
       tokenVotingActionCreatorRole,
@@ -193,6 +198,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
       address(EXECUTOR),
       CORE,
       address(erc721VotesToken),
+      LLAMA_TOKEN_TIMESTAMP_ADAPTER,
       0,
       false,
       tokenVotingActionCreatorRole,
@@ -243,6 +249,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
       randomCaller,
       CORE,
       address(erc20VotesToken),
+      LLAMA_TOKEN_TIMESTAMP_ADAPTER,
       0,
       true,
       tokenVotingActionCreatorRole,
@@ -256,6 +263,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     tokenVotingFactory.deployTokenVotingModule(
       CORE,
       address(erc20VotesToken),
+      LLAMA_TOKEN_TIMESTAMP_ADAPTER,
       0,
       true,
       tokenVotingActionCreatorRole,
@@ -286,6 +294,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
       LlamaTokenVotingFactory.deployTokenVotingModule.selector,
       CORE,
       address(erc20VotesToken),
+      LLAMA_TOKEN_TIMESTAMP_ADAPTER,
       0,
       true,
       tokenVotingActionCreatorRole,
@@ -319,6 +328,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
       address(EXECUTOR),
       CORE,
       address(erc20VotesToken),
+      LLAMA_TOKEN_TIMESTAMP_ADAPTER,
       0,
       true,
       tokenVotingActionCreatorRole,
@@ -338,6 +348,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
       LlamaTokenVotingFactory.deployTokenVotingModule.selector,
       CORE,
       address(erc20VotesToken),
+      LLAMA_TOKEN_TIMESTAMP_ADAPTER,
       1,
       true,
       tokenVotingActionCreatorRole,
@@ -371,6 +382,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
       address(EXECUTOR),
       CORE,
       address(erc20VotesToken),
+      LLAMA_TOKEN_TIMESTAMP_ADAPTER,
       1,
       true,
       tokenVotingActionCreatorRole,

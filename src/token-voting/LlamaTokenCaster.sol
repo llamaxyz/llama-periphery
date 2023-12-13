@@ -5,6 +5,7 @@ import {Initializable} from "@openzeppelin/proxy/utils/Initializable.sol";
 
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
+import {ILlamaTokenClockAdapter} from "src/token-voting/ILlamaTokenClockAdapter.sol";
 import {ActionState, VoteType} from "src/lib/Enums.sol";
 import {LlamaUtils} from "src/lib/LlamaUtils.sol";
 import {Action, ActionInfo} from "src/lib/Structs.sol";
@@ -158,6 +159,9 @@ abstract contract LlamaTokenCaster is Initializable {
   /// @notice The core contract for this Llama instance.
   ILlamaCore public llamaCore;
 
+  /// @notice The contract that manages the timepoints for this token voting module.
+  ILlamaTokenClockAdapter public clockAdapter;
+
   /// @notice The minimum % of approvals required to submit approvals to `LlamaCore`.
   uint256 public voteQuorumPct;
 
@@ -187,6 +191,7 @@ abstract contract LlamaTokenCaster is Initializable {
   /// @param _vetoQuorumPct The minimum % of vetoes required to submit a disapproval to `LlamaCore`.
   function __initializeLlamaTokenCasterMinimalProxy(
     ILlamaCore _llamaCore,
+    ILlamaTokenClockAdapter _clockAdapter,
     uint8 _role,
     uint256 _voteQuorumPct,
     uint256 _vetoQuorumPct
@@ -197,6 +202,7 @@ abstract contract LlamaTokenCaster is Initializable {
     if (_vetoQuorumPct > ONE_HUNDRED_IN_BPS || _vetoQuorumPct <= 0) revert InvalidVetoQuorumPct(_vetoQuorumPct);
 
     llamaCore = _llamaCore;
+    clockAdapter = _clockAdapter;
     role = _role;
     voteQuorumPct = _voteQuorumPct;
     vetoQuorumPct = _vetoQuorumPct;
@@ -279,13 +285,9 @@ abstract contract LlamaTokenCaster is Initializable {
 
     if (block.timestamp > action.creationTime + approvalPeriod) revert SubmissionPeriodOver();
 
-    /// @dev only timestamp mode is supported for now.
-    string memory clockMode = _getClockMode();
-    if (keccak256(abi.encodePacked(clockMode)) != keccak256(abi.encodePacked("mode=timestamp"))) {
-      revert ClockModeNotSupported(clockMode);
-    }
+    _isClockModeSupported(); // reverts if clock mode is not supported
 
-    uint256 totalSupply = _getPastTotalSupply(action.creationTime - 1);
+    uint256 totalSupply = _getPastTotalSupply(_timestampToTimepoint(action.creationTime - 1));
     uint96 votesFor = casts[actionInfo.id].votesFor;
     uint96 votesAgainst = casts[actionInfo.id].votesAgainst;
     uint96 votesAbstain = casts[actionInfo.id].votesAbstain;
@@ -313,13 +315,10 @@ abstract contract LlamaTokenCaster is Initializable {
       revert CannotSubmitYet();
     }
     if (block.timestamp >= action.minExecutionTime) revert SubmissionPeriodOver();
-    /// @dev only timestamp mode is supported for now
-    string memory clockMode = _getClockMode();
-    if (keccak256(abi.encodePacked(clockMode)) != keccak256(abi.encodePacked("mode=timestamp"))) {
-      revert ClockModeNotSupported(clockMode);
-    }
 
-    uint256 totalSupply = _getPastTotalSupply(action.creationTime - 1);
+    _isClockModeSupported(); // reverts if clock mode is not supported
+
+    uint256 totalSupply = _getPastTotalSupply(_timestampToTimepoint(action.creationTime - 1));
     uint96 vetoesFor = casts[actionInfo.id].vetoesFor;
     uint96 vetoesAgainst = casts[actionInfo.id].vetoesAgainst;
     uint96 vetoesAbstain = casts[actionInfo.id].vetoesAbstain;
@@ -357,7 +356,7 @@ abstract contract LlamaTokenCaster is Initializable {
         > action.creationTime + (actionInfo.strategy.approvalPeriod() * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS
     ) revert CastingPeriodOver();
 
-    uint256 balance = _getPastVotes(caster, action.creationTime - 1);
+    uint256 balance = _getPastVotes(caster, _timestampToTimepoint(action.creationTime - 1));
     _preCastAssertions(balance, support);
 
     if (support == uint8(VoteType.Against)) casts[actionInfo.id].votesAgainst += LlamaUtils.toUint96(balance);
@@ -378,7 +377,7 @@ abstract contract LlamaTokenCaster is Initializable {
         > action.minExecutionTime - (actionInfo.strategy.queuingPeriod() * ONE_THIRD_IN_BPS) / ONE_HUNDRED_IN_BPS
     ) revert CastingPeriodOver();
 
-    uint256 balance = _getPastVotes(caster, action.creationTime - 1);
+    uint256 balance = _getPastVotes(caster, _timestampToTimepoint(action.creationTime - 1));
     _preCastAssertions(balance, support);
 
     if (support == uint8(VoteType.Against)) casts[actionInfo.id].vetoesAgainst += LlamaUtils.toUint96(balance);
@@ -391,20 +390,44 @@ abstract contract LlamaTokenCaster is Initializable {
   function _preCastAssertions(uint256 balance, uint8 support) internal view {
     if (support > uint8(VoteType.Abstain)) revert InvalidSupport(support);
 
-    /// @dev only timestamp mode is supported for now.
-    string memory clockMode = _getClockMode();
-    if (keccak256(abi.encodePacked(clockMode)) != keccak256(abi.encodePacked("mode=timestamp"))) {
-      revert ClockModeNotSupported(clockMode);
-    }
+    _isClockModeSupported(); // reverts if clock mode is not supported
 
     if (balance == 0) revert InsufficientBalance(balance);
   }
 
+  /// @dev reverts if the clock mode is not supported
+  function _isClockModeSupported() internal view {
+    if (!_isClockModeTimestamp()) {
+      string memory clockMode = _getClockMode();
+      bool supported = clockAdapter.isClockModeSupported(clockMode);
+      if (!supported) revert ClockModeNotSupported(clockMode);
+    }
+  }
+
+  /// @dev Returns the timestamp or timepoint depending on the clock mode.
+  function _timestampToTimepoint(uint256 timestamp) internal view returns (uint256) {
+    if (_isClockModeTimestamp()) return timestamp;
+    return clockAdapter.timestampToTimepoint(timestamp);
+  }
+
+  /// @dev Returns the current timepoint minus one.
+  function _currentTimepointMinusOne() internal view returns (uint256) {
+    if (_isClockModeTimestamp()) return block.timestamp - 1;
+    return clockAdapter.currentTimepointMinusOne();
+  }
+
+  /// @dev Returns true if the clock mode is timestamp.
+  function _isClockModeTimestamp() internal view returns (bool) {
+    string memory clockMode = _getClockMode();
+    if (keccak256(abi.encodePacked(clockMode)) == keccak256(abi.encodePacked("mode=timestamp"))) return true;
+    return false;
+  }
+
   /// @dev Returns the number of votes for a given token holder at a given timestamp.
-  function _getPastVotes(address account, uint256 timestamp) internal view virtual returns (uint256) {}
+  function _getPastVotes(address account, uint256 timepoint) internal view virtual returns (uint256) {}
 
   /// @dev Returns the total supply of the token at a given timestamp.
-  function _getPastTotalSupply(uint256 timestamp) internal view virtual returns (uint256) {}
+  function _getPastTotalSupply(uint256 timepoint) internal view virtual returns (uint256) {}
 
   /// @dev Returns the clock mode of the token (https://eips.ethereum.org/EIPS/eip-6372).
   function _getClockMode() internal view virtual returns (string memory) {}
