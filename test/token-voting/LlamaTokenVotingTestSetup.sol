@@ -12,9 +12,10 @@ import {DeployLlamaTokenVotingFactory} from "script/DeployLlamaTokenVotingFactor
 
 import {ActionInfo} from "src/lib/Structs.sol";
 import {ILlamaPolicy} from "src/interfaces/ILlamaPolicy.sol";
-import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
 import {ILlamaRelativeStrategyBase} from "src/interfaces/ILlamaRelativeStrategyBase.sol";
+import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
 import {RoleDescription} from "src/lib/UDVTs.sol";
+import {ILlamaTokenClockAdapter} from "src/token-voting/ILlamaTokenClockAdapter.sol";
 import {LlamaERC20TokenActionCreator} from "src/token-voting/LlamaERC20TokenActionCreator.sol";
 import {LlamaERC20TokenCaster} from "src/token-voting/LlamaERC20TokenCaster.sol";
 import {LlamaERC721TokenActionCreator} from "src/token-voting/LlamaERC721TokenActionCreator.sol";
@@ -57,6 +58,9 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
   address notTokenHolder;
   uint256 notTokenHolderPrivateKey;
 
+  // Time manager contracts.
+  // When deploying a token voting module with timestamp checkpointing on the token, we pass in address(0) for the clock adapter.
+  ILlamaTokenClockAdapter constant LLAMA_TOKEN_CLOCK_ADAPTER = ILlamaTokenClockAdapter(address(0)); 
   function setUp() public virtual override {
     LlamaPeripheryTestSetup.setUp();
 
@@ -100,7 +104,7 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
     (address llamaERC20TokenActionCreator, address llamaERC20TokenCaster) = tokenVotingFactory.deployTokenVotingModule(
       CORE,
       address(erc20VotesToken),
-      llamaTokenClockAdapter,
+      LLAMA_TOKEN_CLOCK_ADAPTER,
       0,
       true,
       tokenVotingActionCreatorRole,
@@ -128,7 +132,7 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
     (address llamaERC721TokenActionCreator, address llamaERC721TokenCaster) = tokenVotingFactory.deployTokenVotingModule(
       CORE,
       address(erc721VotesToken),
-      llamaTokenClockAdapter,
+      LLAMA_TOKEN_CLOCK_ADAPTER,
       0,
       false,
       tokenVotingActionCreatorRole,

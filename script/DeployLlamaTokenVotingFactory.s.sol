@@ -4,7 +4,6 @@ pragma solidity 0.8.23;
 import {Script} from "forge-std/Script.sol";
 
 import {DeployUtils} from "script/DeployUtils.sol";
-import {ILlamaTokenClockAdapter} from "src/token-voting/ILlamaTokenClockAdapter.sol";
 import {LlamaERC20TokenActionCreator} from "src/token-voting/LlamaERC20TokenActionCreator.sol";
 import {LlamaERC20TokenCaster} from "src/token-voting/LlamaERC20TokenCaster.sol";
 import {LlamaERC721TokenActionCreator} from "src/token-voting/LlamaERC721TokenActionCreator.sol";
@@ -20,9 +19,6 @@ contract DeployLlamaTokenVotingFactory is Script {
 
   // Factory contracts.
   LlamaTokenVotingFactory tokenVotingFactory;
-
-  // Time manager contracts.
-  ILlamaTokenClockAdapter llamaTokenClockAdapter;
 
   function run() public {
     DeployUtils.print(
