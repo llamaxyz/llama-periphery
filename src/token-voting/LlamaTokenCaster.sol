@@ -20,6 +20,12 @@ import {Action, ActionInfo} from "src/lib/Structs.sol";
 /// verify that during submission.
 abstract contract LlamaTokenCaster is Initializable {
   // =========================
+  // ======= Constants =======
+  // =========================
+
+  string constant DEFAULT_CLOCK_MODE = "mode=timestamp";
+
+  // =========================
   // ======== Structs ========
   // =========================
 
@@ -206,8 +212,6 @@ abstract contract LlamaTokenCaster is Initializable {
     role = _role;
     voteQuorumPct = _voteQuorumPct;
     vetoQuorumPct = _vetoQuorumPct;
-
-    if (clockAdapter.CLOCK_MODE()) {}
 
     emit QuorumSet(_voteQuorumPct, _vetoQuorumPct);
   }
