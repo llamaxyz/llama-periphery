@@ -59,15 +59,7 @@ contract LlamaERC721TokenActionCreator is LlamaTokenActionCreator {
   /// @inheritdoc LlamaTokenActionCreator
   function _getClockMode() internal view virtual override returns (string memory clockmode) {
     if (address(clockAdapter) != address(0)) {
-      try clockAdapter.CLOCK_MODE() returns (string memory mode) {
-        clockmode = mode;
-      } catch {
-        try token.CLOCK_MODE() returns (string memory mode) {
-          clockmode = mode;
-        } catch {
-          clockmode = "mode=timestamp";
-        }
-      }
+      clockmode = clockAdapter.CLOCK_MODE();
     } else {
       try token.CLOCK_MODE() returns (string memory mode) {
         clockmode = mode;
