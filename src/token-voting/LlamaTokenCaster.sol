@@ -111,6 +111,9 @@ abstract contract LlamaTokenCaster is Initializable {
   /// @dev Thrown when a user tries to submit (dis)approval but the submission period has ended.
   error SubmissionPeriodOver();
 
+  /// @dev Thrown when a user tries to cast a vote or veto but the voting delay has not passed.
+  error VotingDelayNotOver();
+
   // ========================
   // ======== Events ========
   // ========================
@@ -362,10 +365,12 @@ abstract contract LlamaTokenCaster is Initializable {
     return quorumCheckpoints.latest();
   }
 
+  /// @notice Returns the voting quorum and vetoing quorum at a given timestamp.
   function getPastQuorum(uint256 timestamp) external view returns (uint16 voteQuorumPct, uint16 vetoQuorumPct) {
     return quorumCheckpoints.getAtProbablyRecentTimestamp(timestamp);
   }
 
+  /// @notice Returns the quorum checkpoints array from a given set of indices.
   function getQuorumCheckpoints(uint256 start, uint256 end) external view returns (QuorumCheckpoints.History memory) {
     if (start > end) revert InvalidIndices();
     uint256 checkpointsLength = quorumCheckpoints._checkpoints.length;
@@ -376,6 +381,41 @@ abstract contract LlamaTokenCaster is Initializable {
       checkpoints[i - start] = quorumCheckpoints._checkpoints[i];
     }
     return QuorumCheckpoints.History(checkpoints);
+  }
+
+  /// @notice Returns the current delay, casting and submission period ratio.
+  function getPeriodPcts()
+    external
+    view
+    returns (uint16 delayPeriodPct, uint16 castingPeriodPct, uint16 submissionPeriodPct)
+  {
+    return periodPctsCheckpoint.latest();
+  }
+
+  /// @notice Returns the delay, casting and submission period ratio at a given timestamp.
+  function getPastPeriodPcts(uint256 timestamp)
+    external
+    view
+    returns (uint16 delayPeriodPct, uint16 castingPeriodPct, uint16 submissionPeriodPct)
+  {
+    return periodPctsCheckpoint.getAtProbablyRecentTimestamp(timestamp);
+  }
+
+  /// @notice Returns the period pct checkpoints array from a given set of indices.
+  function getPeriodPctCheckpoints(uint256 start, uint256 end)
+    external
+    view
+    returns (PeriodPctCheckpoints.History memory)
+  {
+    if (start > end) revert InvalidIndices();
+    uint256 checkpointsLength = periodPctsCheckpoint._checkpoints.length;
+    if (end > checkpointsLength) revert InvalidIndices();
+    uint256 sliceLength = end - start;
+    PeriodPctCheckpoints.Checkpoint[] memory checkpoints = new PeriodPctCheckpoints.Checkpoint[](sliceLength);
+    for (uint256 i = start; i < end; i = LlamaUtils.uncheckedIncrement(i)) {
+      checkpoints[i - start] = periodPctsCheckpoint._checkpoints[i];
+    }
+    return PeriodPctCheckpoints.History(checkpoints);
   }
 
   // ================================
@@ -391,11 +431,15 @@ abstract contract LlamaTokenCaster is Initializable {
     actionInfo.strategy.checkIfApprovalEnabled(actionInfo, address(this), role); // Reverts if not allowed.
     if (llamaCore.getActionState(actionInfo) != uint8(ActionState.Active)) revert ActionNotActive();
     if (casts[actionInfo.id].castVote[caster]) revert AlreadyCastedVote();
-    (, uint16 castingPeriodPct,) = periodPctsCheckpoint.getAtProbablyRecentTimestamp(action.creationTime - 1);
-    if (
-      block.timestamp
-        > action.creationTime + (actionInfo.strategy.approvalPeriod() * castingPeriodPct) / ONE_HUNDRED_IN_BPS
-    ) revert CastingPeriodOver();
+    (uint16 delayPeriodPct, uint16 castingPeriodPct,) =
+      periodPctsCheckpoint.getAtProbablyRecentTimestamp(action.creationTime - 1);
+    uint256 approvalPeriod = actionInfo.strategy.approvalPeriod();
+    if (block.timestamp < action.creationTime + (approvalPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS) {
+      revert VotingDelayNotOver();
+    }
+    if (block.timestamp > action.creationTime + (approvalPeriod * castingPeriodPct) / ONE_HUNDRED_IN_BPS) {
+      revert CastingPeriodOver();
+    }
 
     uint96 weight = LlamaUtils.toUint96(_getPastVotes(caster, _timestampToTimepoint(action.creationTime) - 1));
     _preCastAssertions(support);
@@ -418,11 +462,15 @@ abstract contract LlamaTokenCaster is Initializable {
     actionInfo.strategy.checkIfDisapprovalEnabled(actionInfo, address(this), role); // Reverts if not allowed.
     if (llamaCore.getActionState(actionInfo) != uint8(ActionState.Queued)) revert ActionNotQueued();
     if (casts[actionInfo.id].castVeto[caster]) revert AlreadyCastedVeto();
-    (,, uint16 submissionPeriodPct) = periodPctsCheckpoint.getAtProbablyRecentTimestamp(action.creationTime - 1);
+    (uint16 delayPeriodPct,, uint16 submissionPeriodPct) =
+      periodPctsCheckpoint.getAtProbablyRecentTimestamp(action.creationTime - 1);
+    uint256 queuingPeriod = actionInfo.strategy.queuingPeriod();
     if (
-      block.timestamp
-        > action.minExecutionTime - (actionInfo.strategy.queuingPeriod() * submissionPeriodPct) / ONE_HUNDRED_IN_BPS
-    ) revert CastingPeriodOver();
+      block.timestamp < action.minExecutionTime - queuingPeriod + (queuingPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS
+    ) revert VotingDelayNotOver();
+    if (block.timestamp > action.minExecutionTime - (queuingPeriod * submissionPeriodPct) / ONE_HUNDRED_IN_BPS) {
+      revert CastingPeriodOver();
+    }
 
     uint96 weight = LlamaUtils.toUint96(_getPastVotes(caster, _timestampToTimepoint(action.creationTime) - 1));
     _preCastAssertions(support);
@@ -450,6 +498,15 @@ abstract contract LlamaTokenCaster is Initializable {
     emit QuorumSet(_voteQuorumPct, _vetoQuorumPct);
   }
 
+  /// @dev Sets the delay, casting and submission period ratio.
+  function _setPeriodPcts(uint16 _delayPeriodPct, uint16 _castingPeriodPct, uint16 _submissionPeriodPct) internal {
+    if (_delayPeriodPct + _castingPeriodPct + _submissionPeriodPct != ONE_HUNDRED_IN_BPS) {
+      revert InvalidPeriodPcts(_delayPeriodPct, _castingPeriodPct, _submissionPeriodPct);
+    }
+    periodPctsCheckpoint.push(_delayPeriodPct, _castingPeriodPct, _submissionPeriodPct);
+    emit PeriodsPctSet(_delayPeriodPct, _castingPeriodPct, _submissionPeriodPct);
+  }
+
   /// @dev reverts if the clock mode is not supported
   function _isClockModeSupported() internal view {
     if (!_isClockModeTimestamp()) {
@@ -475,15 +532,6 @@ abstract contract LlamaTokenCaster is Initializable {
   function _isClockModeTimestamp() internal view returns (bool) {
     string memory clockMode = _getClockMode();
     return keccak256(abi.encodePacked(clockMode)) == keccak256(abi.encodePacked("mode=timestamp"));
-  }
-
-  /// @dev Sets the delay, casting and submission period ratio.
-  function _setPeriodPcts(uint16 _delayPeriodPct, uint16 _castingPeriodPct, uint16 _submissionPeriodPct) internal {
-    if (_delayPeriodPct + _castingPeriodPct + _submissionPeriodPct != ONE_HUNDRED_IN_BPS) {
-      revert InvalidPeriodPcts(_delayPeriodPct, _castingPeriodPct, _submissionPeriodPct);
-    }
-    periodPctsCheckpoint.push(_delayPeriodPct, _castingPeriodPct, _submissionPeriodPct);
-    emit PeriodsPctSet(_delayPeriodPct, _castingPeriodPct, _submissionPeriodPct);
   }
 
   /// @dev Returns the number of votes for a given token holder at a given timestamp.
