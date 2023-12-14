@@ -284,7 +284,7 @@ abstract contract LlamaTokenCaster is Initializable {
 
     _isClockModeSupported(); // reverts if clock mode is not supported
 
-    uint256 totalSupply = _getPastTotalSupply(_timestampToTimepoint(action.creationTime - 1));
+    uint256 totalSupply = _getPastTotalSupply(_timestampToTimepoint(action.creationTime) - 1);
     uint96 votesFor = casts[actionInfo.id].votesFor;
     uint96 votesAgainst = casts[actionInfo.id].votesAgainst;
     uint96 votesAbstain = casts[actionInfo.id].votesAbstain;
@@ -315,7 +315,7 @@ abstract contract LlamaTokenCaster is Initializable {
 
     _isClockModeSupported(); // reverts if clock mode is not supported
 
-    uint256 totalSupply = _getPastTotalSupply(_timestampToTimepoint(action.creationTime - 1));
+    uint256 totalSupply = _getPastTotalSupply(_timestampToTimepoint(action.creationTime) - 1);
     uint96 vetoesFor = casts[actionInfo.id].vetoesFor;
     uint96 vetoesAgainst = casts[actionInfo.id].vetoesAgainst;
     uint96 vetoesAbstain = casts[actionInfo.id].vetoesAbstain;
@@ -356,7 +356,7 @@ abstract contract LlamaTokenCaster is Initializable {
         > action.creationTime + (actionInfo.strategy.approvalPeriod() * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS
     ) revert CastingPeriodOver();
 
-    uint96 weight = LlamaUtils.toUint96(_getPastVotes(caster, _timestampToTimepoint(action.creationTime - 1)));
+    uint96 weight = LlamaUtils.toUint96(_getPastVotes(caster, _timestampToTimepoint(action.creationTime) - 1));
     _preCastAssertions(support);
 
     if (support == uint8(VoteType.Against)) casts[actionInfo.id].votesAgainst += weight;
@@ -382,7 +382,7 @@ abstract contract LlamaTokenCaster is Initializable {
         > action.minExecutionTime - (actionInfo.strategy.queuingPeriod() * ONE_THIRD_IN_BPS) / ONE_HUNDRED_IN_BPS
     ) revert CastingPeriodOver();
 
-    uint96 weight = LlamaUtils.toUint96(_getPastVotes(caster, _timestampToTimepoint(action.creationTime - 1)));
+    uint96 weight = LlamaUtils.toUint96(_getPastVotes(caster, _timestampToTimepoint(action.creationTime) - 1));
     _preCastAssertions(support);
 
     if (support == uint8(VoteType.Against)) casts[actionInfo.id].vetoesAgainst += weight;
