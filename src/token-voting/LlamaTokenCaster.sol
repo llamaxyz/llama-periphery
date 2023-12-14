@@ -73,6 +73,9 @@ abstract contract LlamaTokenCaster is Initializable {
   /// @dev Thrown when a user tries to cast a vote or veto but the against surpasses for.
   error ForDoesNotSurpassAgainst(uint256 castsFor, uint256 castsAgainst);
 
+  /// @dev Thrown when a user tries to query checkpoints at non-existant indices.
+  error InvalidIndices();
+
   /// @dev Thrown when a user tries to submit an approval but there are not enough votes.
   error InsufficientVotes(uint256 votes, uint256 threshold);
 
@@ -351,6 +354,26 @@ abstract contract LlamaTokenCaster is Initializable {
   /// @notice Returns the current voting quorum and vetoing quorum.
   function getQuorum() external view returns (uint16 voteQuorumPct, uint16 vetoQuorumPct) {
     return quorumCheckpoints.latest();
+  }
+
+  function getPastQuorum(uint256 timestamp) external view returns (uint16 voteQuorumPct, uint16 vetoQuorumPct) {
+    return quorumCheckpoints.getAtProbablyRecentTimestamp(timestamp);
+  }
+
+  function getQuorumCheckpoints(uint256 start, uint256 end)
+    external
+    view
+    returns (uint256[] memory voteQuorumPcts, uint256[] memory vetoQuorumPcts)
+  {
+    if (start > end) revert InvalidIndices();
+    uint256 checkpointsLength = quorumCheckpoints.length;
+    if (end > checkpointsLength) revert InvalidIndices();
+    uint256 sliceLength = end - start;
+    QuorumCheckpoints.Checkpoint[] memory checkpoints = new QuorumCheckpoints.Checkpoint[](sliceLength);
+    for (uint256 i = start; i < end; i = LlamaUtils.uncheckedIncrement(i)) {
+      checkpoints[i - start] = quorumCheckpoints._checkpoints[i];
+    }
+    return QuorumCheckpoints.History(checkpoints);
   }
 
   // ================================
