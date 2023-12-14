@@ -103,19 +103,19 @@ abstract contract LlamaTokenCaster is Initializable {
   // ========================
 
   /// @dev Emitted when a vote is cast.
-  event VoteCast(uint256 id, address indexed tokenholder, uint8 indexed support, uint96 weight, string reason);
+  event VoteCast(uint256 id, address indexed tokenholder, uint8 indexed support, uint256 weight, string reason);
 
   /// @dev Emitted when a cast approval is submitted to the `LlamaCore` contract.
   event ApprovalSubmitted(
-    uint256 id, address indexed caller, uint96 weightFor, uint96 weightAgainst, uint96 weightAbstain
+    uint256 id, address indexed caller, uint256 weightFor, uint256 weightAgainst, uint256 weightAbstain
   );
 
   /// @dev Emitted when a veto is cast.
-  event VetoCast(uint256 id, address indexed tokenholder, uint8 indexed support, uint96 weight, string reason);
+  event VetoCast(uint256 id, address indexed tokenholder, uint8 indexed support, uint256 weight, string reason);
 
   /// @dev Emitted when a cast disapproval is submitted to the `LlamaCore` contract.
   event DisapprovalSubmitted(
-    uint256 id, address indexed caller, uint96 weightFor, uint96 weightAgainst, uint96 weightAbstain
+    uint256 id, address indexed caller, uint256 weightFor, uint256 weightAgainst, uint256 weightAbstain
   );
 
   /// @dev Emitted when the voting quorum and/or vetoing quorum is set.
