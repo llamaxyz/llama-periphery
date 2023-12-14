@@ -14,6 +14,12 @@ library LlamaUtils {
     return uint16(n);
   }
 
+  /// @dev Reverts if `n` does not fit in a `uint48`.
+  function toUint48(uint256 n) internal pure returns (uint48) {
+    if (n > type(uint48).max) revert UnsafeCast(n);
+    return uint48(n);
+  }
+
   /// @dev Reverts if `n` does not fit in a `uint64`.
   function toUint64(uint256 n) internal pure returns (uint64) {
     if (n > type(uint64).max) revert UnsafeCast(n);

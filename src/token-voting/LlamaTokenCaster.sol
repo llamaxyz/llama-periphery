@@ -7,6 +7,7 @@ import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
 import {ActionState, VoteType} from "src/lib/Enums.sol";
 import {LlamaUtils} from "src/lib/LlamaUtils.sol";
+import {PeriodPctCheckpoints} from "src/lib/PeriodPctCheckpoints.sol";
 import {QuorumCheckpoints} from "src/lib/QuorumCheckpoints.sol";
 import {Action, ActionInfo} from "src/lib/Structs.sol";
 
@@ -19,6 +20,7 @@ import {Action, ActionInfo} from "src/lib/Structs.sol";
 /// contract does not verify that it holds the correct policy when voting and relies on `LlamaCore` to
 /// verify that during submission.
 abstract contract LlamaTokenCaster is Initializable {
+  using PeriodPctCheckpoints for PeriodPctCheckpoints.History;
   using QuorumCheckpoints for QuorumCheckpoints.History;
   // =========================
   // ======== Structs ========
@@ -78,6 +80,9 @@ abstract contract LlamaTokenCaster is Initializable {
   /// @dev Thrown when a user tries to cast but does not have enough tokens.
   error InsufficientBalance(uint256 balance);
 
+  /// @dev Thrown when an invalid `castingPeriodPct` and `submissionPeriodPct` are set.
+  error InvalidPeriodPcts(uint16 delayPeriodPct, uint16 castingPeriodPct, uint16 submissionPeriodPct);
+
   /// @dev Thrown when an invalid `voteQuorumPct` is passed to the constructor.
   error InvalidVoteQuorumPct(uint16 voteQuorumPct);
 
@@ -109,24 +114,27 @@ abstract contract LlamaTokenCaster is Initializable {
   // ======== Events ========
   // ========================
 
-  /// @dev Emitted when a vote is cast.
-  event VoteCast(uint256 id, address indexed tokenholder, uint8 indexed support, uint256 quantity, string reason);
-
   /// @dev Emitted when a cast approval is submitted to the `LlamaCore` contract.
   event ApprovalSubmitted(
     uint256 id, address indexed caller, uint96 quantityFor, uint96 quantityAgainst, uint96 quantityAbstain
   );
-
-  /// @dev Emitted when a veto is cast.
-  event VetoCast(uint256 id, address indexed tokenholder, uint8 indexed support, uint256 quantity, string reason);
 
   /// @dev Emitted when a cast disapproval is submitted to the `LlamaCore` contract.
   event DisapprovalSubmitted(
     uint256 id, address indexed caller, uint96 quantityFor, uint96 quantityAgainst, uint96 quantityAbstain
   );
 
+  /// @dev Emitted when the casting and submission period ratio is set.
+  event PeriodsPctSet(uint16 delayPeriodPct, uint16 castingPeriodPct, uint16 submissionPeriodPct);
+
   /// @dev Emitted when the voting quorum and/or vetoing quorum is set.
   event QuorumSet(uint16 voteQuorumPct, uint16 vetoQuorumPct);
+
+  /// @dev Emitted when a veto is cast.
+  event VetoCast(uint256 id, address indexed tokenholder, uint8 indexed support, uint256 quantity, string reason);
+
+  /// @dev Emitted when a vote is cast.
+  event VoteCast(uint256 id, address indexed tokenholder, uint8 indexed support, uint256 quantity, string reason);
 
   // =================================================
   // ======== Constants and Storage Variables ========
@@ -164,6 +172,8 @@ abstract contract LlamaTokenCaster is Initializable {
   ILlamaCore public llamaCore;
 
   QuorumCheckpoints.History internal quorumCheckpoints;
+
+  PeriodPctCheckpoints.History internal periodPctsCheckpoint;
 
   /// @notice The role used by this contract to cast approvals and disapprovals.
   /// @dev This role is expected to have the ability to force approve and disapprove actions.
@@ -351,11 +361,13 @@ abstract contract LlamaTokenCaster is Initializable {
   /// @dev `_castingPeriodPct` + `_submissionPeriodPct` must be equal to `ONE_HUNDRED_IN_BPS`
   /// @param _castingPeriodPct The minimum % of votes required to submit an approval to `LlamaCore`.
   /// @param _submissionPeriodPct The minimum % of vetoes required to submit a disapproval to `LlamaCore`.
-  function setCastingAndSubmissionPeriodRatio(uint16 _castingPeriodPct, uint16 _submissionPeriodPct) external {
+  function setPeriodPcts(uint16 _delayPeriodPct, uint16 _castingPeriodPct, uint16 _submissionPeriodPct) external {
     if (msg.sender != llamaCore.executor()) revert OnlyLlamaExecutor();
-    if (_castingPeriodPct + _submissionPeriodPct != ONE_HUNDRED_IN_BPS) revert InvalidSubmissionRatio(_castingPeriodPct, _submissionPeriodPct);
-    // quorumCheckpoints.push(_voteQuorumPct, _vetoQuorumPct);
-    // emit QuorumSet(_voteQuorumPct, _vetoQuorumPct);
+    if (_delayPeriodPct + _castingPeriodPct + _submissionPeriodPct != ONE_HUNDRED_IN_BPS) {
+      revert InvalidPeriodPcts(_delayPeriodPct, _castingPeriodPct, _submissionPeriodPct);
+    }
+    periodPctsCheckpoint.push(_delayPeriodPct, _castingPeriodPct, _submissionPeriodPct);
+    emit PeriodsPctSet(_delayPeriodPct, _castingPeriodPct, _submissionPeriodPct);
   }
 
   // -------- User Nonce Management --------
