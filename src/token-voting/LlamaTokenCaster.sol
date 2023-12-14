@@ -205,6 +205,7 @@ abstract contract LlamaTokenCaster is Initializable {
     role = _role;
     quorumCheckpoints.push(_voteQuorumPct, _vetoQuorumPct);
     emit QuorumSet(_voteQuorumPct, _vetoQuorumPct);
+    _setPeriodPcts(2500, 5000, 2500);
   }
 
   // ===========================================
