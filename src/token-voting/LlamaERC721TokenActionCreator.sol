@@ -47,17 +47,25 @@ contract LlamaERC721TokenActionCreator is LlamaTokenActionCreator {
   }
 
   /// @inheritdoc LlamaTokenActionCreator
-  function _getPastVotes(address account, uint256 timepoint) internal view virtual override returns (uint256) {
+  function _getPastVotes(address account, uint48 timepoint) internal view virtual override returns (uint256) {
     return token.getPastVotes(account, timepoint);
   }
 
   /// @inheritdoc LlamaTokenActionCreator
-  function _getPastTotalSupply(uint256 timepoint) internal view virtual override returns (uint256) {
+  function _getPastTotalSupply(uint48 timepoint) internal view virtual override returns (uint256) {
     return token.getPastTotalSupply(timepoint);
   }
 
   /// @inheritdoc LlamaTokenActionCreator
   function _getClockMode() internal view virtual override returns (string memory) {
-    return token.CLOCK_MODE();
+    try token.CLOCK_MODE() returns (string memory clockmode) {
+      return clockmode;
+    } catch {
+      try clockAdapter.CLOCK_MODE() returns (string memory clockmode) {
+        return clockmode;
+      } catch {
+        return "mode=timestamp";
+      }
+    }
   }
 }
