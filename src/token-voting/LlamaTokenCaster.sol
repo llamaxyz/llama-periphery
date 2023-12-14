@@ -359,11 +359,7 @@ abstract contract LlamaTokenCaster is Initializable {
   /// @param _submissionPeriodPct The minimum % of vetoes required to submit a disapproval to `LlamaCore`.
   function setPeriodPcts(uint16 _delayPeriodPct, uint16 _castingPeriodPct, uint16 _submissionPeriodPct) external {
     if (msg.sender != llamaCore.executor()) revert OnlyLlamaExecutor();
-    if (_delayPeriodPct + _castingPeriodPct + _submissionPeriodPct != ONE_HUNDRED_IN_BPS) {
-      revert InvalidPeriodPcts(_delayPeriodPct, _castingPeriodPct, _submissionPeriodPct);
-    }
-    periodPctsCheckpoint.push(_delayPeriodPct, _castingPeriodPct, _submissionPeriodPct);
-    emit PeriodsPctSet(_delayPeriodPct, _castingPeriodPct, _submissionPeriodPct);
+    _setPeriodPcts(_delayPeriodPct, _castingPeriodPct, _submissionPeriodPct);
   }
 
   // -------- User Nonce Management --------
@@ -434,6 +430,15 @@ abstract contract LlamaTokenCaster is Initializable {
     }
 
     if (balance == 0) revert InsufficientBalance(balance);
+  }
+
+  /// @dev Sets the delay, casting and submission period ratio.
+  function _setPeriodPcts(uint16 _delayPeriodPct, uint16 _castingPeriodPct, uint16 _submissionPeriodPct) internal {
+    if (_delayPeriodPct + _castingPeriodPct + _submissionPeriodPct != ONE_HUNDRED_IN_BPS) {
+      revert InvalidPeriodPcts(_delayPeriodPct, _castingPeriodPct, _submissionPeriodPct);
+    }
+    periodPctsCheckpoint.push(_delayPeriodPct, _castingPeriodPct, _submissionPeriodPct);
+    emit PeriodsPctSet(_delayPeriodPct, _castingPeriodPct, _submissionPeriodPct);
   }
 
   /// @dev Returns the number of votes for a given token holder at a given timestamp.
