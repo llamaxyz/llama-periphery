@@ -276,9 +276,9 @@ abstract contract LlamaTokenActionCreator is Initializable {
   }
 
   /// @dev Returns the current timepoint minus one.
-  function _currentTimepointMinusOne() internal view returns (uint256) {
-    if (_isClockModeTimestamp()) return block.timestamp - 1;
-    return clockAdapter.currentTimepointMinusOne();
+  function _currentTimepointMinusOne() internal view returns (uint48) {
+    if (_isClockModeTimestamp()) return LlamaUtils.toUint48(block.timestamp - 1);
+    return clockAdapter.clock() - 1;
   }
 
   // Returns true if the clock mode is timestamp
@@ -288,10 +288,10 @@ abstract contract LlamaTokenActionCreator is Initializable {
   }
 
   /// @dev Returns the number of votes for a given token holder at a given timestamp.
-  function _getPastVotes(address account, uint256 timepoint) internal view virtual returns (uint256) {}
+  function _getPastVotes(address account, uint48 timepoint) internal view virtual returns (uint256) {}
 
   /// @dev Returns the total supply of the token at a given timestamp.
-  function _getPastTotalSupply(uint256 timepoint) internal view virtual returns (uint256) {}
+  function _getPastTotalSupply(uint48 timepoint) internal view virtual returns (uint256) {}
 
   /// @dev Returns the clock mode of the token (https://eips.ethereum.org/EIPS/eip-6372).
   function _getClockMode() internal view virtual returns (string memory) {}

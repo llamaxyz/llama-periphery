@@ -44,17 +44,17 @@ contract LlamaERC20TokenCaster is LlamaTokenCaster {
   }
 
   /// @inheritdoc LlamaTokenCaster
-  function _getPastVotes(address account, uint256 timepoint) internal view virtual override returns (uint256) {
+  function _getPastVotes(address account, uint48 timepoint) internal view virtual override returns (uint256) {
     return token.getPastVotes(account, timepoint);
   }
 
   /// @inheritdoc LlamaTokenCaster
-  function _getPastTotalSupply(uint256 timepoint) internal view virtual override returns (uint256) {
+  function _getPastTotalSupply(uint48 timepoint) internal view virtual override returns (uint256) {
     return token.getPastTotalSupply(timepoint);
   }
 
   /// @inheritdoc LlamaTokenCaster
-  function _getClockMode() internal view virtual override returns (string memory) {
+  function _getClockMode() internal view virtual override returns (string memory clockmode) {
     return token.CLOCK_MODE();
   }
 }
