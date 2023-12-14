@@ -20,12 +20,6 @@ import {Action, ActionInfo} from "src/lib/Structs.sol";
 /// verify that during submission.
 abstract contract LlamaTokenCaster is Initializable {
   // =========================
-  // ======= Constants =======
-  // =========================
-
-  string constant DEFAULT_CLOCK_MODE = "mode=timestamp";
-
-  // =========================
   // ======== Structs ========
   // =========================
 
