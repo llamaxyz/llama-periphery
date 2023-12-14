@@ -55,14 +55,22 @@ contract LlamaERC20TokenActionCreator is LlamaTokenActionCreator {
   }
 
   /// @inheritdoc LlamaTokenActionCreator
-  function _getClockMode() internal view virtual override returns (string memory) {
-    try token.CLOCK_MODE() returns (string memory clockmode) {
-      return clockmode;
-    } catch {
-      try clockAdapter.CLOCK_MODE() returns (string memory clockmode) {
-        return clockmode;
+  function _getClockMode() internal view virtual override returns (string memory clockmode) {
+    if (address(clockAdapter) != address(0)) {
+      try clockAdapter.CLOCK_MODE() returns (string memory mode) {
+        clockmode = mode;
       } catch {
-        return "mode=timestamp";
+        try token.CLOCK_MODE() returns (string memory mode) {
+          clockmode = mode;
+        } catch {
+          clockmode = "mode=timestamp";
+        }
+      }
+    } else {
+      try token.CLOCK_MODE() returns (string memory mode) {
+        clockmode = mode;
+      } catch {
+        clockmode = "mode=timestamp";
       }
     }
   }
