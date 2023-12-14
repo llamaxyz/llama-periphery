@@ -10,11 +10,12 @@ import {LlamaPeripheryTestSetup} from "test/LlamaPeripheryTestSetup.sol";
 
 import {DeployLlamaTokenVotingFactory} from "script/DeployLlamaTokenVotingFactory.s.sol";
 
-import {Action, ActionInfo, PermissionData} from "src/lib/Structs.sol";
+import {ActionInfo} from "src/lib/Structs.sol";
 import {ILlamaPolicy} from "src/interfaces/ILlamaPolicy.sol";
-import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
 import {ILlamaRelativeStrategyBase} from "src/interfaces/ILlamaRelativeStrategyBase.sol";
+import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
 import {RoleDescription} from "src/lib/UDVTs.sol";
+import {ILlamaTokenClockAdapter} from "src/token-voting/ILlamaTokenClockAdapter.sol";
 import {LlamaERC20TokenActionCreator} from "src/token-voting/LlamaERC20TokenActionCreator.sol";
 import {LlamaERC20TokenCaster} from "src/token-voting/LlamaERC20TokenCaster.sol";
 import {LlamaERC721TokenActionCreator} from "src/token-voting/LlamaERC721TokenActionCreator.sol";
@@ -35,6 +36,10 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
   uint256 public constant ERC721_CREATION_THRESHOLD = 1;
   uint16 public constant ERC721_VOTE_QUORUM_PCT = 1000;
   uint16 public constant ERC721_VETO_QUORUM_PCT = 1000;
+
+  // When deploying a token-voting module with timestamp checkpointing on the token, we pass in address(0) for the clock
+  // adapter.
+  ILlamaTokenClockAdapter constant LLAMA_TOKEN_TIMESTAMP_ADAPTER = ILlamaTokenClockAdapter(address(0));
 
   // Votes Tokens
   MockERC20Votes public erc20VotesToken;
@@ -67,6 +72,8 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
     erc20VotesToken = new MockERC20Votes();
     erc721VotesToken = new MockERC721Votes();
 
+    //Deploy
+
     // Setting up tokenholder addresses and private keys.
     (tokenHolder0, tokenHolder0PrivateKey) = makeAddrAndKey("tokenHolder0");
     (tokenHolder1, tokenHolder1PrivateKey) = makeAddrAndKey("tokenHolder1");
@@ -95,9 +102,10 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
   {
     vm.startPrank(address(EXECUTOR));
     // Deploy Token Voting Module
-    (address llamaERC20TokenActionCreator, address llamaERC20TokenCaster) = tokenVotingFactory.deployTokenVotingModule(
+    (address llamaERC20TokenActionCreator, address llamaERC20TokenCaster) = tokenVotingFactory.deploy(
       CORE,
       address(erc20VotesToken),
+      LLAMA_TOKEN_TIMESTAMP_ADAPTER,
       0,
       true,
       tokenVotingActionCreatorRole,
@@ -122,9 +130,10 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
   {
     vm.startPrank(address(EXECUTOR));
     // Deploy Token Voting Module
-    (address llamaERC721TokenActionCreator, address llamaERC721TokenCaster) = tokenVotingFactory.deployTokenVotingModule(
+    (address llamaERC721TokenActionCreator, address llamaERC721TokenCaster) = tokenVotingFactory.deploy(
       CORE,
       address(erc721VotesToken),
+      LLAMA_TOKEN_TIMESTAMP_ADAPTER,
       0,
       false,
       tokenVotingActionCreatorRole,

@@ -10,6 +10,7 @@ import {LlamaTokenVotingTestSetup} from "test/token-voting/LlamaTokenVotingTestS
 import {ActionInfo} from "src/lib/Structs.sol";
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
 import {ILlamaPolicy} from "src/interfaces/ILlamaPolicy.sol";
+import {ILlamaTokenClockAdapter} from "src/token-voting/ILlamaTokenClockAdapter.sol";
 import {LlamaERC20TokenActionCreator} from "src/token-voting/LlamaERC20TokenActionCreator.sol";
 import {LlamaERC20TokenCaster} from "src/token-voting/LlamaERC20TokenCaster.sol";
 import {LlamaERC721TokenActionCreator} from "src/token-voting/LlamaERC721TokenActionCreator.sol";
@@ -21,6 +22,7 @@ contract LlamaTokenVotingFactoryTest is LlamaTokenVotingTestSetup {
     address indexed deployer,
     ILlamaCore indexed llamaCore,
     address indexed token,
+    ILlamaTokenClockAdapter clockAdapter,
     uint256 nonce,
     bool isERC20,
     uint8 actionCreatorRole,
@@ -67,9 +69,9 @@ contract Constructor is LlamaTokenVotingFactoryTest {
 
 contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
   function _setPermissionCreateApproveAndQueueAction(bytes memory data) internal returns (ActionInfo memory actionInfo) {
-    // Assign `deployTokenVotingModule` permission to the `CORE_TEAM_ROLE` role.
+    // Assign `deploy` permission to the `CORE_TEAM_ROLE` role.
     ILlamaPolicy.PermissionData memory deployTokenVotingPermission = ILlamaPolicy.PermissionData(
-      address(tokenVotingFactory), LlamaTokenVotingFactory.deployTokenVotingModule.selector, address(STRATEGY)
+      address(tokenVotingFactory), LlamaTokenVotingFactory.deploy.selector, address(STRATEGY)
     );
 
     vm.prank(address(EXECUTOR));
@@ -89,11 +91,12 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
   }
 
   function test_CanDeployERC20TokenVotingModule() public {
-    // Set up action to call `deployTokenVotingModule` with the ERC20 token.
+    // Set up action to call `deploy` with the ERC20 token.
     bytes memory data = abi.encodeWithSelector(
-      LlamaTokenVotingFactory.deployTokenVotingModule.selector,
+      LlamaTokenVotingFactory.deploy.selector,
       CORE,
       address(erc20VotesToken),
+      LLAMA_TOKEN_TIMESTAMP_ADAPTER,
       0,
       true,
       tokenVotingActionCreatorRole,
@@ -120,7 +123,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
       )
     );
 
-    // Execute call to `deployTokenVotingModule`.
+    // Execute call to `deploy`.
     vm.expectEmit();
     emit ActionThresholdSet(ERC20_CREATION_THRESHOLD);
     vm.expectEmit();
@@ -130,6 +133,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
       address(EXECUTOR),
       CORE,
       address(erc20VotesToken),
+      LLAMA_TOKEN_TIMESTAMP_ADAPTER,
       0,
       true,
       tokenVotingActionCreatorRole,
@@ -150,11 +154,12 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
   }
 
   function test_CanDeployERC721TokenVotingModule() public {
-    // Set up action to call `deployTokenVotingModule` with the ERC721 token.
+    // Set up action to call `deploy` with the ERC721 token.
     bytes memory data = abi.encodeWithSelector(
-      LlamaTokenVotingFactory.deployTokenVotingModule.selector,
+      LlamaTokenVotingFactory.deploy.selector,
       CORE,
       address(erc721VotesToken),
+      LLAMA_TOKEN_TIMESTAMP_ADAPTER,
       0,
       false,
       tokenVotingActionCreatorRole,
@@ -181,7 +186,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
       )
     );
 
-    // Execute call to `deployTokenVotingModule`.
+    // Execute call to `deploy`.
     vm.expectEmit();
     emit ActionThresholdSet(ERC721_CREATION_THRESHOLD);
     vm.expectEmit();
@@ -191,6 +196,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
       address(EXECUTOR),
       CORE,
       address(erc721VotesToken),
+      LLAMA_TOKEN_TIMESTAMP_ADAPTER,
       0,
       false,
       tokenVotingActionCreatorRole,
@@ -239,6 +245,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
       randomCaller,
       CORE,
       address(erc20VotesToken),
+      LLAMA_TOKEN_TIMESTAMP_ADAPTER,
       0,
       true,
       tokenVotingActionCreatorRole,
@@ -249,9 +256,10 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     );
 
     vm.prank(randomCaller);
-    tokenVotingFactory.deployTokenVotingModule(
+    tokenVotingFactory.deploy(
       CORE,
       address(erc20VotesToken),
+      LLAMA_TOKEN_TIMESTAMP_ADAPTER,
       0,
       true,
       tokenVotingActionCreatorRole,
@@ -275,11 +283,12 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     // First deployment//
     /////////////////////
 
-    // Set up action to call `deployTokenVotingModule` with the ERC20 token.
+    // Set up action to call `deploy` with the ERC20 token.
     bytes memory data = abi.encodeWithSelector(
-      LlamaTokenVotingFactory.deployTokenVotingModule.selector,
+      LlamaTokenVotingFactory.deploy.selector,
       CORE,
       address(erc20VotesToken),
+      LLAMA_TOKEN_TIMESTAMP_ADAPTER,
       0,
       true,
       tokenVotingActionCreatorRole,
@@ -307,12 +316,13 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
       )
     );
 
-    // Execute call to `deployTokenVotingModule`.
+    // Execute call to `deploy`.
     vm.expectEmit();
     emit LlamaTokenVotingInstanceCreated(
       address(EXECUTOR),
       CORE,
       address(erc20VotesToken),
+      LLAMA_TOKEN_TIMESTAMP_ADAPTER,
       0,
       true,
       tokenVotingActionCreatorRole,
@@ -327,11 +337,12 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     // Second deployment//
     //////////////////////
 
-    // Set up action to call `deployTokenVotingModule` with the ERC20 token.
+    // Set up action to call `deploy` with the ERC20 token.
     data = abi.encodeWithSelector(
-      LlamaTokenVotingFactory.deployTokenVotingModule.selector,
+      LlamaTokenVotingFactory.deploy.selector,
       CORE,
       address(erc20VotesToken),
+      LLAMA_TOKEN_TIMESTAMP_ADAPTER,
       1,
       true,
       tokenVotingActionCreatorRole,
@@ -359,12 +370,13 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
       )
     );
 
-    // Execute call to `deployTokenVotingModule`.
+    // Execute call to `deploy`.
     vm.expectEmit();
     emit LlamaTokenVotingInstanceCreated(
       address(EXECUTOR),
       CORE,
       address(erc20VotesToken),
+      LLAMA_TOKEN_TIMESTAMP_ADAPTER,
       1,
       true,
       tokenVotingActionCreatorRole,
