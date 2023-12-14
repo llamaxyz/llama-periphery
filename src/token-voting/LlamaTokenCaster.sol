@@ -199,14 +199,11 @@ abstract contract LlamaTokenCaster is Initializable {
   ) internal {
     if (_llamaCore.actionsCount() < 0) revert InvalidLlamaCoreAddress();
     if (_role > _llamaCore.policy().numRoles()) revert RoleNotInitialized(_role);
-    if (_voteQuorumPct > ONE_HUNDRED_IN_BPS || _voteQuorumPct <= 0) revert InvalidVoteQuorumPct(_voteQuorumPct);
-    if (_vetoQuorumPct > ONE_HUNDRED_IN_BPS || _vetoQuorumPct <= 0) revert InvalidVetoQuorumPct(_vetoQuorumPct);
 
     llamaCore = _llamaCore;
     clockAdapter = _clockAdapter;
     role = _role;
-    quorumCheckpoints.push(_voteQuorumPct, _vetoQuorumPct);
-    emit QuorumSet(_voteQuorumPct, _vetoQuorumPct);
+    _setQuorumPct(_voteQuorumPct, _vetoQuorumPct);
   }
 
   // ===========================================
@@ -340,10 +337,7 @@ abstract contract LlamaTokenCaster is Initializable {
   /// @param _vetoQuorumPct The minimum % of vetoes required to submit a disapproval to `LlamaCore`.
   function setQuorumPct(uint16 _voteQuorumPct, uint16 _vetoQuorumPct) external {
     if (msg.sender != llamaCore.executor()) revert OnlyLlamaExecutor();
-    if (_voteQuorumPct > ONE_HUNDRED_IN_BPS || _voteQuorumPct <= 0) revert InvalidVoteQuorumPct(_voteQuorumPct);
-    if (_vetoQuorumPct > ONE_HUNDRED_IN_BPS || _vetoQuorumPct <= 0) revert InvalidVetoQuorumPct(_vetoQuorumPct);
-    quorumCheckpoints.push(_voteQuorumPct, _vetoQuorumPct);
-    emit QuorumSet(_voteQuorumPct, _vetoQuorumPct);
+    _setQuorumPct(_voteQuorumPct, _vetoQuorumPct);
   }
 
   // -------- User Nonce Management --------
@@ -408,6 +402,14 @@ abstract contract LlamaTokenCaster is Initializable {
     _isClockModeSupported(); // reverts if clock mode is not supported
 
     if (balance == 0) revert InsufficientBalance(balance);
+  }
+
+  /// @dev Sets the voting quorum and vetoing quorum.
+  function _setQuorumPct(uint16 _voteQuorumPct, uint16 _vetoQuorumPct) internal {
+    if (_voteQuorumPct > ONE_HUNDRED_IN_BPS || _voteQuorumPct <= 0) revert InvalidVoteQuorumPct(_voteQuorumPct);
+    if (_vetoQuorumPct > ONE_HUNDRED_IN_BPS || _vetoQuorumPct <= 0) revert InvalidVetoQuorumPct(_vetoQuorumPct);
+    quorumCheckpoints.push(_voteQuorumPct, _vetoQuorumPct);
+    emit QuorumSet(_voteQuorumPct, _vetoQuorumPct);
   }
 
   /// @dev reverts if the clock mode is not supported
