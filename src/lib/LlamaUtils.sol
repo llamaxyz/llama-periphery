@@ -8,6 +8,7 @@ library LlamaUtils {
   /// @dev Thrown when a value cannot be safely casted to a smaller type.
   error UnsafeCast(uint256 n);
 
+  /// @dev Reverts if `n` does not fit in a `uint48`.
   function toUint48(uint256 n) internal pure returns (uint48) {
     if (n > type(uint48).max) revert UnsafeCast(n);
     return uint48(n);
