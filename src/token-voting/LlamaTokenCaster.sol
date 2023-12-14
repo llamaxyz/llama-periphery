@@ -347,7 +347,7 @@ abstract contract LlamaTokenCaster is Initializable {
     nonces[msg.sender][selector] = LlamaUtils.uncheckedIncrement(nonces[msg.sender][selector]);
   }
 
-  function getCurrentQuorumPct() external view returns (uint16 voteQuorumPct, uint16 vetoQuorumPct) {
+  function getQuorum() external view returns (uint16 voteQuorumPct, uint16 vetoQuorumPct) {
     return quorumCheckpoints.latest();
   }
 

@@ -146,6 +146,9 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
 
     assertEq(address(llamaERC20TokenActionCreator.token()), address(erc20VotesToken));
     assertEq(address(llamaERC20TokenActionCreator.llamaCore()), address(CORE));
+    (uint16 voteQuorumPct, uint16 vetoQuorumPct) = llamaERC20TokenCaster.getQuorum();
+    assertEq(ERC20_VOTE_QUORUM_PCT, voteQuorumPct);
+    assertEq(ERC20_VETO_QUORUM_PCT, vetoQuorumPct);
     assertEq(llamaERC20TokenActionCreator.role(), tokenVotingActionCreatorRole);
     assertEq(llamaERC20TokenActionCreator.creationThreshold(), ERC20_CREATION_THRESHOLD);
     assertEq(address(llamaERC20TokenCaster.token()), address(erc20VotesToken));
@@ -209,6 +212,9 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
 
     assertEq(address(llamaERC721TokenActionCreator.token()), address(erc721VotesToken));
     assertEq(address(llamaERC721TokenActionCreator.llamaCore()), address(CORE));
+    (uint16 voteQuorumPct, uint16 vetoQuorumPct) = llamaERC721TokenCaster.getQuorum();
+    assertEq(ERC721_VOTE_QUORUM_PCT, voteQuorumPct);
+    assertEq(ERC721_VETO_QUORUM_PCT, vetoQuorumPct);
     assertEq(llamaERC721TokenActionCreator.role(), tokenVotingActionCreatorRole);
     assertEq(llamaERC721TokenActionCreator.creationThreshold(), ERC721_CREATION_THRESHOLD);
     assertEq(address(llamaERC721TokenCaster.token()), address(erc721VotesToken));
@@ -271,6 +277,9 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
 
     assertEq(address(llamaERC20TokenActionCreator.token()), address(erc20VotesToken));
     assertEq(address(llamaERC20TokenActionCreator.llamaCore()), address(CORE));
+    (uint16 voteQuorumPct, uint16 vetoQuorumPct) = llamaERC20TokenCaster.getQuorum();
+    assertEq(ERC20_VOTE_QUORUM_PCT, voteQuorumPct);
+    assertEq(ERC20_VETO_QUORUM_PCT, vetoQuorumPct);
     assertEq(llamaERC20TokenActionCreator.role(), tokenVotingActionCreatorRole);
     assertEq(llamaERC20TokenActionCreator.creationThreshold(), ERC20_CREATION_THRESHOLD);
     assertEq(address(llamaERC20TokenCaster.token()), address(erc20VotesToken));
