@@ -161,10 +161,11 @@ abstract contract LlamaTokenCaster is Initializable {
   /// @dev Equivalent to 2/3, but in basis points.
   uint256 internal constant TWO_THIRDS_IN_BPS = 6667;
 
+  /// @dev The quorum checkpoints for this token voting module.
+  QuorumCheckpoints.History internal quorumCheckpoints;
+
   /// @notice The core contract for this Llama instance.
   ILlamaCore public llamaCore;
-
-  QuorumCheckpoints.History internal quorumCheckpoints;
 
   /// @notice The contract that manages the timepoints for this token voting module.
   ILlamaTokenClockAdapter public clockAdapter;
