@@ -360,13 +360,9 @@ abstract contract LlamaTokenCaster is Initializable {
     return quorumCheckpoints.getAtProbablyRecentTimestamp(timestamp);
   }
 
-  function getQuorumCheckpoints(uint256 start, uint256 end)
-    external
-    view
-    returns (uint256[] memory voteQuorumPcts, uint256[] memory vetoQuorumPcts)
-  {
+  function getQuorumCheckpoints(uint256 start, uint256 end) external view returns (QuorumCheckpoints.History memory) {
     if (start > end) revert InvalidIndices();
-    uint256 checkpointsLength = quorumCheckpoints.length;
+    uint256 checkpointsLength = quorumCheckpoints._checkpoints.length;
     if (end > checkpointsLength) revert InvalidIndices();
     uint256 sliceLength = end - start;
     QuorumCheckpoints.Checkpoint[] memory checkpoints = new QuorumCheckpoints.Checkpoint[](sliceLength);
