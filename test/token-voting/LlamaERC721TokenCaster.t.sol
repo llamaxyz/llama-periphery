@@ -17,13 +17,13 @@ import {LlamaERC721TokenCaster} from "src/token-voting/LlamaERC721TokenCaster.so
 import {LlamaTokenCaster} from "src/token-voting/LlamaTokenCaster.sol";
 
 contract LlamaERC721TokenCasterTest is LlamaTokenVotingTestSetup, LlamaCoreSigUtils {
-  event VoteCast(uint256 id, address indexed tokenholder, uint8 indexed support, uint256 quantity, string reason);
+  event VoteCast(uint256 id, address indexed tokenholder, uint8 indexed support, uint256 weight, string reason);
   event ApprovalSubmitted(
-    uint256 id, address indexed caller, uint96 quantityFor, uint96 quantityAgainst, uint96 quantityAbstain
+    uint256 id, address indexed caller, uint256 weightFor, uint256 weightAgainst, uint256 weightAbstain
   );
-  event VetoCast(uint256 id, address indexed tokenholder, uint8 indexed support, uint256 quantity, string reason);
+  event VetoCast(uint256 id, address indexed tokenholder, uint8 indexed support, uint256 weight, string reason);
   event DisapprovalSubmitted(
-    uint256 id, address indexed caller, uint96 quantityFor, uint96 quantityAgainst, uint96 quantityAbstain
+    uint256 id, address indexed caller, uint256 weightFor, uint256 weightAgainst, uint256 weightAbstain
   );
   event QuorumSet(uint16 voteQuorumPct, uint16 vetoQuorumPct);
 
@@ -166,7 +166,9 @@ contract CastVote is LlamaERC721TokenCasterTest {
         address(llamaERC721TokenCasterLogic), keccak256(abi.encodePacked(address(erc721VotesToken), msg.sender))
       )
     );
-    casterWithWrongRole.initialize(erc721VotesToken, CORE, madeUpRole, ERC721_VOTE_QUORUM_PCT, ERC721_VETO_QUORUM_PCT);
+    casterWithWrongRole.initialize(
+      erc721VotesToken, CORE, LLAMA_TOKEN_TIMESTAMP_ADAPTER, madeUpRole, ERC721_VOTE_QUORUM_PCT, ERC721_VETO_QUORUM_PCT
+    );
 
     vm.expectRevert(abi.encodeWithSelector(ILlamaRelativeStrategyBase.InvalidRole.selector, tokenVotingCasterRole));
     casterWithWrongRole.castVote(actionInfo, uint8(VoteType.For), "");
@@ -198,12 +200,13 @@ contract CastVote is LlamaERC721TokenCasterTest {
     llamaERC721TokenCaster.castVote(actionInfo, uint8(VoteType.For), "");
   }
 
-  function test_RevertsIf_InsufficientBalance() public {
-    vm.expectRevert(abi.encodeWithSelector(LlamaTokenCaster.InsufficientBalance.selector, 0));
+  function test_CanCastWithWeightZero() public {
+    vm.expectEmit();
+    emit VoteCast(actionInfo.id, address(this), uint8(VoteType.For), 0, "");
     llamaERC721TokenCaster.castVote(actionInfo, uint8(VoteType.For), "");
   }
 
-  function test_CastsApprovalCorrectly(uint8 support) public {
+  function test_CastsVoteCorrectly(uint8 support) public {
     support = uint8(bound(support, uint8(VoteType.For), uint8(VoteType.Abstain)));
     vm.expectEmit();
     emit VoteCast(
@@ -213,7 +216,7 @@ contract CastVote is LlamaERC721TokenCasterTest {
     llamaERC721TokenCaster.castVote(actionInfo, support, "");
   }
 
-  function test_CastsApprovalCorrectly_WithReason() public {
+  function test_CastsVoteCorrectly_WithReason() public {
     vm.expectEmit();
     emit VoteCast(
       actionInfo.id,
@@ -252,7 +255,7 @@ contract CastApprovalBySig is LlamaERC721TokenCasterTest {
     llamaERC721TokenCaster.castVoteBySig(tokenHolder1, support, _actionInfo, "", v, r, s);
   }
 
-  function test_CastsApprovalBySig() public {
+  function test_CastsVoteBySig() public {
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
 
     vm.expectEmit();
@@ -338,7 +341,9 @@ contract CastVeto is LlamaERC721TokenCasterTest {
         address(llamaERC721TokenCasterLogic), keccak256(abi.encodePacked(address(erc721VotesToken), msg.sender))
       )
     );
-    casterWithWrongRole.initialize(erc721VotesToken, CORE, madeUpRole, ERC721_VOTE_QUORUM_PCT, ERC721_VETO_QUORUM_PCT);
+    casterWithWrongRole.initialize(
+      erc721VotesToken, CORE, LLAMA_TOKEN_TIMESTAMP_ADAPTER, madeUpRole, ERC721_VOTE_QUORUM_PCT, ERC721_VETO_QUORUM_PCT
+    );
 
     vm.expectRevert(abi.encodeWithSelector(ILlamaRelativeStrategyBase.InvalidRole.selector, tokenVotingCasterRole));
     casterWithWrongRole.castVeto(actionInfo, uint8(VoteType.For), "");
@@ -376,12 +381,13 @@ contract CastVeto is LlamaERC721TokenCasterTest {
     llamaERC721TokenCaster.castVeto(actionInfo, uint8(VoteType.For), "");
   }
 
-  function test_RevertsIf_InsufficientBalance() public {
-    vm.expectRevert(abi.encodeWithSelector(LlamaTokenCaster.InsufficientBalance.selector, 0));
+  function test_CanCastWithWeightZero() public {
+    vm.expectEmit();
+    emit VetoCast(actionInfo.id, address(this), uint8(VoteType.For), 0, "");
     llamaERC721TokenCaster.castVeto(actionInfo, uint8(VoteType.For), "");
   }
 
-  function test_CastsDisapprovalCorrectly(uint8 support) public {
+  function test_CastsVetoCorrectly(uint8 support) public {
     support = uint8(bound(support, uint8(VoteType.For), uint8(VoteType.Abstain)));
     vm.expectEmit();
     emit VetoCast(
@@ -391,7 +397,7 @@ contract CastVeto is LlamaERC721TokenCasterTest {
     llamaERC721TokenCaster.castVeto(actionInfo, support, "");
   }
 
-  function test_CastsDisapprovalCorrectly_WithReason() public {
+  function test_CastsVetoCorrectly_WithReason() public {
     vm.expectEmit();
     emit VetoCast(
       actionInfo.id,
@@ -437,7 +443,7 @@ contract CastVetoBySig is LlamaERC721TokenCasterTest {
     llamaERC721TokenCaster.castVetoBySig(tokenHolder1, uint8(VoteType.For), _actionInfo, "", v, r, s);
   }
 
-  function test_CastsDisapprovalBySig() public {
+  function test_CastsVetoBySig() public {
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
 
     vm.expectEmit();
@@ -556,7 +562,9 @@ contract SubmitApprovals is LlamaERC721TokenCasterTest {
         address(llamaERC721TokenCasterLogic), keccak256(abi.encodePacked(address(erc721VotesToken), msg.sender))
       )
     );
-    casterWithWrongRole.initialize(erc721VotesToken, CORE, madeUpRole, ERC721_VOTE_QUORUM_PCT, ERC721_VETO_QUORUM_PCT);
+    casterWithWrongRole.initialize(
+      erc721VotesToken, CORE, LLAMA_TOKEN_TIMESTAMP_ADAPTER, madeUpRole, ERC721_VOTE_QUORUM_PCT, ERC721_VETO_QUORUM_PCT
+    );
     vm.expectRevert(abi.encodeWithSelector(ILlamaRelativeStrategyBase.InvalidRole.selector, tokenVotingCasterRole));
     casterWithWrongRole.submitApproval(actionInfo);
   }
@@ -637,7 +645,9 @@ contract SubmitDisapprovals is LlamaERC721TokenCasterTest {
         address(llamaERC721TokenCasterLogic), keccak256(abi.encodePacked(address(erc721VotesToken), msg.sender))
       )
     );
-    casterWithWrongRole.initialize(erc721VotesToken, CORE, madeUpRole, ERC721_VOTE_QUORUM_PCT, ERC721_VETO_QUORUM_PCT);
+    casterWithWrongRole.initialize(
+      erc721VotesToken, CORE, LLAMA_TOKEN_TIMESTAMP_ADAPTER, madeUpRole, ERC721_VOTE_QUORUM_PCT, ERC721_VETO_QUORUM_PCT
+    );
     vm.expectRevert(abi.encodeWithSelector(ILlamaRelativeStrategyBase.InvalidRole.selector, tokenVotingCasterRole));
     casterWithWrongRole.submitDisapproval(actionInfo);
   }

@@ -5,6 +5,7 @@ import {Initializable} from "@openzeppelin/proxy/utils/Initializable.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
 
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
+import {ILlamaTokenClockAdapter} from "src/token-voting/ILlamaTokenClockAdapter.sol";
 import {ActionState, VoteType} from "src/lib/Enums.sol";
 import {LlamaUtils} from "src/lib/LlamaUtils.sol";
 import {PeriodPctCheckpoints} from "src/lib/PeriodPctCheckpoints.sol";
@@ -74,11 +75,11 @@ abstract contract LlamaTokenCaster is Initializable {
   /// @dev Thrown when a user tries to cast a vote or veto but the against surpasses for.
   error ForDoesNotSurpassAgainst(uint256 castsFor, uint256 castsAgainst);
 
+  /// @dev Thrown when a user tries to query checkpoints at non-existant indices.
+  error InvalidIndices();
+
   /// @dev Thrown when a user tries to submit an approval but there are not enough votes.
   error InsufficientVotes(uint256 votes, uint256 threshold);
-
-  /// @dev Thrown when a user tries to cast but does not have enough tokens.
-  error InsufficientBalance(uint256 balance);
 
   /// @dev Thrown when an invalid `castingPeriodPct` and `submissionPeriodPct` are set.
   error InvalidPeriodPcts(uint16 delayPeriodPct, uint16 castingPeriodPct, uint16 submissionPeriodPct);
@@ -116,12 +117,12 @@ abstract contract LlamaTokenCaster is Initializable {
 
   /// @dev Emitted when a cast approval is submitted to the `LlamaCore` contract.
   event ApprovalSubmitted(
-    uint256 id, address indexed caller, uint96 quantityFor, uint96 quantityAgainst, uint96 quantityAbstain
+    uint256 id, address indexed caller, uint256 weightFor, uint256 weightAgainst, uint256 weightAbstain
   );
 
   /// @dev Emitted when a cast disapproval is submitted to the `LlamaCore` contract.
   event DisapprovalSubmitted(
-    uint256 id, address indexed caller, uint96 quantityFor, uint96 quantityAgainst, uint96 quantityAbstain
+    uint256 id, address indexed caller, uint256 weightFor, uint256 weightAgainst, uint256 weightAbstain
   );
 
   /// @dev Emitted when the casting and submission period ratio is set.
@@ -131,10 +132,10 @@ abstract contract LlamaTokenCaster is Initializable {
   event QuorumSet(uint16 voteQuorumPct, uint16 vetoQuorumPct);
 
   /// @dev Emitted when a veto is cast.
-  event VetoCast(uint256 id, address indexed tokenholder, uint8 indexed support, uint256 quantity, string reason);
+  event VetoCast(uint256 id, address indexed tokenholder, uint8 indexed support, uint256 weight, string reason);
 
   /// @dev Emitted when a vote is cast.
-  event VoteCast(uint256 id, address indexed tokenholder, uint8 indexed support, uint256 quantity, string reason);
+  event VoteCast(uint256 id, address indexed tokenholder, uint8 indexed support, uint256 weight, string reason);
 
   // =================================================
   // ======== Constants and Storage Variables ========
@@ -169,6 +170,9 @@ abstract contract LlamaTokenCaster is Initializable {
 
   PeriodPctCheckpoints.History internal periodPctsCheckpoint;
 
+  /// @notice The contract that manages the timepoints for this token voting module.
+  ILlamaTokenClockAdapter public clockAdapter;
+
   /// @notice The role used by this contract to cast approvals and disapprovals.
   /// @dev This role is expected to have the ability to force approve and disapprove actions.
   uint8 public role;
@@ -192,20 +196,18 @@ abstract contract LlamaTokenCaster is Initializable {
   /// @param _vetoQuorumPct The minimum % of vetoes required to submit a disapproval to `LlamaCore`.
   function __initializeLlamaTokenCasterMinimalProxy(
     ILlamaCore _llamaCore,
+    ILlamaTokenClockAdapter _clockAdapter,
     uint8 _role,
     uint16 _voteQuorumPct,
     uint16 _vetoQuorumPct
   ) internal {
     if (_llamaCore.actionsCount() < 0) revert InvalidLlamaCoreAddress();
     if (_role > _llamaCore.policy().numRoles()) revert RoleNotInitialized(_role);
-    if (_voteQuorumPct > ONE_HUNDRED_IN_BPS || _voteQuorumPct <= 0) revert InvalidVoteQuorumPct(_voteQuorumPct);
-    if (_vetoQuorumPct > ONE_HUNDRED_IN_BPS || _vetoQuorumPct <= 0) revert InvalidVetoQuorumPct(_vetoQuorumPct);
 
     llamaCore = _llamaCore;
+    clockAdapter = _clockAdapter;
     role = _role;
-    quorumCheckpoints.push(_voteQuorumPct, _vetoQuorumPct);
-    emit QuorumSet(_voteQuorumPct, _vetoQuorumPct);
-    _setPeriodPcts(2500, 5000, 2500);
+    _setQuorumPct(_voteQuorumPct, _vetoQuorumPct);
   }
 
   // ===========================================
@@ -222,8 +224,8 @@ abstract contract LlamaTokenCaster is Initializable {
   ///   1 = For
   ///   2 = Abstain, but this is not currently supported.
   /// @param reason The reason given for the approval by the tokenholder.
-  function castVote(ActionInfo calldata actionInfo, uint8 support, string calldata reason) external {
-    _castVote(msg.sender, actionInfo, support, reason);
+  function castVote(ActionInfo calldata actionInfo, uint8 support, string calldata reason) external returns (uint96) {
+    return _castVote(msg.sender, actionInfo, support, reason);
   }
 
   function castVoteBySig(
@@ -234,11 +236,11 @@ abstract contract LlamaTokenCaster is Initializable {
     uint8 v,
     bytes32 r,
     bytes32 s
-  ) external {
+  ) external returns (uint96) {
     bytes32 digest = _getCastVoteTypedDataHash(caster, support, actionInfo, reason);
     address signer = ecrecover(digest, v, r, s);
     if (signer == address(0) || signer != caster) revert InvalidSignature();
-    _castVote(signer, actionInfo, support, reason);
+    return _castVote(signer, actionInfo, support, reason);
   }
 
   /// @notice How tokenholders add their support of the disapproval of an action with a reason.
@@ -249,8 +251,8 @@ abstract contract LlamaTokenCaster is Initializable {
   ///   1 = For
   ///   2 = Abstain, but this is not currently supported.
   /// @param reason The reason given for the approval by the tokenholder.
-  function castVeto(ActionInfo calldata actionInfo, uint8 support, string calldata reason) external {
-    _castVeto(msg.sender, actionInfo, support, reason);
+  function castVeto(ActionInfo calldata actionInfo, uint8 support, string calldata reason) external returns (uint96) {
+    return _castVeto(msg.sender, actionInfo, support, reason);
   }
 
   function castVetoBySig(
@@ -261,11 +263,11 @@ abstract contract LlamaTokenCaster is Initializable {
     uint8 v,
     bytes32 r,
     bytes32 s
-  ) external {
+  ) external returns (uint96) {
     bytes32 digest = _getCastVetoTypedDataHash(caster, support, actionInfo, reason);
     address signer = ecrecover(digest, v, r, s);
     if (signer == address(0) || signer != caster) revert InvalidSignature();
-    _castVeto(signer, actionInfo, support, reason);
+    return _castVeto(signer, actionInfo, support, reason);
   }
 
   /// @notice Submits a cast approval to the `LlamaCore` contract.
@@ -285,13 +287,9 @@ abstract contract LlamaTokenCaster is Initializable {
 
     if (block.timestamp > action.creationTime + approvalPeriod) revert SubmissionPeriodOver();
 
-    /// @dev only timestamp mode is supported for now.
-    string memory clockMode = _getClockMode();
-    if (keccak256(abi.encodePacked(clockMode)) != keccak256(abi.encodePacked("mode=timestamp"))) {
-      revert ClockModeNotSupported(clockMode);
-    }
+    _isClockModeSupported(); // reverts if clock mode is not supported
 
-    uint256 totalSupply = _getPastTotalSupply(action.creationTime - 1);
+    uint256 totalSupply = _getPastTotalSupply(_timestampToTimepoint(action.creationTime) - 1);
     uint96 votesFor = casts[actionInfo.id].votesFor;
     uint96 votesAgainst = casts[actionInfo.id].votesAgainst;
     uint96 votesAbstain = casts[actionInfo.id].votesAbstain;
@@ -321,13 +319,10 @@ abstract contract LlamaTokenCaster is Initializable {
       revert CannotSubmitYet();
     }
     if (block.timestamp >= action.minExecutionTime) revert SubmissionPeriodOver();
-    /// @dev only timestamp mode is supported for now
-    string memory clockMode = _getClockMode();
-    if (keccak256(abi.encodePacked(clockMode)) != keccak256(abi.encodePacked("mode=timestamp"))) {
-      revert ClockModeNotSupported(clockMode);
-    }
 
-    uint256 totalSupply = _getPastTotalSupply(action.creationTime - 1);
+    _isClockModeSupported(); // reverts if clock mode is not supported
+
+    uint256 totalSupply = _getPastTotalSupply(_timestampToTimepoint(action.creationTime) - 1);
     uint96 vetoesFor = casts[actionInfo.id].vetoesFor;
     uint96 vetoesAgainst = casts[actionInfo.id].vetoesAgainst;
     uint96 vetoesAbstain = casts[actionInfo.id].vetoesAbstain;
@@ -348,19 +343,7 @@ abstract contract LlamaTokenCaster is Initializable {
   /// @param _vetoQuorumPct The minimum % of vetoes required to submit a disapproval to `LlamaCore`.
   function setQuorumPct(uint16 _voteQuorumPct, uint16 _vetoQuorumPct) external {
     if (msg.sender != llamaCore.executor()) revert OnlyLlamaExecutor();
-    if (_voteQuorumPct > ONE_HUNDRED_IN_BPS || _voteQuorumPct <= 0) revert InvalidVoteQuorumPct(_voteQuorumPct);
-    if (_vetoQuorumPct > ONE_HUNDRED_IN_BPS || _vetoQuorumPct <= 0) revert InvalidVetoQuorumPct(_vetoQuorumPct);
-    quorumCheckpoints.push(_voteQuorumPct, _vetoQuorumPct);
-    emit QuorumSet(_voteQuorumPct, _vetoQuorumPct);
-  }
-
-  /// @notice Sets the casting / submission period ratio
-  /// @dev `_castingPeriodPct` + `_submissionPeriodPct` must be equal to `ONE_HUNDRED_IN_BPS`
-  /// @param _castingPeriodPct The minimum % of votes required to submit an approval to `LlamaCore`.
-  /// @param _submissionPeriodPct The minimum % of vetoes required to submit a disapproval to `LlamaCore`.
-  function setPeriodPcts(uint16 _delayPeriodPct, uint16 _castingPeriodPct, uint16 _submissionPeriodPct) external {
-    if (msg.sender != llamaCore.executor()) revert OnlyLlamaExecutor();
-    _setPeriodPcts(_delayPeriodPct, _castingPeriodPct, _submissionPeriodPct);
+    _setQuorumPct(_voteQuorumPct, _vetoQuorumPct);
   }
 
   // -------- User Nonce Management --------
@@ -373,11 +356,36 @@ abstract contract LlamaTokenCaster is Initializable {
     nonces[msg.sender][selector] = LlamaUtils.uncheckedIncrement(nonces[msg.sender][selector]);
   }
 
+  // -------- Getters --------
+  /// @notice Returns the current voting quorum and vetoing quorum.
+  function getQuorum() external view returns (uint16 voteQuorumPct, uint16 vetoQuorumPct) {
+    return quorumCheckpoints.latest();
+  }
+
+  function getPastQuorum(uint256 timestamp) external view returns (uint16 voteQuorumPct, uint16 vetoQuorumPct) {
+    return quorumCheckpoints.getAtProbablyRecentTimestamp(timestamp);
+  }
+
+  function getQuorumCheckpoints(uint256 start, uint256 end) external view returns (QuorumCheckpoints.History memory) {
+    if (start > end) revert InvalidIndices();
+    uint256 checkpointsLength = quorumCheckpoints._checkpoints.length;
+    if (end > checkpointsLength) revert InvalidIndices();
+    uint256 sliceLength = end - start;
+    QuorumCheckpoints.Checkpoint[] memory checkpoints = new QuorumCheckpoints.Checkpoint[](sliceLength);
+    for (uint256 i = start; i < end; i = LlamaUtils.uncheckedIncrement(i)) {
+      checkpoints[i - start] = quorumCheckpoints._checkpoints[i];
+    }
+    return QuorumCheckpoints.History(checkpoints);
+  }
+
   // ================================
   // ======== Internal Logic ========
   // ================================
 
-  function _castVote(address caster, ActionInfo calldata actionInfo, uint8 support, string calldata reason) internal {
+  function _castVote(address caster, ActionInfo calldata actionInfo, uint8 support, string calldata reason)
+    internal
+    returns (uint96)
+  {
     Action memory action = llamaCore.getAction(actionInfo.id);
 
     actionInfo.strategy.checkIfApprovalEnabled(actionInfo, address(this), role); // Reverts if not allowed.
@@ -389,17 +397,22 @@ abstract contract LlamaTokenCaster is Initializable {
         > action.creationTime + (actionInfo.strategy.approvalPeriod() * castingPeriodPct) / ONE_HUNDRED_IN_BPS
     ) revert CastingPeriodOver();
 
-    uint256 balance = _getPastVotes(caster, action.creationTime - 1);
-    _preCastAssertions(balance, support);
+    uint96 weight = LlamaUtils.toUint96(_getPastVotes(caster, _timestampToTimepoint(action.creationTime) - 1));
+    _preCastAssertions(support);
 
-    if (support == uint8(VoteType.Against)) casts[actionInfo.id].votesAgainst += LlamaUtils.toUint96(balance);
-    else if (support == uint8(VoteType.For)) casts[actionInfo.id].votesFor += LlamaUtils.toUint96(balance);
-    else if (support == uint8(VoteType.Abstain)) casts[actionInfo.id].votesAbstain += LlamaUtils.toUint96(balance);
+    if (support == uint8(VoteType.Against)) casts[actionInfo.id].votesAgainst += weight;
+    else if (support == uint8(VoteType.For)) casts[actionInfo.id].votesFor += weight;
+    else if (support == uint8(VoteType.Abstain)) casts[actionInfo.id].votesAbstain += weight;
     casts[actionInfo.id].castVote[caster] = true;
-    emit VoteCast(actionInfo.id, caster, support, balance, reason);
+    emit VoteCast(actionInfo.id, caster, support, weight, reason);
+
+    return weight;
   }
 
-  function _castVeto(address caster, ActionInfo calldata actionInfo, uint8 support, string calldata reason) internal {
+  function _castVeto(address caster, ActionInfo calldata actionInfo, uint8 support, string calldata reason)
+    internal
+    returns (uint96)
+  {
     Action memory action = llamaCore.getAction(actionInfo.id);
 
     actionInfo.strategy.checkIfDisapprovalEnabled(actionInfo, address(this), role); // Reverts if not allowed.
@@ -411,26 +424,57 @@ abstract contract LlamaTokenCaster is Initializable {
         > action.minExecutionTime - (actionInfo.strategy.queuingPeriod() * submissionPeriodPct) / ONE_HUNDRED_IN_BPS
     ) revert CastingPeriodOver();
 
-    uint256 balance = _getPastVotes(caster, action.creationTime - 1);
-    _preCastAssertions(balance, support);
+    uint96 weight = LlamaUtils.toUint96(_getPastVotes(caster, _timestampToTimepoint(action.creationTime) - 1));
+    _preCastAssertions(support);
 
-    if (support == uint8(VoteType.Against)) casts[actionInfo.id].vetoesAgainst += LlamaUtils.toUint96(balance);
-    else if (support == uint8(VoteType.For)) casts[actionInfo.id].vetoesFor += LlamaUtils.toUint96(balance);
-    else if (support == uint8(VoteType.Abstain)) casts[actionInfo.id].vetoesAbstain += LlamaUtils.toUint96(balance);
+    if (support == uint8(VoteType.Against)) casts[actionInfo.id].vetoesAgainst += weight;
+    else if (support == uint8(VoteType.For)) casts[actionInfo.id].vetoesFor += weight;
+    else if (support == uint8(VoteType.Abstain)) casts[actionInfo.id].vetoesAbstain += weight;
     casts[actionInfo.id].castVeto[caster] = true;
-    emit VetoCast(actionInfo.id, caster, support, balance, reason);
+    emit VetoCast(actionInfo.id, caster, support, weight, reason);
+
+    return weight;
   }
 
-  function _preCastAssertions(uint256 balance, uint8 support) internal view {
+  function _preCastAssertions(uint8 support) internal view {
     if (support > uint8(VoteType.Abstain)) revert InvalidSupport(support);
 
-    /// @dev only timestamp mode is supported for now.
-    string memory clockMode = _getClockMode();
-    if (keccak256(abi.encodePacked(clockMode)) != keccak256(abi.encodePacked("mode=timestamp"))) {
-      revert ClockModeNotSupported(clockMode);
-    }
+    _isClockModeSupported(); // reverts if clock mode is not supported
+  }
 
-    if (balance == 0) revert InsufficientBalance(balance);
+  /// @dev Sets the voting quorum and vetoing quorum.
+  function _setQuorumPct(uint16 _voteQuorumPct, uint16 _vetoQuorumPct) internal {
+    if (_voteQuorumPct > ONE_HUNDRED_IN_BPS || _voteQuorumPct <= 0) revert InvalidVoteQuorumPct(_voteQuorumPct);
+    if (_vetoQuorumPct > ONE_HUNDRED_IN_BPS || _vetoQuorumPct <= 0) revert InvalidVetoQuorumPct(_vetoQuorumPct);
+    quorumCheckpoints.push(_voteQuorumPct, _vetoQuorumPct);
+    emit QuorumSet(_voteQuorumPct, _vetoQuorumPct);
+  }
+
+  /// @dev reverts if the clock mode is not supported
+  function _isClockModeSupported() internal view {
+    if (!_isClockModeTimestamp()) {
+      string memory clockMode = _getClockMode();
+      bool supported = clockAdapter.isClockModeSupported(clockMode);
+      if (!supported) revert ClockModeNotSupported(clockMode);
+    }
+  }
+
+  /// @dev Returns the timestamp or timepoint depending on the clock mode.
+  function _timestampToTimepoint(uint256 timestamp) internal view returns (uint48) {
+    if (_isClockModeTimestamp()) return LlamaUtils.toUint48(timestamp);
+    return clockAdapter.timestampToTimepoint(timestamp);
+  }
+
+  /// @dev Returns the current timepoint minus one.
+  function _currentTimepointMinusOne() internal view returns (uint48) {
+    if (_isClockModeTimestamp()) return LlamaUtils.toUint48(block.timestamp - 1);
+    return clockAdapter.clock() - 1;
+  }
+
+  /// @dev Returns true if the clock mode is timestamp.
+  function _isClockModeTimestamp() internal view returns (bool) {
+    string memory clockMode = _getClockMode();
+    return keccak256(abi.encodePacked(clockMode)) == keccak256(abi.encodePacked("mode=timestamp"));
   }
 
   /// @dev Sets the delay, casting and submission period ratio.
@@ -443,10 +487,10 @@ abstract contract LlamaTokenCaster is Initializable {
   }
 
   /// @dev Returns the number of votes for a given token holder at a given timestamp.
-  function _getPastVotes(address account, uint256 timestamp) internal view virtual returns (uint256) {}
+  function _getPastVotes(address account, uint48 timepoint) internal view virtual returns (uint256) {}
 
   /// @dev Returns the total supply of the token at a given timestamp.
-  function _getPastTotalSupply(uint256 timestamp) internal view virtual returns (uint256) {}
+  function _getPastTotalSupply(uint48 timepoint) internal view virtual returns (uint256) {}
 
   /// @dev Returns the clock mode of the token (https://eips.ethereum.org/EIPS/eip-6372).
   function _getClockMode() internal view virtual returns (string memory) {}
