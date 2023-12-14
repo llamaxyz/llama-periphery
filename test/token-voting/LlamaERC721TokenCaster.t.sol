@@ -200,8 +200,9 @@ contract CastVote is LlamaERC721TokenCasterTest {
     llamaERC721TokenCaster.castVote(actionInfo, uint8(VoteType.For), "");
   }
 
-  function test_RevertsIf_InsufficientBalance() public {
-    vm.expectRevert(abi.encodeWithSelector(LlamaTokenCaster.InsufficientBalance.selector, 0));
+  function test_SucceedsWithZeroBalance() public {
+    vm.expectEmit();
+    emit VoteCast(actionInfo.id, address(this), uint8(VoteType.For), 0, "");
     llamaERC721TokenCaster.castVote(actionInfo, uint8(VoteType.For), "");
   }
 
@@ -380,9 +381,10 @@ contract CastVeto is LlamaERC721TokenCasterTest {
     llamaERC721TokenCaster.castVeto(actionInfo, uint8(VoteType.For), "");
   }
 
-  function test_RevertsIf_InsufficientBalance() public {
-    vm.expectRevert(abi.encodeWithSelector(LlamaTokenCaster.InsufficientBalance.selector, 0));
-    llamaERC721TokenCaster.castVeto(actionInfo, uint8(VoteType.For), "");
+  function test_SucceedsWithZeroBalance() public {
+    vm.expectEmit();
+    emit VetoCast(actionInfo.id, address(this), uint8(VoteType.For), 0, "");
+    llamaERC721TokenCaster.castVote(actionInfo, uint8(VoteType.For), "");
   }
 
   function test_CastsDisapprovalCorrectly(uint8 support) public {
