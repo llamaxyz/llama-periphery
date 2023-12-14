@@ -284,8 +284,7 @@ abstract contract LlamaTokenActionCreator is Initializable {
   // Returns true if the clock mode is timestamp
   function _isClockModeTimestamp() internal view returns (bool) {
     string memory clockMode = _getClockMode();
-    if (keccak256(abi.encodePacked(clockMode)) == keccak256(abi.encodePacked("mode=timestamp"))) return true;
-    return false;
+    return keccak256(abi.encodePacked(clockMode)) == keccak256(abi.encodePacked("mode=timestamp"));
   }
 
   /// @dev Returns the number of votes for a given token holder at a given timestamp.

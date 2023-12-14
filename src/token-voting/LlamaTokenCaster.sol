@@ -74,9 +74,6 @@ abstract contract LlamaTokenCaster is Initializable {
   /// @dev Thrown when a user tries to submit an approval but there are not enough votes.
   error InsufficientVotes(uint256 votes, uint256 threshold);
 
-  /// @dev Thrown when a user tries to cast but does not have enough tokens.
-  error InsufficientBalance(uint256 balance);
-
   /// @dev Thrown when an invalid `voteQuorumPct` is passed to the constructor.
   error InvalidVoteQuorumPct(uint256 voteQuorumPct);
 
@@ -106,19 +103,19 @@ abstract contract LlamaTokenCaster is Initializable {
   // ========================
 
   /// @dev Emitted when a vote is cast.
-  event VoteCast(uint256 id, address indexed tokenholder, uint8 indexed support, uint256 quantity, string reason);
+  event VoteCast(uint256 id, address indexed tokenholder, uint8 indexed support, uint256 weight, string reason);
 
   /// @dev Emitted when a cast approval is submitted to the `LlamaCore` contract.
   event ApprovalSubmitted(
-    uint256 id, address indexed caller, uint96 quantityFor, uint96 quantityAgainst, uint96 quantityAbstain
+    uint256 id, address indexed caller, uint256 weightFor, uint256 weightAgainst, uint256 weightAbstain
   );
 
   /// @dev Emitted when a veto is cast.
-  event VetoCast(uint256 id, address indexed tokenholder, uint8 indexed support, uint256 quantity, string reason);
+  event VetoCast(uint256 id, address indexed tokenholder, uint8 indexed support, uint256 weight, string reason);
 
   /// @dev Emitted when a cast disapproval is submitted to the `LlamaCore` contract.
   event DisapprovalSubmitted(
-    uint256 id, address indexed caller, uint96 quantityFor, uint96 quantityAgainst, uint96 quantityAbstain
+    uint256 id, address indexed caller, uint256 weightFor, uint256 weightAgainst, uint256 weightAbstain
   );
 
   /// @dev Emitted when the voting quorum and/or vetoing quorum is set.
@@ -224,8 +221,8 @@ abstract contract LlamaTokenCaster is Initializable {
   ///   1 = For
   ///   2 = Abstain, but this is not currently supported.
   /// @param reason The reason given for the approval by the tokenholder.
-  function castVote(ActionInfo calldata actionInfo, uint8 support, string calldata reason) external {
-    _castVote(msg.sender, actionInfo, support, reason);
+  function castVote(ActionInfo calldata actionInfo, uint8 support, string calldata reason) external returns (uint96) {
+    return _castVote(msg.sender, actionInfo, support, reason);
   }
 
   function castVoteBySig(
@@ -236,11 +233,11 @@ abstract contract LlamaTokenCaster is Initializable {
     uint8 v,
     bytes32 r,
     bytes32 s
-  ) external {
+  ) external returns (uint96) {
     bytes32 digest = _getCastVoteTypedDataHash(caster, support, actionInfo, reason);
     address signer = ecrecover(digest, v, r, s);
     if (signer == address(0) || signer != caster) revert InvalidSignature();
-    _castVote(signer, actionInfo, support, reason);
+    return _castVote(signer, actionInfo, support, reason);
   }
 
   /// @notice How tokenholders add their support of the disapproval of an action with a reason.
@@ -251,8 +248,8 @@ abstract contract LlamaTokenCaster is Initializable {
   ///   1 = For
   ///   2 = Abstain, but this is not currently supported.
   /// @param reason The reason given for the approval by the tokenholder.
-  function castVeto(ActionInfo calldata actionInfo, uint8 support, string calldata reason) external {
-    _castVeto(msg.sender, actionInfo, support, reason);
+  function castVeto(ActionInfo calldata actionInfo, uint8 support, string calldata reason) external returns (uint96) {
+    return _castVeto(msg.sender, actionInfo, support, reason);
   }
 
   function castVetoBySig(
@@ -263,11 +260,11 @@ abstract contract LlamaTokenCaster is Initializable {
     uint8 v,
     bytes32 r,
     bytes32 s
-  ) external {
+  ) external returns (uint96) {
     bytes32 digest = _getCastVetoTypedDataHash(caster, support, actionInfo, reason);
     address signer = ecrecover(digest, v, r, s);
     if (signer == address(0) || signer != caster) revert InvalidSignature();
-    _castVeto(signer, actionInfo, support, reason);
+    return _castVeto(signer, actionInfo, support, reason);
   }
 
   /// @notice Submits a cast approval to the `LlamaCore` contract.
@@ -346,7 +343,10 @@ abstract contract LlamaTokenCaster is Initializable {
   // ======== Internal Logic ========
   // ================================
 
-  function _castVote(address caster, ActionInfo calldata actionInfo, uint8 support, string calldata reason) internal {
+  function _castVote(address caster, ActionInfo calldata actionInfo, uint8 support, string calldata reason)
+    internal
+    returns (uint96)
+  {
     Action memory action = llamaCore.getAction(actionInfo.id);
 
     actionInfo.strategy.checkIfApprovalEnabled(actionInfo, address(this), role); // Reverts if not allowed.
@@ -357,17 +357,22 @@ abstract contract LlamaTokenCaster is Initializable {
         > action.creationTime + (actionInfo.strategy.approvalPeriod() * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS
     ) revert CastingPeriodOver();
 
-    uint256 balance = _getPastVotes(caster, _timestampToTimepoint(action.creationTime) - 1);
-    _preCastAssertions(balance, support);
+    uint96 weight = LlamaUtils.toUint96(_getPastVotes(caster, _timestampToTimepoint(action.creationTime) - 1));
+    _preCastAssertions(support);
 
-    if (support == uint8(VoteType.Against)) casts[actionInfo.id].votesAgainst += LlamaUtils.toUint96(balance);
-    else if (support == uint8(VoteType.For)) casts[actionInfo.id].votesFor += LlamaUtils.toUint96(balance);
-    else if (support == uint8(VoteType.Abstain)) casts[actionInfo.id].votesAbstain += LlamaUtils.toUint96(balance);
+    if (support == uint8(VoteType.Against)) casts[actionInfo.id].votesAgainst += weight;
+    else if (support == uint8(VoteType.For)) casts[actionInfo.id].votesFor += weight;
+    else if (support == uint8(VoteType.Abstain)) casts[actionInfo.id].votesAbstain += weight;
     casts[actionInfo.id].castVote[caster] = true;
-    emit VoteCast(actionInfo.id, caster, support, balance, reason);
+    emit VoteCast(actionInfo.id, caster, support, weight, reason);
+
+    return weight;
   }
 
-  function _castVeto(address caster, ActionInfo calldata actionInfo, uint8 support, string calldata reason) internal {
+  function _castVeto(address caster, ActionInfo calldata actionInfo, uint8 support, string calldata reason)
+    internal
+    returns (uint96)
+  {
     Action memory action = llamaCore.getAction(actionInfo.id);
 
     actionInfo.strategy.checkIfDisapprovalEnabled(actionInfo, address(this), role); // Reverts if not allowed.
@@ -378,22 +383,22 @@ abstract contract LlamaTokenCaster is Initializable {
         > action.minExecutionTime - (actionInfo.strategy.queuingPeriod() * ONE_THIRD_IN_BPS) / ONE_HUNDRED_IN_BPS
     ) revert CastingPeriodOver();
 
-    uint256 balance = _getPastVotes(caster, _timestampToTimepoint(action.creationTime) - 1);
-    _preCastAssertions(balance, support);
+    uint96 weight = LlamaUtils.toUint96(_getPastVotes(caster, _timestampToTimepoint(action.creationTime) - 1));
+    _preCastAssertions(support);
 
-    if (support == uint8(VoteType.Against)) casts[actionInfo.id].vetoesAgainst += LlamaUtils.toUint96(balance);
-    else if (support == uint8(VoteType.For)) casts[actionInfo.id].vetoesFor += LlamaUtils.toUint96(balance);
-    else if (support == uint8(VoteType.Abstain)) casts[actionInfo.id].vetoesAbstain += LlamaUtils.toUint96(balance);
+    if (support == uint8(VoteType.Against)) casts[actionInfo.id].vetoesAgainst += weight;
+    else if (support == uint8(VoteType.For)) casts[actionInfo.id].vetoesFor += weight;
+    else if (support == uint8(VoteType.Abstain)) casts[actionInfo.id].vetoesAbstain += weight;
     casts[actionInfo.id].castVeto[caster] = true;
-    emit VetoCast(actionInfo.id, caster, support, balance, reason);
+    emit VetoCast(actionInfo.id, caster, support, weight, reason);
+
+    return weight;
   }
 
-  function _preCastAssertions(uint256 balance, uint8 support) internal view {
+  function _preCastAssertions(uint8 support) internal view {
     if (support > uint8(VoteType.Abstain)) revert InvalidSupport(support);
 
     _isClockModeSupported(); // reverts if clock mode is not supported
-
-    if (balance == 0) revert InsufficientBalance(balance);
   }
 
   /// @dev reverts if the clock mode is not supported
@@ -420,8 +425,7 @@ abstract contract LlamaTokenCaster is Initializable {
   /// @dev Returns true if the clock mode is timestamp.
   function _isClockModeTimestamp() internal view returns (bool) {
     string memory clockMode = _getClockMode();
-    if (keccak256(abi.encodePacked(clockMode)) == keccak256(abi.encodePacked("mode=timestamp"))) return true;
-    return false;
+    return keccak256(abi.encodePacked(clockMode)) == keccak256(abi.encodePacked("mode=timestamp"));
   }
 
   /// @dev Returns the number of votes for a given token holder at a given timestamp.
