@@ -155,8 +155,8 @@ abstract contract LlamaTokenActionCreator is Initializable {
     return _createAction(msg.sender, strategy, target, value, data, description);
   }
 
-  /// @notice Creates an action via an off-chain signature. The creator needs to hold a policy with the permission ID
-  /// of the provided `(target, selector, strategy)`.
+  /// @notice Creates an action via an off-chain signature. The creator needs to have sufficient token balance that is
+  /// greater than or equal to the creation threshold.
   /// @dev Use `""` for `description` if there is no description.
   /// @param tokenHolder The tokenHolder that signed the message.
   /// @param strategy The strategy contract that will determine how the action is executed.

@@ -29,16 +29,16 @@ contract LlamaCoreSigUtils {
 
   struct CastVote {
     address tokenHolder;
-    uint8 support;
     ActionInfo actionInfo;
+    uint8 support;
     string reason;
     uint256 nonce;
   }
 
   struct CastVeto {
     address tokenHolder;
-    uint8 support;
     ActionInfo actionInfo;
+    uint8 support;
     string reason;
     uint256 nonce;
   }
@@ -59,12 +59,12 @@ contract LlamaCoreSigUtils {
 
   /// @notice EIP-712 castVote typehash.
   bytes32 internal constant CAST_VOTE_TYPEHASH = keccak256(
-    "CastVote(address tokenHolder,uint8 support,ActionInfo actionInfo,string reason,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
+    "CastVote(address tokenHolder,ActionInfo actionInfo,uint8 support,string reason,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
   );
 
   /// @notice EIP-712 castVeto typehash.
   bytes32 internal constant CAST_VETO_TYPEHASH = keccak256(
-    "CastVeto(address tokenHolder,uint8 role,ActionInfo actionInfo,string reason,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
+    "CastVeto(address tokenHolder,ActionInfo actionInfo,uint8 support,string reason,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
   );
 
   /// @notice EIP-712 actionInfo typehash.
@@ -130,8 +130,8 @@ contract LlamaCoreSigUtils {
       abi.encode(
         CAST_VOTE_TYPEHASH,
         castVote.tokenHolder,
-        castVote.support,
         getActionInfoHash(castVote.actionInfo),
+        castVote.support,
         keccak256(bytes(castVote.reason)),
         castVote.nonce
       )
@@ -150,8 +150,8 @@ contract LlamaCoreSigUtils {
       abi.encode(
         CAST_VETO_TYPEHASH,
         castVeto.tokenHolder,
-        castVeto.support,
         getActionInfoHash(castVeto.actionInfo),
+        castVeto.support,
         keccak256(bytes(castVeto.reason)),
         castVeto.nonce
       )
