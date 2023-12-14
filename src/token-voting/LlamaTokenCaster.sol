@@ -162,12 +162,6 @@ abstract contract LlamaTokenCaster is Initializable {
   /// @dev Equivalent to 100%, but in basis points.
   uint256 internal constant ONE_HUNDRED_IN_BPS = 10_000;
 
-  /// @dev Equivalent to 1/3, but in basis points.
-  uint256 internal constant ONE_THIRD_IN_BPS = 3333;
-
-  /// @dev Equivalent to 2/3, but in basis points.
-  uint256 internal constant TWO_THIRDS_IN_BPS = 6667;
-
   /// @notice The core contract for this Llama instance.
   ILlamaCore public llamaCore;
 
@@ -283,7 +277,8 @@ abstract contract LlamaTokenCaster is Initializable {
     if (casts[actionInfo.id].approvalSubmitted) revert AlreadySubmittedApproval();
     // check to make sure the casting period has ended
     uint256 approvalPeriod = actionInfo.strategy.approvalPeriod();
-    if (block.timestamp < action.creationTime + (approvalPeriod * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS) {
+    (, uint16 castingPeriodPct,) = periodPctsCheckpoint.getAtProbablyRecentTimestamp(action.creationTime - 1);
+    if (block.timestamp < action.creationTime + (approvalPeriod * castingPeriodPct) / ONE_HUNDRED_IN_BPS) {
       revert CannotSubmitYet();
     }
 
@@ -319,8 +314,9 @@ abstract contract LlamaTokenCaster is Initializable {
     if (casts[actionInfo.id].disapprovalSubmitted) revert AlreadySubmittedDisapproval();
 
     uint256 queuingPeriod = actionInfo.strategy.queuingPeriod();
+    (,, uint16 submissionPeriodPct) = periodPctsCheckpoint.getAtProbablyRecentTimestamp(action.creationTime - 1);
     // check to make sure the current timestamp is within the submitDisapprovalBuffer 9period
-    if (block.timestamp < action.minExecutionTime - (queuingPeriod * ONE_THIRD_IN_BPS) / ONE_HUNDRED_IN_BPS) {
+    if (block.timestamp < action.minExecutionTime - (queuingPeriod * submissionPeriodPct) / ONE_HUNDRED_IN_BPS) {
       revert CannotSubmitYet();
     }
     if (block.timestamp >= action.minExecutionTime) revert SubmissionPeriodOver();
@@ -390,9 +386,10 @@ abstract contract LlamaTokenCaster is Initializable {
     actionInfo.strategy.checkIfApprovalEnabled(actionInfo, address(this), role); // Reverts if not allowed.
     if (llamaCore.getActionState(actionInfo) != uint8(ActionState.Active)) revert ActionNotActive();
     if (casts[actionInfo.id].castVote[caster]) revert AlreadyCastedVote();
+    (, uint16 castingPeriodPct,) = periodPctsCheckpoint.getAtProbablyRecentTimestamp(action.creationTime - 1);
     if (
       block.timestamp
-        > action.creationTime + (actionInfo.strategy.approvalPeriod() * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS
+        > action.creationTime + (actionInfo.strategy.approvalPeriod() * castingPeriodPct) / ONE_HUNDRED_IN_BPS
     ) revert CastingPeriodOver();
 
     uint256 balance = _getPastVotes(caster, action.creationTime - 1);
@@ -411,9 +408,10 @@ abstract contract LlamaTokenCaster is Initializable {
     actionInfo.strategy.checkIfDisapprovalEnabled(actionInfo, address(this), role); // Reverts if not allowed.
     if (llamaCore.getActionState(actionInfo) != uint8(ActionState.Queued)) revert ActionNotQueued();
     if (casts[actionInfo.id].castVeto[caster]) revert AlreadyCastedVeto();
+    (,, uint16 submissionPeriodPct) = periodPctsCheckpoint.getAtProbablyRecentTimestamp(action.creationTime - 1);
     if (
       block.timestamp
-        > action.minExecutionTime - (actionInfo.strategy.queuingPeriod() * ONE_THIRD_IN_BPS) / ONE_HUNDRED_IN_BPS
+        > action.minExecutionTime - (actionInfo.strategy.queuingPeriod() * submissionPeriodPct) / ONE_HUNDRED_IN_BPS
     ) revert CastingPeriodOver();
 
     uint256 balance = _getPastVotes(caster, action.creationTime - 1);
