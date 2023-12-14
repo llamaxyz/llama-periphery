@@ -25,7 +25,7 @@ contract LlamaERC721TokenCasterTest is LlamaTokenVotingTestSetup, LlamaCoreSigUt
   event DisapprovalSubmitted(
     uint256 id, address indexed caller, uint256 weightFor, uint256 weightAgainst, uint256 weightAbstain
   );
-  event QuorumSet(uint256 voteQuorumPct, uint256 vetoQuorumPct);
+  event QuorumSet(uint16 voteQuorumPct, uint16 vetoQuorumPct);
 
   ActionInfo actionInfo;
   LlamaERC721TokenCaster llamaERC721TokenCaster;
@@ -712,5 +712,36 @@ contract SubmitDisapprovals is LlamaERC721TokenCasterTest {
     vm.expectEmit();
     emit DisapprovalSubmitted(actionInfo.id, address(this), 3, 0, 0);
     llamaERC721TokenCaster.submitDisapproval(actionInfo);
+  }
+}
+
+contract SetQuorumPct is LlamaERC721TokenCasterTest {
+  function test_RevertsIf_NotLlamaExecutor(address notLlamaExecutor) public {
+    vm.assume(notLlamaExecutor != address(EXECUTOR));
+    vm.expectRevert(LlamaTokenCaster.OnlyLlamaExecutor.selector);
+    vm.prank(notLlamaExecutor);
+    llamaERC721TokenCaster.setQuorumPct(ERC20_VOTE_QUORUM_PCT, ERC20_VETO_QUORUM_PCT);
+  }
+
+  function test_RevertsIf_InvalidQuorumPct() public {
+    vm.startPrank(address(EXECUTOR));
+    vm.expectRevert(abi.encodeWithSelector(LlamaTokenCaster.InvalidVetoQuorumPct.selector, uint256(0)));
+    llamaERC721TokenCaster.setQuorumPct(ERC20_VOTE_QUORUM_PCT, 0);
+    vm.expectRevert(abi.encodeWithSelector(LlamaTokenCaster.InvalidVoteQuorumPct.selector, uint256(0)));
+    llamaERC721TokenCaster.setQuorumPct(0, ERC20_VETO_QUORUM_PCT);
+    vm.expectRevert(abi.encodeWithSelector(LlamaTokenCaster.InvalidVetoQuorumPct.selector, uint256(10_001)));
+    llamaERC721TokenCaster.setQuorumPct(ERC20_VOTE_QUORUM_PCT, 10_001);
+    vm.expectRevert(abi.encodeWithSelector(LlamaTokenCaster.InvalidVoteQuorumPct.selector, uint256(10_001)));
+    llamaERC721TokenCaster.setQuorumPct(10_001, ERC20_VETO_QUORUM_PCT);
+    vm.stopPrank();
+  }
+
+  function test_SetsQuorumPctCorrectly(uint16 _voteQuorum, uint16 _vetoQuorum) public {
+    _voteQuorum = uint16(bound(_voteQuorum, 1, ONE_HUNDRED_IN_BPS));
+    _vetoQuorum = uint16(bound(_vetoQuorum, 1, ONE_HUNDRED_IN_BPS));
+    vm.expectEmit();
+    emit QuorumSet(_voteQuorum, _vetoQuorum);
+    vm.prank(address(EXECUTOR));
+    llamaERC721TokenCaster.setQuorumPct(_voteQuorum, _vetoQuorum);
   }
 }

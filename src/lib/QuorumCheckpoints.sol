@@ -8,39 +8,35 @@ import {LlamaUtils} from "src/lib/LlamaUtils.sol";
  * @dev This library defines the `History` struct, for checkpointing values as they change at different points in
  * time, and later looking up past values by block timestamp.
  *
- * To create a history of checkpoints define a variable type `SupplyCheckpoints.History` in your contract, and store a
- * new checkpoint for the current transaction timestamp using the {push} function.
+ * To create a history of checkpoints define a variable type `PolicyholderCheckpoints.History` in your contract, and store a new
+ * checkpoint for the current transaction timestamp using the {push} function.
  *
  * @dev This was created by modifying then running the OpenZeppelin `Checkpoints.js` script, which generated a version
  * of this library that uses a 64 bit `timestamp` and 96 bit `quantity` field in the `Checkpoint` struct. The struct
- * was then modified to work with the below `Checkpoint` struct. For simplicity, safe cast and math methods were inlined
- * from the OpenZeppelin versions at the same commit. We disable forge-fmt for this file to simplify diffing against the
+ * was then modified to add two uint16 quorum fields. For simplicity, safe cast and math methods were inlined from
+ * the OpenZeppelin versions at the same commit. We disable forge-fmt for this file to simplify diffing against the
  * original OpenZeppelin version: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/d00acef4059807535af0bd0dd0ddf619747a044b/contracts/utils/Checkpoints.sol
  */
-library SupplyCheckpoints {
+library QuorumCheckpoints {
     struct History {
         Checkpoint[] _checkpoints;
     }
 
     struct Checkpoint {
-        uint64 timestamp;
-        uint96 numberOfHolders;
-        uint96 totalQuantity;
+        uint224 timestamp;
+        uint16 voteQuorumPct;
+        uint16 vetoQuorumPct;
     }
 
     /**
-     * @dev Returns the supply quantities at a given block timestamp. If a checkpoint is not available at that time, the closest
+     * @dev Returns the quorums at a given block timestamp. If a checkpoint is not available at that time, the closest
      * one before it is returned, or zero otherwise. Similar to {upperLookup} but optimized for the case when the
      * searched checkpoint is probably "recent", defined as being among the last sqrt(N) checkpoints where N is the
      * timestamp of checkpoints.
      */
-    function getAtProbablyRecentTimestamp(History storage self, uint256 timestamp)
-      internal
-      view
-      returns (uint96 numberOfHolders, uint96 totalQuantity)
-    {
-        require(timestamp < block.timestamp, "SupplyCheckpoints: timestamp is not in the past");
-        uint64 _timestamp = LlamaUtils.toUint64(timestamp);
+    function getAtProbablyRecentTimestamp(History storage self, uint256 timestamp) internal view returns (uint16, uint16) {
+        require(timestamp < block.timestamp, "PolicyholderCheckpoints: timestamp is not in the past");
+        uint224 _timestamp = LlamaUtils.toUint224(timestamp);
 
         uint256 len = self._checkpoints.length;
 
@@ -58,39 +54,48 @@ library SupplyCheckpoints {
 
         uint256 pos = _upperBinaryLookup(self._checkpoints, _timestamp, low, high);
 
-        return pos == 0 ? (0, 0) : _unsafeSupplyAccess(self._checkpoints, pos - 1);
+        if (pos == 0) return (0, 0);
+        Checkpoint memory ckpt = _unsafeAccess(self._checkpoints, pos - 1);
+        return (ckpt.voteQuorumPct, ckpt.vetoQuorumPct);
     }
 
     /**
-     * @dev Pushes the `numberOfHolders` and `totalQuantity` supplies onto a History so that it is stored as the
-     * checkpoint for the current `timestamp`.
+     * @dev Pushes a `voteQuorumPct` and `vetoQuorumPct` onto a History so that it is stored as the checkpoint for the current
+     * `timestamp`.
      *
-     * For simplicity, this method does not return anything, since the return values are not needed by Llama.
+     * Returns previous quorum and new quorum.
+     *
+     * @dev Note that the order of the `voteQuorumPct` and `vetoQuorumPct` parameters is reversed from the ordering used
+     * everywhere else in this file. The struct and other methods have the order as `(voteQuorumPct, vetoQuorumPct)` but this
+     * method has it as `(voteQuorumPct, vetoQuorumPct)`. As a result, use caution when editing this method to avoid
+     * accidentally introducing a bug or breaking change.
      */
-    function push(History storage self, uint256 numberOfHolders, uint256 totalQuantity) internal {
-        _insert(self._checkpoints, LlamaUtils.toUint64(block.timestamp), LlamaUtils.toUint96(numberOfHolders), LlamaUtils.toUint96(totalQuantity));
+    function push(History storage self, uint256 vetoQuorumPct, uint256 voteQuorumPct) internal returns (uint16, uint16) {
+        return _insert(self._checkpoints, LlamaUtils.toUint224(block.timestamp), LlamaUtils.toUint16(voteQuorumPct), LlamaUtils.toUint16(vetoQuorumPct));
     }
 
     /**
-     * @dev Returns the supplies in the most recent checkpoint, or zeros if there are no checkpoints.
+     * @dev Returns the quorum in the most recent checkpoint, or zero if there are no checkpoints.
      */
-    function latest(History storage self) internal view returns (uint96 numberOfHolders, uint96 totalQuantity) {
+    function latest(History storage self) internal view returns (uint16, uint16) {
         uint256 pos = self._checkpoints.length;
-        return pos == 0 ? (0, 0) : _unsafeSupplyAccess(self._checkpoints, pos - 1);
+        if (pos == 0) return (0, 0);
+        Checkpoint memory ckpt = _unsafeAccess(self._checkpoints, pos - 1);
+        return (ckpt.voteQuorumPct, ckpt.vetoQuorumPct);
     }
 
     /**
      * @dev Returns whether there is a checkpoint in the structure (i.e. it is not empty), and if so the timestamp and
-     * supplies in the most recent checkpoint.
+     * quorum in the most recent checkpoint.
      */
     function latestCheckpoint(History storage self)
         internal
         view
         returns (
             bool exists,
-            uint64 timestamp,
-            uint96 numberOfHolders,
-            uint96 totalQuantity
+            uint224 timestamp,
+            uint16 voteQuorumPct,
+            uint16 vetoQuorumPct
         )
     {
         uint256 pos = self._checkpoints.length;
@@ -98,7 +103,7 @@ library SupplyCheckpoints {
             return (false, 0, 0, 0);
         } else {
             Checkpoint memory ckpt = _unsafeAccess(self._checkpoints, pos - 1);
-            return (true, ckpt.timestamp, ckpt.numberOfHolders, ckpt.totalQuantity);
+            return (true, ckpt.timestamp, ckpt.voteQuorumPct, ckpt.vetoQuorumPct);
         }
     }
 
@@ -110,17 +115,15 @@ library SupplyCheckpoints {
     }
 
     /**
-     * @dev Pushes a (`timestamp`, `numberOfHolders`, `totalQuantity`) pair into an ordered list of checkpoints, either
-     * by inserting a new checkpoint, or by updating the last one.
-     *
-     * For simplicity, this method does not return anything, since the return values are not needed by Llama.
+     * @dev Pushes a (`timestamp`, `voteQuorumPct`, `vetoQuorumPct`) pair into an ordered list of checkpoints, either by inserting a new
+     * checkpoint, or by updating the last one.
      */
     function _insert(
         Checkpoint[] storage self,
-        uint64 timestamp,
-        uint96 numberOfHolders,
-        uint96 totalQuantity
-    ) private {
+        uint224 timestamp,
+        uint16 voteQuorumPct,
+        uint16 vetoQuorumPct
+    ) private returns (uint16, uint16) {
         uint256 pos = self.length;
 
         if (pos > 0) {
@@ -128,18 +131,20 @@ library SupplyCheckpoints {
             Checkpoint memory last = _unsafeAccess(self, pos - 1);
 
             // Checkpoints timestamps must be increasing.
-            require(last.timestamp <= timestamp, "Supply Checkpoint: invalid timestamp");
+            require(last.timestamp <= timestamp, "Role Checkpoint: invalid timestamp");
 
             // Update or push new checkpoint
             if (last.timestamp == timestamp) {
                 Checkpoint storage ckpt = _unsafeAccess(self, pos - 1);
-                ckpt.numberOfHolders = numberOfHolders;
-                ckpt.totalQuantity = totalQuantity;
+                ckpt.voteQuorumPct = voteQuorumPct;
+                ckpt.vetoQuorumPct = vetoQuorumPct;
             } else {
-                self.push(Checkpoint({timestamp: timestamp, numberOfHolders: numberOfHolders, totalQuantity: totalQuantity}));
+                self.push(Checkpoint({timestamp: timestamp, voteQuorumPct: voteQuorumPct, vetoQuorumPct: vetoQuorumPct}));
             }
+            return (last.vetoQuorumPct, vetoQuorumPct);
         } else {
-            self.push(Checkpoint({timestamp: timestamp, numberOfHolders: numberOfHolders, totalQuantity: totalQuantity}));
+            self.push(Checkpoint({timestamp: timestamp, voteQuorumPct: voteQuorumPct, vetoQuorumPct: vetoQuorumPct}));
+            return (0, vetoQuorumPct);
         }
     }
 
@@ -152,7 +157,7 @@ library SupplyCheckpoints {
      */
     function _upperBinaryLookup(
         Checkpoint[] storage self,
-        uint64 timestamp,
+        uint224 timestamp,
         uint256 low,
         uint256 high
     ) private view returns (uint256) {
@@ -176,7 +181,7 @@ library SupplyCheckpoints {
      */
     function _lowerBinaryLookup(
         Checkpoint[] storage self,
-        uint64 timestamp,
+        uint224 timestamp,
         uint256 low,
         uint256 high
     ) private view returns (uint256) {
@@ -200,20 +205,6 @@ library SupplyCheckpoints {
             mstore(0, self.slot)
             result.slot := add(keccak256(0, 0x20), pos)
         }
-    }
-
-    function _unsafeSupplyAccess(Checkpoint[] storage self, uint256 pos)
-        private
-        view
-        returns (uint96 numberOfHolders, uint96 totalQuantity)
-    {
-        Checkpoint storage result;
-        assembly {
-            mstore(0, self.slot)
-            result.slot := add(keccak256(0, 0x20), pos)
-        }
-        numberOfHolders = result.numberOfHolders;
-        totalQuantity = result.totalQuantity;
     }
 
     /**

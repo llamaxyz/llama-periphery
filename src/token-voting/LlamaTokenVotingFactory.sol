@@ -75,8 +75,8 @@ contract LlamaTokenVotingFactory {
     uint8 actionCreatorRole,
     uint8 casterRole,
     uint256 creationThreshold,
-    uint256 voteQuorumPct,
-    uint256 vetoQuorumPct
+    uint16 voteQuorumPct,
+    uint16 vetoQuorumPct
   ) external returns (address actionCreator, address caster) {
     if (isERC20) {
       actionCreator = address(
@@ -164,8 +164,8 @@ contract LlamaTokenVotingFactory {
     ILlamaTokenClockAdapter clockAdapter,
     uint256 nonce,
     uint8 role,
-    uint256 voteQuorumPct,
-    uint256 vetoQuorumPct
+    uint16 voteQuorumPct,
+    uint16 vetoQuorumPct
   ) internal returns (LlamaERC20TokenCaster caster) {
     caster = LlamaERC20TokenCaster(
       Clones.cloneDeterministic(
@@ -183,8 +183,8 @@ contract LlamaTokenVotingFactory {
     ILlamaTokenClockAdapter clockAdapter,
     uint256 nonce,
     uint8 role,
-    uint256 voteQuorumPct,
-    uint256 vetoQuorumPct
+    uint16 voteQuorumPct,
+    uint16 vetoQuorumPct
   ) internal returns (LlamaERC721TokenCaster caster) {
     caster = LlamaERC721TokenCaster(
       Clones.cloneDeterministic(

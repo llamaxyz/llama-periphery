@@ -2,12 +2,13 @@
 pragma solidity ^0.8.23;
 
 import {Initializable} from "@openzeppelin/proxy/utils/Initializable.sol";
-
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
+
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
 import {ILlamaTokenClockAdapter} from "src/token-voting/ILlamaTokenClockAdapter.sol";
 import {ActionState, VoteType} from "src/lib/Enums.sol";
 import {LlamaUtils} from "src/lib/LlamaUtils.sol";
+import {QuorumCheckpoints} from "src/lib/QuorumCheckpoints.sol";
 import {Action, ActionInfo} from "src/lib/Structs.sol";
 
 /// @title LlamaTokenCaster
@@ -19,6 +20,7 @@ import {Action, ActionInfo} from "src/lib/Structs.sol";
 /// contract does not verify that it holds the correct policy when voting and relies on `LlamaCore` to
 /// verify that during submission.
 abstract contract LlamaTokenCaster is Initializable {
+  using QuorumCheckpoints for QuorumCheckpoints.History;
   // =========================
   // ======== Structs ========
   // =========================
@@ -71,14 +73,17 @@ abstract contract LlamaTokenCaster is Initializable {
   /// @dev Thrown when a user tries to cast a vote or veto but the against surpasses for.
   error ForDoesNotSurpassAgainst(uint256 castsFor, uint256 castsAgainst);
 
+  /// @dev Thrown when a user tries to query checkpoints at non-existant indices.
+  error InvalidIndices();
+
   /// @dev Thrown when a user tries to submit an approval but there are not enough votes.
   error InsufficientVotes(uint256 votes, uint256 threshold);
 
   /// @dev Thrown when an invalid `voteQuorumPct` is passed to the constructor.
-  error InvalidVoteQuorumPct(uint256 voteQuorumPct);
+  error InvalidVoteQuorumPct(uint16 voteQuorumPct);
 
-  /// @dev Thrown when an invalid `veteQuorumPct` is passed to the constructor.
-  error InvalidVetoQuorumPct(uint256 veteQuorumPct);
+  /// @dev Thrown when an invalid `vetoQuorumPct` is passed to the constructor.
+  error InvalidVetoQuorumPct(uint16 vetoQuorumPct);
 
   /// @dev Thrown when an invalid `llamaCore` address is passed to the constructor.
   error InvalidLlamaCoreAddress();
@@ -91,6 +96,9 @@ abstract contract LlamaTokenCaster is Initializable {
 
   /// @dev Thrown when an invalid `support` value is used when casting.
   error InvalidSupport(uint8 support);
+
+  /// @dev Thrown when an address other than the `LlamaExecutor` tries to call a function.
+  error OnlyLlamaExecutor();
 
   /// @dev Thrown when an invalid `role` is passed to the constructor.
   error RoleNotInitialized(uint8 role);
@@ -119,7 +127,7 @@ abstract contract LlamaTokenCaster is Initializable {
   );
 
   /// @dev Emitted when the voting quorum and/or vetoing quorum is set.
-  event QuorumSet(uint256 voteQuorumPct, uint256 vetoQuorumPct);
+  event QuorumSet(uint16 voteQuorumPct, uint16 vetoQuorumPct);
 
   // =================================================
   // ======== Constants and Storage Variables ========
@@ -156,14 +164,10 @@ abstract contract LlamaTokenCaster is Initializable {
   /// @notice The core contract for this Llama instance.
   ILlamaCore public llamaCore;
 
+  QuorumCheckpoints.History internal quorumCheckpoints;
+
   /// @notice The contract that manages the timepoints for this token voting module.
   ILlamaTokenClockAdapter public clockAdapter;
-
-  /// @notice The minimum % of approvals required to submit approvals to `LlamaCore`.
-  uint256 public voteQuorumPct;
-
-  /// @notice The minimum % of disapprovals required to submit disapprovals to `LlamaCore`.
-  uint256 public vetoQuorumPct;
 
   /// @notice The role used by this contract to cast approvals and disapprovals.
   /// @dev This role is expected to have the ability to force approve and disapprove actions.
@@ -190,21 +194,16 @@ abstract contract LlamaTokenCaster is Initializable {
     ILlamaCore _llamaCore,
     ILlamaTokenClockAdapter _clockAdapter,
     uint8 _role,
-    uint256 _voteQuorumPct,
-    uint256 _vetoQuorumPct
+    uint16 _voteQuorumPct,
+    uint16 _vetoQuorumPct
   ) internal {
     if (_llamaCore.actionsCount() < 0) revert InvalidLlamaCoreAddress();
     if (_role > _llamaCore.policy().numRoles()) revert RoleNotInitialized(_role);
-    if (_voteQuorumPct > ONE_HUNDRED_IN_BPS || _voteQuorumPct <= 0) revert InvalidVoteQuorumPct(_voteQuorumPct);
-    if (_vetoQuorumPct > ONE_HUNDRED_IN_BPS || _vetoQuorumPct <= 0) revert InvalidVetoQuorumPct(_vetoQuorumPct);
 
     llamaCore = _llamaCore;
     clockAdapter = _clockAdapter;
     role = _role;
-    voteQuorumPct = _voteQuorumPct;
-    vetoQuorumPct = _vetoQuorumPct;
-
-    emit QuorumSet(_voteQuorumPct, _vetoQuorumPct);
+    _setQuorumPct(_voteQuorumPct, _vetoQuorumPct);
   }
 
   // ===========================================
@@ -289,6 +288,7 @@ abstract contract LlamaTokenCaster is Initializable {
     uint96 votesFor = casts[actionInfo.id].votesFor;
     uint96 votesAgainst = casts[actionInfo.id].votesAgainst;
     uint96 votesAbstain = casts[actionInfo.id].votesAbstain;
+    (uint16 voteQuorumPct,) = quorumCheckpoints.getAtProbablyRecentTimestamp(action.creationTime - 1);
     uint256 threshold = FixedPointMathLib.mulDivUp(totalSupply, voteQuorumPct, ONE_HUNDRED_IN_BPS);
     if (votesFor < threshold) revert InsufficientVotes(votesFor, threshold);
     if (votesFor <= votesAgainst) revert ForDoesNotSurpassAgainst(votesFor, votesAgainst);
@@ -320,6 +320,7 @@ abstract contract LlamaTokenCaster is Initializable {
     uint96 vetoesFor = casts[actionInfo.id].vetoesFor;
     uint96 vetoesAgainst = casts[actionInfo.id].vetoesAgainst;
     uint96 vetoesAbstain = casts[actionInfo.id].vetoesAbstain;
+    (, uint16 vetoQuorumPct) = quorumCheckpoints.getAtProbablyRecentTimestamp(action.creationTime - 1);
     uint256 threshold = FixedPointMathLib.mulDivUp(totalSupply, vetoQuorumPct, ONE_HUNDRED_IN_BPS);
     if (vetoesFor < threshold) revert InsufficientVotes(vetoesFor, threshold);
     if (vetoesFor <= vetoesAgainst) revert ForDoesNotSurpassAgainst(vetoesFor, vetoesAgainst);
@@ -327,6 +328,16 @@ abstract contract LlamaTokenCaster is Initializable {
     casts[actionInfo.id].disapprovalSubmitted = true;
     llamaCore.castDisapproval(role, actionInfo, "");
     emit DisapprovalSubmitted(actionInfo.id, msg.sender, vetoesFor, vetoesAgainst, vetoesAbstain);
+  }
+
+  // -------- Instance Management --------
+
+  /// @notice Sets the voting quorum and vetoing quorum.
+  /// @param _voteQuorumPct The minimum % of votes required to submit an approval to `LlamaCore`.
+  /// @param _vetoQuorumPct The minimum % of vetoes required to submit a disapproval to `LlamaCore`.
+  function setQuorumPct(uint16 _voteQuorumPct, uint16 _vetoQuorumPct) external {
+    if (msg.sender != llamaCore.executor()) revert OnlyLlamaExecutor();
+    _setQuorumPct(_voteQuorumPct, _vetoQuorumPct);
   }
 
   // -------- User Nonce Management --------
@@ -337,6 +348,28 @@ abstract contract LlamaTokenCaster is Initializable {
   function incrementNonce(bytes4 selector) external {
     // Safety: Can never overflow a uint256 by incrementing.
     nonces[msg.sender][selector] = LlamaUtils.uncheckedIncrement(nonces[msg.sender][selector]);
+  }
+
+  // -------- Getters --------
+  /// @notice Returns the current voting quorum and vetoing quorum.
+  function getQuorum() external view returns (uint16 voteQuorumPct, uint16 vetoQuorumPct) {
+    return quorumCheckpoints.latest();
+  }
+
+  function getPastQuorum(uint256 timestamp) external view returns (uint16 voteQuorumPct, uint16 vetoQuorumPct) {
+    return quorumCheckpoints.getAtProbablyRecentTimestamp(timestamp);
+  }
+
+  function getQuorumCheckpoints(uint256 start, uint256 end) external view returns (QuorumCheckpoints.History memory) {
+    if (start > end) revert InvalidIndices();
+    uint256 checkpointsLength = quorumCheckpoints._checkpoints.length;
+    if (end > checkpointsLength) revert InvalidIndices();
+    uint256 sliceLength = end - start;
+    QuorumCheckpoints.Checkpoint[] memory checkpoints = new QuorumCheckpoints.Checkpoint[](sliceLength);
+    for (uint256 i = start; i < end; i = LlamaUtils.uncheckedIncrement(i)) {
+      checkpoints[i - start] = quorumCheckpoints._checkpoints[i];
+    }
+    return QuorumCheckpoints.History(checkpoints);
   }
 
   // ================================
@@ -399,6 +432,14 @@ abstract contract LlamaTokenCaster is Initializable {
     if (support > uint8(VoteType.Abstain)) revert InvalidSupport(support);
 
     _isClockModeSupported(); // reverts if clock mode is not supported
+  }
+
+  /// @dev Sets the voting quorum and vetoing quorum.
+  function _setQuorumPct(uint16 _voteQuorumPct, uint16 _vetoQuorumPct) internal {
+    if (_voteQuorumPct > ONE_HUNDRED_IN_BPS || _voteQuorumPct <= 0) revert InvalidVoteQuorumPct(_voteQuorumPct);
+    if (_vetoQuorumPct > ONE_HUNDRED_IN_BPS || _vetoQuorumPct <= 0) revert InvalidVetoQuorumPct(_vetoQuorumPct);
+    quorumCheckpoints.push(_voteQuorumPct, _vetoQuorumPct);
+    emit QuorumSet(_voteQuorumPct, _vetoQuorumPct);
   }
 
   /// @dev reverts if the clock mode is not supported
