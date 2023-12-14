@@ -23,7 +23,7 @@ library QuorumCheckpoints {
     }
 
     struct Checkpoint {
-        uint224 timestamp;
+        uint48 timestamp;
         uint16 voteQuorumPct;
         uint16 vetoQuorumPct;
     }
@@ -42,7 +42,7 @@ library QuorumCheckpoints {
      */
     function getAtProbablyRecentTimestamp(History storage self, uint256 timestamp) internal view returns (uint16, uint16) {
         require(timestamp < block.timestamp, "PolicyholderCheckpoints: timestamp is not in the past");
-        uint224 _timestamp = LlamaUtils.toUint224(timestamp);
+        uint48 _timestamp = LlamaUtils.toUint48(timestamp);
 
         uint256 len = self._checkpoints.length;
 
@@ -77,7 +77,7 @@ library QuorumCheckpoints {
      * accidentally introducing a bug or breaking change.
      */
     function push(History storage self, uint256 vetoQuorumPct, uint256 voteQuorumPct) internal returns (uint16, uint16) {
-        return _insert(self._checkpoints, LlamaUtils.toUint224(block.timestamp), LlamaUtils.toUint16(voteQuorumPct), LlamaUtils.toUint16(vetoQuorumPct));
+        return _insert(self._checkpoints, LlamaUtils.toUint48(block.timestamp), LlamaUtils.toUint16(voteQuorumPct), LlamaUtils.toUint16(vetoQuorumPct));
     }
 
     /**
@@ -99,7 +99,7 @@ library QuorumCheckpoints {
         view
         returns (
             bool exists,
-            uint224 timestamp,
+            uint48 timestamp,
             uint16 voteQuorumPct,
             uint16 vetoQuorumPct
         )
@@ -126,7 +126,7 @@ library QuorumCheckpoints {
      */
     function _insert(
         Checkpoint[] storage self,
-        uint224 timestamp,
+        uint48 timestamp,
         uint16 voteQuorumPct,
         uint16 vetoQuorumPct
     ) private returns (uint16, uint16) {
@@ -163,7 +163,7 @@ library QuorumCheckpoints {
      */
     function _upperBinaryLookup(
         Checkpoint[] storage self,
-        uint224 timestamp,
+        uint48 timestamp,
         uint256 low,
         uint256 high
     ) private view returns (uint256) {
@@ -187,7 +187,7 @@ library QuorumCheckpoints {
      */
     function _lowerBinaryLookup(
         Checkpoint[] storage self,
-        uint224 timestamp,
+        uint48 timestamp,
         uint256 low,
         uint256 high
     ) private view returns (uint256) {
