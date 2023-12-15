@@ -72,6 +72,7 @@ contract LlamaERC20TokenCasterTest is LlamaTokenVotingTestSetup, LlamaCoreSigUti
   }
 
   function castVotesFor() public {
+    _skipVotingDelay();
     vm.prank(tokenHolder1);
     llamaERC20TokenCaster.castVote(actionInfo, uint8(VoteType.For), "");
     vm.prank(tokenHolder2);
@@ -81,6 +82,7 @@ contract LlamaERC20TokenCasterTest is LlamaTokenVotingTestSetup, LlamaCoreSigUti
   }
 
   function castVetosFor() public {
+    _skipVotingDelay();
     vm.prank(tokenHolder1);
     llamaERC20TokenCaster.castVeto(actionInfo, uint8(VoteType.For), "");
     vm.prank(tokenHolder2);
@@ -90,68 +92,18 @@ contract LlamaERC20TokenCasterTest is LlamaTokenVotingTestSetup, LlamaCoreSigUti
   }
 }
 
-// contract Constructor is LlamaERC20TokenCasterTest {
-//   function test_RevertsIf_InvalidLlamaCoreAddress() public {
-//     // With invalid LlamaCore instance, LlamaTokenActionCreator.InvalidLlamaCoreAddress is unreachable
-//     vm.expectRevert();
-//     new LlamaERC20TokenCaster(
-//       erc20VotesToken, ILlamaCore(makeAddr("invalid-llama-core")), tokenVotingCasterRole, uint256(1), uint256(1)
-//     );
-//   }
-
-//   function test_RevertsIf_InvalidTokenAddress(address notAToken) public {
-//     vm.assume(notAToken != address(0));
-//     vm.assume(notAToken != address(erc20VotesToken));
-//     vm.expectRevert(); // will revert with EvmError: Revert because `totalSupply` is not a function
-//     new LlamaERC20TokenCaster(
-//       ERC20Votes(notAToken), ILlamaCore(address(CORE)), tokenVotingCasterRole, uint256(1), uint256(1)
-//     );
-//   }
-
-//   function test_RevertsIf_InvalidRole(uint8 role) public {
-//     role = uint8(bound(role, POLICY.numRoles(), 255));
-//     vm.expectRevert(abi.encodeWithSelector(LlamaTokenCaster.RoleNotInitialized.selector, uint8(255)));
-//     new LlamaERC20TokenCaster(erc20VotesToken, ILlamaCore(address(CORE)), uint8(255), uint256(1), uint256(1));
-//   }
-
-//   function test_RevertsIf_InvalidVoteQuorumPct() public {
-//     vm.expectRevert(abi.encodeWithSelector(LlamaTokenCaster.InvalidVoteQuorumPct.selector, uint256(0)));
-//     new LlamaERC20TokenCaster(erc20VotesToken, ILlamaCore(address(CORE)), tokenVotingCasterRole, uint256(0),
-// uint256(1));
-//     vm.expectRevert(abi.encodeWithSelector(LlamaTokenCaster.InvalidVoteQuorumPct.selector, uint256(10_001)));
-//     new LlamaERC20TokenCaster(erc20VotesToken, ILlamaCore(address(CORE)), tokenVotingCasterRole,
-// uint256(10_001),
-// uint256(1));
-//   }
-
-//   function test_RevertsIf_InvalidVetoQuorumPct() public {
-//     vm.expectRevert(abi.encodeWithSelector(LlamaTokenCaster.InvalidVetoQuorumPct.selector, uint256(0)));
-//     new LlamaERC20TokenCaster(erc20VotesToken, ILlamaCore(address(CORE)), tokenVotingCasterRole, uint256(1),
-// uint256(0));
-//     vm.expectRevert(abi.encodeWithSelector(LlamaTokenCaster.InvalidVetoQuorumPct.selector,
-// uint256(10_001)));
-//     new LlamaERC20TokenCaster(erc20VotesToken, ILlamaCore(address(CORE)), tokenVotingCasterRole, uint256(1),
-// uint256(10_001));
-//   }
-
-//   function test_ProperlySetsConstructorArguments() public {
-//     erc20VotesToken.mint(address(this), 1_000_000e18); // we use erc20VotesToken because IVotesToken is an interface
-//     // without the `mint` function
-
-//     llamaERC20TokenCaster = new LlamaERC20TokenCaster(
-//       erc20VotesToken, ILlamaCore(address(CORE)), tokenVotingCasterRole, DEFAULT_APPROVAL_THRESHOLD,
-// DEFAULT_APPROVAL_THRESHOLD
-//     );
-
-//     assertEq(address(llamaERC20TokenCaster.LLAMA_CORE()), address(CORE));
-//     assertEq(address(llamaERC20TokenCaster.TOKEN()), address(erc20VotesToken));
-//     assertEq(llamaERC20TokenCaster.ROLE(), tokenVotingCasterRole);
-//     assertEq(llamaERC20TokenCaster.MIN_APPROVAL_PCT(), DEFAULT_APPROVAL_THRESHOLD);
-//     assertEq(llamaERC20TokenCaster.MIN_DISAPPROVAL_PCT(), DEFAULT_APPROVAL_THRESHOLD);
-//   }
-// }
-
 contract CastVote is LlamaERC20TokenCasterTest {
+  function setUp() public virtual override {
+    LlamaERC20TokenCasterTest.setUp();
+    _skipVotingDelay();
+  }
+
+  function test_RevertsIf_NotPastVotingDelay() public {
+    vm.warp(block.timestamp - (1 days * ONE_QUARTER_IN_BPS) / ONE_HUNDRED_IN_BPS);
+    vm.expectRevert(LlamaTokenCaster.VotingDelayNotOver.selector);
+    llamaERC20TokenCaster.castVote(actionInfo, uint8(VoteType.For), "");
+  }
+
   function test_RevertsIf_ActionInfoMismatch(ActionInfo memory notActionInfo) public {
     vm.assume(notActionInfo.id != actionInfo.id);
     vm.expectRevert();
@@ -192,7 +144,8 @@ contract CastVote is LlamaERC20TokenCasterTest {
   }
 
   function test_RevertsIf_CastingPeriodOver() public {
-    vm.warp(block.timestamp + ((1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS) + 1); // 2/3 of the approval period
+    vm.warp(block.timestamp + ((1 days * TWO_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS) + 1); // 2/3 of the approval
+    // period
     vm.expectRevert(LlamaTokenCaster.CastingPeriodOver.selector);
     vm.prank(tokenHolder1);
     llamaERC20TokenCaster.castVote(actionInfo, uint8(VoteType.For), "");
@@ -211,7 +164,8 @@ contract CastVote is LlamaERC20TokenCasterTest {
       actionInfo.id, tokenHolder1, support, erc20VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1), ""
     );
     vm.prank(tokenHolder1);
-    llamaERC20TokenCaster.castVote(actionInfo, support, "");
+    uint96 weight = llamaERC20TokenCaster.castVote(actionInfo, support, "");
+    assertEq(weight, erc20VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1));
   }
 
   function test_CastsVoteCorrectly_WithReason() public {
@@ -226,11 +180,44 @@ contract CastVote is LlamaERC20TokenCasterTest {
     vm.prank(tokenHolder1);
     llamaERC20TokenCaster.castVote(actionInfo, uint8(VoteType.For), "reason");
   }
+
+  function test_GetsWeightAtDelayPeriodTimestamp() public {
+    vm.warp(block.timestamp - (1 days * ONE_QUARTER_IN_BPS) / ONE_HUNDRED_IN_BPS); // go back to action creation time
+    uint256 prevBalance1 = erc20VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1);
+    uint256 prevBalance2 = erc20VotesToken.getPastVotes(tokenHolder2, block.timestamp - 1);
+
+    vm.warp(block.timestamp + 1); // go forward 1 second (could be any random time in the future)
+
+    vm.prank(tokenHolder1);
+    erc20VotesToken.transfer(tokenHolder2, ERC20_CREATION_THRESHOLD / 2);
+    vm.warp(block.timestamp + 1);
+
+    uint256 newBalance1 = erc20VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1);
+    uint256 newBalance2 = erc20VotesToken.getPastVotes(tokenHolder2, block.timestamp - 1);
+
+    assertGt(prevBalance1, newBalance1);
+    assertGt(newBalance2, prevBalance2);
+
+    vm.warp(block.timestamp + (1 days * ONE_QUARTER_IN_BPS) / ONE_HUNDRED_IN_BPS);
+
+    vm.expectEmit();
+    emit VoteCast(actionInfo.id, tokenHolder1, 1, 0, "");
+    vm.prank(tokenHolder1);
+    uint96 weight1 = llamaERC20TokenCaster.castVote(actionInfo, 1, "");
+    assertEq(weight1, 0);
+
+    vm.expectEmit();
+    emit VoteCast(actionInfo.id, tokenHolder2, 1, ERC20_CREATION_THRESHOLD, "");
+    vm.prank(tokenHolder2);
+    uint96 weight2 = llamaERC20TokenCaster.castVote(actionInfo, 1, "");
+    assertEq(weight2, ERC20_CREATION_THRESHOLD);
+  }
 }
 
 contract CastVoteBySig is LlamaERC20TokenCasterTest {
   function setUp() public virtual override {
     LlamaERC20TokenCasterTest.setUp();
+    _skipVotingDelay();
   }
 
   function createOffchainSignature(ActionInfo memory _actionInfo, uint256 privateKey)
@@ -321,10 +308,15 @@ contract CastVeto is LlamaERC20TokenCasterTest {
 
     castVotesFor();
 
-    vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
+    vm.warp(block.timestamp + (1 days * THREE_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS);
 
     vm.prank(tokenHolder1);
     llamaERC20TokenCaster.submitApproval(actionInfo);
+  }
+
+  function test_RevertsIf_NotPastVotingDelay() public {
+    vm.expectRevert(LlamaTokenCaster.VotingDelayNotOver.selector);
+    llamaERC20TokenCaster.castVeto(actionInfo, uint8(VoteType.For), "");
   }
 
   function test_RevertsIf_ActionInfoMismatch(ActionInfo memory notActionInfo) public {
@@ -353,13 +345,14 @@ contract CastVeto is LlamaERC20TokenCasterTest {
     uint256 actionId = CORE.createAction(CORE_TEAM_ROLE, tokenVotingStrategy, address(mockProtocol), 0, data, "");
     ActionInfo memory _actionInfo =
       ActionInfo(actionId, coreTeam1, CORE_TEAM_ROLE, tokenVotingStrategy, address(mockProtocol), 0, data);
-    vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
+    vm.warp(block.timestamp + (1 days * THREE_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS);
     vm.expectRevert(LlamaTokenCaster.ActionNotQueued.selector);
     vm.startPrank(tokenHolder1);
     llamaERC20TokenCaster.castVeto(_actionInfo, uint8(VoteType.For), "");
   }
 
   function test_RevertsIf_AlreadyCastedVote() public {
+    _skipVotingDelay();
     vm.startPrank(tokenHolder1);
     llamaERC20TokenCaster.castVeto(actionInfo, uint8(VoteType.For), "");
 
@@ -368,34 +361,41 @@ contract CastVeto is LlamaERC20TokenCasterTest {
   }
 
   function test_RevertsIf_InvalidSupport() public {
+    _skipVotingDelay();
     vm.expectRevert(abi.encodeWithSelector(LlamaTokenCaster.InvalidSupport.selector, uint8(3)));
     llamaERC20TokenCaster.castVeto(actionInfo, 3, "");
   }
 
   function test_RevertsIf_CastingPeriodOver() public {
-    // TODO why do we need to add 2 here
-    vm.warp(block.timestamp + 2 + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS); // 2/3 of the approval period
+    Action memory action = CORE.getAction(actionInfo.id);
+    (,, uint256 submissionPeriodPct) = llamaERC20TokenCaster.getPeriodPcts();
+    uint256 queuingPeriod = actionInfo.strategy.queuingPeriod();
+    vm.warp((action.minExecutionTime - (queuingPeriod * submissionPeriodPct) / ONE_HUNDRED_IN_BPS) + 1);
     vm.expectRevert(LlamaTokenCaster.CastingPeriodOver.selector);
     llamaERC20TokenCaster.castVeto(actionInfo, uint8(VoteType.For), "");
   }
 
   function test_CanCastWithWeightZero() public {
+    _skipVotingDelay();
     vm.expectEmit();
     emit VetoCast(actionInfo.id, address(this), uint8(VoteType.For), 0, "");
     llamaERC20TokenCaster.castVeto(actionInfo, uint8(VoteType.For), "");
   }
 
   function test_CastsVetoCorrectly(uint8 support) public {
+    _skipVotingDelay();
     support = uint8(bound(support, uint8(VoteType.Against), uint8(VoteType.Abstain)));
     vm.expectEmit();
     emit VetoCast(
       actionInfo.id, tokenHolder1, support, erc20VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1), ""
     );
     vm.prank(tokenHolder1);
-    llamaERC20TokenCaster.castVeto(actionInfo, support, "");
+    uint96 weight = llamaERC20TokenCaster.castVeto(actionInfo, support, "");
+    assertEq(weight, erc20VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1));
   }
 
   function test_CastsVetoCorrectly_WithReason() public {
+    _skipVotingDelay();
     vm.expectEmit();
     emit VetoCast(
       actionInfo.id,
@@ -407,6 +407,37 @@ contract CastVeto is LlamaERC20TokenCasterTest {
     vm.prank(tokenHolder1);
     llamaERC20TokenCaster.castVeto(actionInfo, uint8(VoteType.For), "reason");
   }
+
+  function test_GetsWeightAtDelayPeriodTimestamp() public {
+    uint256 prevBalance1 = erc20VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1);
+    uint256 prevBalance2 = erc20VotesToken.getPastVotes(tokenHolder2, block.timestamp - 1);
+
+    vm.warp(block.timestamp + 1); // go forward 1 second (could be any random time in the future)
+
+    vm.prank(tokenHolder1);
+    erc20VotesToken.transfer(tokenHolder2, ERC20_CREATION_THRESHOLD / 2);
+    vm.warp(block.timestamp + 1);
+
+    uint256 newBalance1 = erc20VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1);
+    uint256 newBalance2 = erc20VotesToken.getPastVotes(tokenHolder2, block.timestamp - 1);
+
+    assertGt(prevBalance1, newBalance1);
+    assertGt(newBalance2, prevBalance2);
+
+    vm.warp(block.timestamp + (1 days * ONE_QUARTER_IN_BPS) / ONE_HUNDRED_IN_BPS);
+
+    vm.expectEmit();
+    emit VetoCast(actionInfo.id, tokenHolder1, 1, 0, "");
+    vm.prank(tokenHolder1);
+    uint96 weight1 = llamaERC20TokenCaster.castVeto(actionInfo, 1, "");
+    assertEq(weight1, 0);
+
+    vm.expectEmit();
+    emit VetoCast(actionInfo.id, tokenHolder2, 1, ERC20_CREATION_THRESHOLD, "");
+    vm.prank(tokenHolder2);
+    uint96 weight2 = llamaERC20TokenCaster.castVeto(actionInfo, 1, "");
+    assertEq(weight2, ERC20_CREATION_THRESHOLD);
+  }
 }
 
 contract CastVetoBySig is LlamaERC20TokenCasterTest {
@@ -415,10 +446,12 @@ contract CastVetoBySig is LlamaERC20TokenCasterTest {
 
     castVotesFor();
 
-    vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
+    vm.warp(block.timestamp + (1 days * THREE_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS);
 
     vm.prank(tokenHolder1);
     llamaERC20TokenCaster.submitApproval(actionInfo);
+
+    _skipVotingDelay();
   }
 
   function createOffchainSignature(ActionInfo memory _actionInfo, uint256 privateKey)
@@ -526,7 +559,7 @@ contract CastVetoBySig is LlamaERC20TokenCasterTest {
     vm.prank(tokenHolder2);
     llamaERC20TokenCaster.castVeto(actionInfo, uint8(VoteType.For), "");
 
-    vm.warp(block.timestamp + 1 + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
+    vm.warp(block.timestamp + 1 + (1 days * TWO_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS);
 
     llamaERC20TokenCaster.submitDisapproval(actionInfo);
 
@@ -545,7 +578,7 @@ contract SubmitApprovals is LlamaERC20TokenCasterTest {
 
     castVotesFor();
 
-    vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
+    vm.warp(block.timestamp + (1 days * THREE_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS);
   }
 
   function test_RevertsIf_ActionInfoMismatch(ActionInfo memory notActionInfo) public {
@@ -577,27 +610,29 @@ contract SubmitApprovals is LlamaERC20TokenCasterTest {
 
   function test_RevertsIf_SubmissionPeriodOver() public {
     // TODO why do we need to add 2 here
-    vm.warp(block.timestamp + ((1 days * ONE_THIRD_IN_BPS) / ONE_HUNDRED_IN_BPS) + 2); // 1/3 of the approval period
+    vm.warp(block.timestamp + ((1 days * ONE_QUARTER_IN_BPS) / ONE_HUNDRED_IN_BPS) + 2); // 1/3 of the approval period
     vm.expectRevert(LlamaTokenCaster.SubmissionPeriodOver.selector);
     llamaERC20TokenCaster.submitApproval(actionInfo);
   }
 
   function test_RevertsIf_InsufficientVotes() public {
     actionInfo = _createActionWithTokenVotingStrategy(tokenVotingStrategy);
-    vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
+    vm.warp(block.timestamp + (1 days * THREE_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS);
     vm.expectRevert(abi.encodeWithSelector(LlamaTokenCaster.InsufficientVotes.selector, 0, 75_000e18));
     llamaERC20TokenCaster.submitApproval(actionInfo);
   }
 
   function test_RevertsIf_CastingPeriodNotOver() public {
     actionInfo = _createActionWithTokenVotingStrategy(tokenVotingStrategy);
-    vm.warp(block.timestamp + (1 days * ONE_THIRD_IN_BPS) / ONE_HUNDRED_IN_BPS); // 1/3 of the approval period
+    _skipVotingDelay(); // 1/3 of the approval period
     vm.expectRevert(LlamaTokenCaster.CannotSubmitYet.selector);
     llamaERC20TokenCaster.submitApproval(actionInfo);
   }
 
   function test_RevertsIf_ForDoesNotSurpassAgainst() public {
     actionInfo = _createActionWithTokenVotingStrategy(tokenVotingStrategy);
+
+    _skipVotingDelay();
 
     vm.prank(tokenHolder1);
     llamaERC20TokenCaster.castVote(actionInfo, uint8(VoteType.For), "");
@@ -606,7 +641,7 @@ contract SubmitApprovals is LlamaERC20TokenCasterTest {
     vm.prank(tokenHolder3);
     llamaERC20TokenCaster.castVote(actionInfo, uint8(VoteType.Against), "");
 
-    vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
+    vm.warp(block.timestamp + (1 days * THREE_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS);
     vm.expectRevert(abi.encodeWithSelector(LlamaTokenCaster.ForDoesNotSurpassAgainst.selector, 250_000e18, 500_000e18));
     llamaERC20TokenCaster.submitApproval(actionInfo);
   }
@@ -624,20 +659,20 @@ contract SubmitDisapprovals is LlamaERC20TokenCasterTest {
 
     castVotesFor();
 
-    vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
+    vm.warp(block.timestamp + (1 days * THREE_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS);
 
     llamaERC20TokenCaster.submitApproval(actionInfo);
   }
 
   function test_RevertsIf_ActionInfoMismatch(ActionInfo memory notActionInfo) public {
-    vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
+    vm.warp(block.timestamp + (1 days * THREE_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS);
     vm.assume(notActionInfo.id != actionInfo.id);
     vm.expectRevert();
     llamaERC20TokenCaster.submitDisapproval(notActionInfo);
   }
 
   function test_RevertsIf_DisapprovalNotEnabled() public {
-    vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
+    vm.warp(block.timestamp + (1 days * THREE_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS);
     LlamaERC20TokenCaster casterWithWrongRole = LlamaERC20TokenCaster(
       Clones.cloneDeterministic(
         address(llamaERC20TokenCasterLogic), keccak256(abi.encodePacked(address(erc20VotesToken), msg.sender))
@@ -651,10 +686,9 @@ contract SubmitDisapprovals is LlamaERC20TokenCasterTest {
   }
 
   function test_RevertsIf_AlreadySubmittedDisapproval() public {
-    Action memory action = CORE.getAction(actionInfo.id);
-    vm.warp(action.minExecutionTime - (actionInfo.strategy.queuingPeriod() * ONE_THIRD_IN_BPS) / ONE_HUNDRED_IN_BPS);
-
     castVetosFor();
+
+    vm.warp(block.timestamp + (1 days * TWO_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS);
 
     vm.startPrank(tokenHolder1);
     llamaERC20TokenCaster.submitDisapproval(actionInfo);
@@ -674,11 +708,11 @@ contract SubmitDisapprovals is LlamaERC20TokenCasterTest {
   function test_RevertsIf_InsufficientDisapprovals() public {
     actionInfo = _createActionWithTokenVotingStrategy(tokenVotingStrategy);
     castVotesFor();
-    vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
+    vm.warp(block.timestamp + (1 days * THREE_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS);
     llamaERC20TokenCaster.submitApproval(actionInfo);
 
     //TODO why add 1 here
-    vm.warp(block.timestamp + 1 + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
+    vm.warp(block.timestamp + 1 + (1 days * THREE_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS);
     vm.expectRevert(abi.encodeWithSelector(LlamaTokenCaster.InsufficientVotes.selector, 0, 75_000e18));
     llamaERC20TokenCaster.submitDisapproval(actionInfo);
   }
@@ -690,6 +724,8 @@ contract SubmitDisapprovals is LlamaERC20TokenCasterTest {
   }
 
   function test_RevertsIf_ForDoesNotSurpassAgainst() public {
+    _skipVotingDelay();
+
     vm.prank(tokenHolder1);
     llamaERC20TokenCaster.castVeto(actionInfo, uint8(VoteType.For), "");
     vm.prank(tokenHolder2);
@@ -697,7 +733,11 @@ contract SubmitDisapprovals is LlamaERC20TokenCasterTest {
     vm.prank(tokenHolder3);
     llamaERC20TokenCaster.castVeto(actionInfo, uint8(VoteType.Against), "");
     // TODO why add 1 here?
-    vm.warp(block.timestamp + 1 + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
+
+    Action memory action = CORE.getAction(actionInfo.id);
+    (,, uint256 submissionPeriodPct) = llamaERC20TokenCaster.getPeriodPcts();
+    uint256 queuingPeriod = actionInfo.strategy.queuingPeriod();
+    vm.warp((action.minExecutionTime - (queuingPeriod * submissionPeriodPct) / ONE_HUNDRED_IN_BPS));
     vm.expectRevert(abi.encodeWithSelector(LlamaTokenCaster.ForDoesNotSurpassAgainst.selector, 250_000e18, 500_000e18));
     llamaERC20TokenCaster.submitDisapproval(actionInfo);
   }
@@ -705,8 +745,7 @@ contract SubmitDisapprovals is LlamaERC20TokenCasterTest {
   function test_SubmitsDisapprovalsCorrectly() public {
     castVetosFor();
 
-    //TODO why add 1 here?
-    vm.warp(block.timestamp + 1 + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
+    vm.warp(block.timestamp + (1 days * TWO_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS);
     vm.expectEmit();
     emit DisapprovalSubmitted(actionInfo.id, address(this), 750_000e18, 0, 0);
     llamaERC20TokenCaster.submitDisapproval(actionInfo);
