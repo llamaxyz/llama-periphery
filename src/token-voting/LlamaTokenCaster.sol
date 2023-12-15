@@ -213,9 +213,6 @@ contract LlamaTokenCaster is Initializable {
     tokenAdapter = _tokenAdapter;
     role = _role;
     _setQuorumPct(_voteQuorumPct, _vetoQuorumPct);
-
-    uint256 totalSupply = tokenAdapter.getPastTotalSupply(tokenAdapter.clock() - 1);
-    if (totalSupply == 0) revert InvalidTokenAddress();
   }
 
   // ===========================================
