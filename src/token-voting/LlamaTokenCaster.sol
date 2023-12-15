@@ -96,9 +96,6 @@ contract LlamaTokenCaster is Initializable {
   /// @dev The recovered signer does not match the expected tokenholder.
   error InvalidSignature();
 
-  /// @dev Thrown when an invalid `token` address is passed to the constructor.
-  error InvalidTotalSupply();
-
   /// @dev Thrown when an invalid `support` value is used when casting.
   error InvalidSupport(uint8 support);
 
