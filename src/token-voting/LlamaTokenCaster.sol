@@ -52,50 +52,50 @@ contract LlamaTokenCaster is Initializable {
   /// @dev Thrown when a user tries to cast a veto but the action is not queued.
   error ActionNotQueued();
 
+  /// @dev Thrown when a user tries to cast a veto but has already casted.
+  error AlreadyCastedVeto();
+
   /// @dev Thrown when a user tries to cast a vote but has already casted.
   error AlreadyCastedVote();
 
   /// @dev Thrown when a user tries to cast approval but the casts have already been submitted to `LlamaCore`.
   error AlreadySubmittedApproval();
 
-  /// @dev Thrown when a user tries to cast a veto but has already casted.
-  error AlreadyCastedVeto();
-
   /// @dev Thrown when a user tries to cast disapproval but the casts have already been submitted to `LlamaCore.
   error AlreadySubmittedDisapproval();
-
-  /// @dev Thrown when a user tries to cast a vote or veto but the casting period has ended.
-  error CastingPeriodOver();
 
   /// @dev Thrown when a user tries to cast (dis)approval but the action cannot be submitted yet.
   error CannotSubmitYet();
 
+  /// @dev Thrown when a user tries to cast a vote or veto but the casting period has ended.
+  error CastingPeriodOver();
+
   /// @dev Thrown when a user tries to cast a vote or veto but the against surpasses for.
   error ForDoesNotSurpassAgainst(uint256 castsFor, uint256 castsAgainst);
-
-  /// @dev Thrown when a user tries to query checkpoints at non-existant indices.
-  error InvalidIndices();
 
   /// @dev Thrown when a user tries to submit an approval but there are not enough votes.
   error InsufficientVotes(uint256 votes, uint256 threshold);
 
-  /// @dev Thrown when an invalid `castingPeriodPct` and `submissionPeriodPct` are set.
-  error InvalidPeriodPcts(uint16 delayPeriodPct, uint16 castingPeriodPct, uint16 submissionPeriodPct);
-
-  /// @dev Thrown when an invalid `voteQuorumPct` is passed to the constructor.
-  error InvalidVoteQuorumPct(uint16 voteQuorumPct);
-
-  /// @dev Thrown when an invalid `vetoQuorumPct` is passed to the constructor.
-  error InvalidVetoQuorumPct(uint16 vetoQuorumPct);
+  /// @dev Thrown when a user tries to query checkpoints at non-existant indices.
+  error InvalidIndices();
 
   /// @dev Thrown when an invalid `llamaCore` address is passed to the constructor.
   error InvalidLlamaCoreAddress();
+
+  /// @dev Thrown when an invalid `castingPeriodPct` and `submissionPeriodPct` are set.
+  error InvalidPeriodPcts(uint16 delayPeriodPct, uint16 castingPeriodPct, uint16 submissionPeriodPct);
 
   /// @dev The recovered signer does not match the expected tokenholder.
   error InvalidSignature();
 
   /// @dev Thrown when an invalid `support` value is used when casting.
   error InvalidSupport(uint8 support);
+
+  /// @dev Thrown when an invalid `vetoQuorumPct` is passed to the constructor.
+  error InvalidVetoQuorumPct(uint16 vetoQuorumPct);
+
+  /// @dev Thrown when an invalid `voteQuorumPct` is passed to the constructor.
+  error InvalidVoteQuorumPct(uint16 voteQuorumPct);
 
   /// @dev Thrown when an address other than the `LlamaExecutor` tries to call a function.
   error OnlyLlamaExecutor();

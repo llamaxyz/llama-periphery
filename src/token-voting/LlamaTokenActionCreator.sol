@@ -25,6 +25,9 @@ contract LlamaTokenActionCreator is Initializable {
   /// @dev Thrown when a user tries to create an action but does not have enough tokens.
   error InsufficientBalance(uint256 balance);
 
+  /// @dev Thrown when an invalid `creationThreshold` is passed to the constructor.
+  error InvalidCreationThreshold();
+
   /// @dev Thrown when an invalid `llamaCore` address is passed to the constructor.
   error InvalidLlamaCoreAddress();
 
@@ -33,9 +36,6 @@ contract LlamaTokenActionCreator is Initializable {
 
   /// @dev Thrown when a `token` with an invalid totaly supply is passed to the constructor.
   error InvalidTotalSupply();
-
-  /// @dev Thrown when an invalid `creationThreshold` is passed to the constructor.
-  error InvalidCreationThreshold();
 
   /// @dev Thrown when a user tries to cancel an action but they are not the action creator.
   error OnlyActionCreator();
