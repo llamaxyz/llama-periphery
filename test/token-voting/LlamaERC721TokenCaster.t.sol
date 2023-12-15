@@ -98,6 +98,12 @@ contract CastVote is LlamaERC721TokenCasterTest {
     _skipVotingDelay();
   }
 
+  function test_RevertsIf_NotPastVotingDelay() public {
+    vm.warp(block.timestamp - (1 days * ONE_QUARTER_IN_BPS) / ONE_HUNDRED_IN_BPS);
+    vm.expectRevert(LlamaTokenCaster.VotingDelayNotOver.selector);
+    llamaERC721TokenCaster.castVote(actionInfo, uint8(VoteType.For), "");
+  }
+
   function test_RevertsIf_ActionInfoMismatch(ActionInfo memory notActionInfo) public {
     vm.assume(notActionInfo.id != actionInfo.id);
     vm.expectRevert();
@@ -273,6 +279,11 @@ contract CastVeto is LlamaERC721TokenCasterTest {
 
     vm.prank(tokenHolder1);
     llamaERC721TokenCaster.submitApproval(actionInfo);
+  }
+
+  function test_RevertsIf_NotPastVotingDelay() public {
+    vm.expectRevert(LlamaTokenCaster.VotingDelayNotOver.selector);
+    llamaERC721TokenCaster.castVeto(actionInfo, uint8(VoteType.For), "");
   }
 
   function test_RevertsIf_ActionInfoMismatch(ActionInfo memory notActionInfo) public {
