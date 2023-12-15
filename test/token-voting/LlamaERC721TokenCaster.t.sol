@@ -13,8 +13,8 @@ import {Action, ActionInfo} from "src/lib/Structs.sol";
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
 import {ILlamaRelativeStrategyBase} from "src/interfaces/ILlamaRelativeStrategyBase.sol";
 import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
-import {LlamaTokenAdapterTimestamp} from "src/token-voting/token-adapters/LlamaTokenAdapterTimestamp.sol";
 import {ILlamaTokenAdapter} from "src/token-voting/interfaces/ILlamaTokenAdapter.sol";
+import {LlamaTokenAdapterTimestamp} from "src/token-voting/token-adapters/LlamaTokenAdapterTimestamp.sol";
 import {LlamaTokenCaster} from "src/token-voting/LlamaTokenCaster.sol";
 
 contract LlamaERC721TokenCasterTest is LlamaTokenVotingTestSetup, LlamaCoreSigUtils {

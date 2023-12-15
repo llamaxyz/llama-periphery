@@ -89,7 +89,7 @@ contract LlamaTokenVotingFactory {
 
     // Check to see if token adapter was correctly initialized
     if (address(tokenAdapter.token()) == address(0)) revert InvalidTokenAdapterConfig();
-    if (tokenAdapter.timestampToTimepoint(block.timestamp) >= 0) revert InvalidTokenAdapterConfig();
+    if (tokenAdapter.timestampToTimepoint(block.timestamp) == 0) revert InvalidTokenAdapterConfig();
 
     // Reverts if clock is inconsistent
     tokenAdapter.checkIfInconsistentClock();
