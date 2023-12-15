@@ -180,6 +180,38 @@ contract CastVote is LlamaERC721TokenCasterTest {
     vm.prank(tokenHolder1);
     llamaERC721TokenCaster.castVote(actionInfo, uint8(VoteType.For), "reason");
   }
+
+  function test_GetsWeightAtDelayPeriodTimestamp() public {
+    vm.warp(block.timestamp - (1 days * ONE_QUARTER_IN_BPS) / ONE_HUNDRED_IN_BPS); // go back to action creation time
+    uint256 prevBalance1 = erc721VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1);
+    uint256 prevBalance2 = erc721VotesToken.getPastVotes(tokenHolder2, block.timestamp - 1);
+
+    vm.warp(block.timestamp + 1); // go forward 100 seconds (some random time in the future)
+
+    vm.prank(tokenHolder1);
+    erc721VotesToken.transferFrom(tokenHolder1, tokenHolder2, 0);
+    vm.warp(block.timestamp + 1);
+
+    uint256 newBalance1 = erc721VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1);
+    uint256 newBalance2 = erc721VotesToken.getPastVotes(tokenHolder2, block.timestamp - 1);
+
+    assertGt(prevBalance1, newBalance1);
+    assertGt(newBalance2, prevBalance2);
+
+    vm.warp(block.timestamp + (1 days * ONE_QUARTER_IN_BPS) / ONE_HUNDRED_IN_BPS);
+
+    vm.expectEmit();
+    emit VoteCast(actionInfo.id, tokenHolder1, 1, 0, "");
+    vm.prank(tokenHolder1);
+    uint96 weight1 = llamaERC721TokenCaster.castVote(actionInfo, 1, "");
+    assertEq(weight1, 0);
+
+    vm.expectEmit();
+    emit VoteCast(actionInfo.id, tokenHolder2, 1, 2, "");
+    vm.prank(tokenHolder2);
+    uint96 weight2 = llamaERC721TokenCaster.castVote(actionInfo, 1, "");
+    assertEq(weight2, 2);
+  }
 }
 
 contract CastVoteBySig is LlamaERC721TokenCasterTest {
