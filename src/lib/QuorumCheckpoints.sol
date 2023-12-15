@@ -42,7 +42,7 @@ library QuorumCheckpoints {
      */
     function getAtProbablyRecentTimestamp(History storage self, uint256 timestamp) internal view returns (uint16, uint16) {
         require(timestamp < block.timestamp, "QuorumCheckpoints: timestamp is not in the past");
-        uint224 _timestamp = LlamaUtils.toUint48(timestamp);
+        uint48 _timestamp = LlamaUtils.toUint48(timestamp);
 
         uint256 len = self._checkpoints.length;
 
