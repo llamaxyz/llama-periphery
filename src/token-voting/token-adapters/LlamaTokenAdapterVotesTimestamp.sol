@@ -86,6 +86,7 @@ contract LlamaTokenAdapterVotesTimestamp is ILlamaTokenAdapter, Initializable {
     return IVotes(token).getPastTotalSupply(timepoint);
   }
 
+  /// @dev Check to see if the token's CLOCK_MODE function is returning a different CLOCK_MODE.
   function _hasClockModeChanged() internal view returns (bool) {
     try IERC6372(token).CLOCK_MODE() returns (string memory mode) {
       return keccak256(abi.encodePacked(mode)) != keccak256(abi.encodePacked(CLOCK_MODE));
@@ -94,6 +95,7 @@ contract LlamaTokenAdapterVotesTimestamp is ILlamaTokenAdapter, Initializable {
     }
   }
 
+  /// @dev Check to see if the token's clock function is no longer returning the timestamp
   function _hasClockChanged() internal view returns (bool) {
     return clock() != LlamaUtils.toUint48(block.timestamp);
   }
