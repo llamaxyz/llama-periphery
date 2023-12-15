@@ -269,9 +269,7 @@ contract LlamaTokenActionCreator is Initializable {
     uint256 totalSupply = tokenAdapter.getPastTotalSupply(tokenAdapter.clock() - 1);
     if (totalSupply == 0) revert InvalidTotalSupply();
     if (_creationThreshold > totalSupply) revert InvalidCreationThreshold();
-
     creationThreshold = _creationThreshold;
-
     emit ActionThresholdSet(_creationThreshold);
   }
 
