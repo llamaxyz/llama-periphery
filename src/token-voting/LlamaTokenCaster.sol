@@ -8,6 +8,7 @@ import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
 import {ILlamaTokenClockAdapter} from "src/token-voting/ILlamaTokenClockAdapter.sol";
 import {ActionState, VoteType} from "src/lib/Enums.sol";
 import {LlamaUtils} from "src/lib/LlamaUtils.sol";
+import {CasterConfig} from "src/lib/Structs.sol";
 import {PeriodPctCheckpoints} from "src/lib/PeriodPctCheckpoints.sol";
 import {QuorumCheckpoints} from "src/lib/QuorumCheckpoints.sol";
 import {Action, ActionInfo} from "src/lib/Structs.sol";
@@ -197,14 +198,12 @@ abstract contract LlamaTokenCaster is Initializable {
   /// @dev This will be called by the `initialize` of the inheriting contract.
   /// @param _llamaCore The `LlamaCore` contract for this Llama instance.
   /// @param _role The role used by this contract to cast approvals and disapprovals.
-  /// @param _voteQuorumPct The minimum % of votes required to submit an approval to `LlamaCore`.
-  /// @param _vetoQuorumPct The minimum % of vetoes required to submit a disapproval to `LlamaCore`.
+  /// @param casterConfig Contains the quorum and period pct values to initialize the contract with.
   function __initializeLlamaTokenCasterMinimalProxy(
     ILlamaCore _llamaCore,
     ILlamaTokenClockAdapter _clockAdapter,
     uint8 _role,
-    uint16 _voteQuorumPct,
-    uint16 _vetoQuorumPct
+    CasterConfig memory casterConfig
   ) internal {
     if (_llamaCore.actionsCount() < 0) revert InvalidLlamaCoreAddress();
     if (_role > _llamaCore.policy().numRoles()) revert RoleNotInitialized(_role);
@@ -212,8 +211,9 @@ abstract contract LlamaTokenCaster is Initializable {
     llamaCore = _llamaCore;
     clockAdapter = _clockAdapter;
     role = _role;
-    _setQuorumPct(_voteQuorumPct, _vetoQuorumPct);
-    _setPeriodPcts(2500, 5000, 2500); // default to 25% delay, 50% casting, 25% submission periods
+    _setQuorumPct(casterConfig.voteQuorumPct, casterConfig.vetoQuorumPct);
+    _setPeriodPcts(casterConfig.delayPeriodPct, casterConfig.castingPeriodPct, casterConfig.submissionPeriodPct); // default
+      // to 25% delay, 50% casting, 25% submission periods
   }
 
   // ===========================================

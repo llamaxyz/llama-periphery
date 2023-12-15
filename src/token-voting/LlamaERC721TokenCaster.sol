@@ -5,6 +5,7 @@ import {ERC721Votes} from "@openzeppelin/token/ERC721/extensions/ERC721Votes.sol
 import {IERC721} from "@openzeppelin/token/ERC721/IERC721.sol";
 
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
+import {CasterConfig} from "src/lib/Structs.sol";
 import {ILlamaTokenClockAdapter} from "src/token-voting/ILlamaTokenClockAdapter.sol";
 import {LlamaTokenCaster} from "src/token-voting/LlamaTokenCaster.sol";
 /// @title LlamaERC721TokenCaster
@@ -28,17 +29,15 @@ contract LlamaERC721TokenCaster is LlamaTokenCaster {
   /// @param _token The ERC721 token to be used for voting.
   /// @param _llamaCore The `LlamaCore` contract for this Llama instance.
   /// @param _role The role used by this contract to cast approvals and disapprovals.
-  /// @param _voteQuorumPct The minimum % of votes required to submit an approval to `LlamaCore`.
-  /// @param _vetoQuorumPct The minimum % of vetoes required to submit a disapproval to `LlamaCore`.
+  /// @param casterConfig Contains the quorum and period pct values to initialize the contract with.
   function initialize(
     ERC721Votes _token,
     ILlamaCore _llamaCore,
     ILlamaTokenClockAdapter _clockAdapter,
     uint8 _role,
-    uint16 _voteQuorumPct,
-    uint16 _vetoQuorumPct
+    CasterConfig memory casterConfig
   ) external initializer {
-    __initializeLlamaTokenCasterMinimalProxy(_llamaCore, _clockAdapter, _role, _voteQuorumPct, _vetoQuorumPct);
+    __initializeLlamaTokenCasterMinimalProxy(_llamaCore, _clockAdapter, _role, casterConfig);
     token = _token;
     if (!token.supportsInterface(type(IERC721).interfaceId)) revert InvalidTokenAddress();
     uint256 totalSupply = token.getPastTotalSupply(_currentTimepointMinusOne());

@@ -4,6 +4,7 @@ pragma solidity ^0.8.23;
 import {ERC20Votes} from "@openzeppelin/token/ERC20/extensions/ERC20Votes.sol";
 
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
+import {CasterConfig} from "src/lib/Structs.sol";
 import {ILlamaTokenClockAdapter} from "src/token-voting/ILlamaTokenClockAdapter.sol";
 import {LlamaTokenCaster} from "src/token-voting/LlamaTokenCaster.sol";
 
@@ -27,17 +28,15 @@ contract LlamaERC20TokenCaster is LlamaTokenCaster {
   /// @param _token The ERC20 token to be used for voting.
   /// @param _llamaCore The `LlamaCore` contract for this Llama instance.
   /// @param _role The role used by this contract to cast approvals and disapprovals.
-  /// @param _voteQuorumPct The minimum % of votes required to submit an approval to `LlamaCore`.
-  /// @param _vetoQuorumPct The minimum % of vetoes required to submit a disapproval to `LlamaCore`.
+  /// @param casterConfig Contains the quorum and period pct values to initialize the contract with.
   function initialize(
     ERC20Votes _token,
     ILlamaCore _llamaCore,
     ILlamaTokenClockAdapter _clockAdapter,
     uint8 _role,
-    uint16 _voteQuorumPct,
-    uint16 _vetoQuorumPct
+    CasterConfig memory casterConfig
   ) external initializer {
-    __initializeLlamaTokenCasterMinimalProxy(_llamaCore, _clockAdapter, _role, _voteQuorumPct, _vetoQuorumPct);
+    __initializeLlamaTokenCasterMinimalProxy(_llamaCore, _clockAdapter, _role, casterConfig);
     token = _token;
     uint256 totalSupply = token.getPastTotalSupply(_currentTimepointMinusOne());
     if (totalSupply == 0) revert InvalidTokenAddress();

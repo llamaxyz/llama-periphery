@@ -6,6 +6,7 @@ import {ERC20Votes} from "@openzeppelin/token/ERC20/extensions/ERC20Votes.sol";
 import {ERC721Votes} from "@openzeppelin/token/ERC721/extensions/ERC721Votes.sol";
 
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
+import {CasterConfig} from "src/lib/Structs.sol";
 import {ILlamaTokenClockAdapter} from "src/token-voting/ILlamaTokenClockAdapter.sol";
 import {LlamaERC20TokenActionCreator} from "src/token-voting/LlamaERC20TokenActionCreator.sol";
 import {LlamaERC20TokenCaster} from "src/token-voting/LlamaERC20TokenCaster.sol";
@@ -64,8 +65,7 @@ contract LlamaTokenVotingFactory {
   ///@param actionCreatorRole The role required by the `LlamaTokenActionCreator` to create an action.
   ///@param casterRole The role required by the `LlamaTokenCaster` to cast approvals and disapprovals.
   ///@param creationThreshold The number of tokens required to create an action.
-  ///@param voteQuorumPct The minimum percentage of tokens required to approve an action.
-  ///@param vetoQuorumPct The minimum percentage of tokens required to disapprove an action.
+  ///@param casterConfig Contains the quorum and period pct values to initialize the contract with.
   function deploy(
     ILlamaCore llamaCore,
     address token,
@@ -75,8 +75,7 @@ contract LlamaTokenVotingFactory {
     uint8 actionCreatorRole,
     uint8 casterRole,
     uint256 creationThreshold,
-    uint16 voteQuorumPct,
-    uint16 vetoQuorumPct
+    CasterConfig memory casterConfig
   ) external returns (address actionCreator, address caster) {
     if (isERC20) {
       actionCreator = address(
@@ -85,9 +84,7 @@ contract LlamaTokenVotingFactory {
         )
       );
       caster = address(
-        _deployLlamaERC20TokenCaster(
-          ERC20Votes(token), llamaCore, clockAdapter, nonce, casterRole, voteQuorumPct, vetoQuorumPct
-        )
+        _deployLlamaERC20TokenCaster(ERC20Votes(token), llamaCore, clockAdapter, nonce, casterRole, casterConfig)
       );
     } else {
       actionCreator = address(
@@ -96,9 +93,7 @@ contract LlamaTokenVotingFactory {
         )
       );
       caster = address(
-        _deployLlamaERC721TokenCaster(
-          ERC721Votes(token), llamaCore, clockAdapter, nonce, casterRole, voteQuorumPct, vetoQuorumPct
-        )
+        _deployLlamaERC721TokenCaster(ERC721Votes(token), llamaCore, clockAdapter, nonce, casterRole, casterConfig)
       );
     }
 
@@ -164,8 +159,7 @@ contract LlamaTokenVotingFactory {
     ILlamaTokenClockAdapter clockAdapter,
     uint256 nonce,
     uint8 role,
-    uint16 voteQuorumPct,
-    uint16 vetoQuorumPct
+    CasterConfig memory casterConfig
   ) internal returns (LlamaERC20TokenCaster caster) {
     caster = LlamaERC20TokenCaster(
       Clones.cloneDeterministic(
@@ -173,7 +167,7 @@ contract LlamaTokenVotingFactory {
         keccak256(abi.encodePacked(msg.sender, address(llamaCore), address(token), nonce))
       )
     );
-    caster.initialize(token, llamaCore, clockAdapter, role, voteQuorumPct, vetoQuorumPct);
+    caster.initialize(token, llamaCore, clockAdapter, role, casterConfig);
   }
 
   /// @dev Deploys and initiliazes a new `LlamaERC721TokenCaster` clone.
@@ -183,8 +177,7 @@ contract LlamaTokenVotingFactory {
     ILlamaTokenClockAdapter clockAdapter,
     uint256 nonce,
     uint8 role,
-    uint16 voteQuorumPct,
-    uint16 vetoQuorumPct
+    CasterConfig memory casterConfig
   ) internal returns (LlamaERC721TokenCaster caster) {
     caster = LlamaERC721TokenCaster(
       Clones.cloneDeterministic(
@@ -192,6 +185,6 @@ contract LlamaTokenVotingFactory {
         keccak256(abi.encodePacked(msg.sender, address(llamaCore), address(token), nonce))
       )
     );
-    caster.initialize(token, llamaCore, clockAdapter, role, voteQuorumPct, vetoQuorumPct);
+    caster.initialize(token, llamaCore, clockAdapter, role, casterConfig);
   }
 }
