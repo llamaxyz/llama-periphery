@@ -13,7 +13,7 @@ import {LlamaUtils} from "src/lib/LlamaUtils.sol";
  *
  * @dev This was created by modifying then running the OpenZeppelin `Checkpoints.js` script, which generated a version
  * of this library that uses a 64 bit `timestamp` and 96 bit `quantity` field in the `Checkpoint` struct. The struct
- * was then modified to add two uint16 quorum fields. For simplicity, safe cast and math methods were inlined from
+ * was then modified to use uint48 timestamps and add three uint16 period fields. For simplicity, safe cast and math methods were inlined from
  * the OpenZeppelin versions at the same commit. We disable forge-fmt for this file to simplify diffing against the
  * original OpenZeppelin version: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/d00acef4059807535af0bd0dd0ddf619747a044b/contracts/utils/Checkpoints.sol
  */
@@ -30,7 +30,7 @@ library PeriodPctCheckpoints {
     }
 
     /**
-     * @dev Returns the quorums at a given block timestamp. If a checkpoint is not available at that time, the closest
+     * @dev Returns the periods at a given block timestamp. If a checkpoint is not available at that time, the closest
      * one before it is returned, or zero otherwise. Similar to {upperLookup} but optimized for the case when the
      * searched checkpoint is probably "recent", defined as being among the last sqrt(N) checkpoints where N is the
      * timestamp of checkpoints.
@@ -61,22 +61,15 @@ library PeriodPctCheckpoints {
     }
 
     /**
-     * @dev Pushes a `voteQuorumPct` and `vetoQuorumPct` onto a History so that it is stored as the checkpoint for the current
+     * @dev Pushes a `delayPeriodPct`, `castingPeriodPct` and `submissionPeriodPct` onto a History so that it is stored as the checkpoint for the current
      * `timestamp`.
-     *
-     * Returns previous quorum and new quorum.
-     *
-     * @dev Note that the order of the `voteQuorumPct` and `vetoQuorumPct` parameters is reversed from the ordering used
-     * everywhere else in this file. The struct and other methods have the order as `(voteQuorumPct, vetoQuorumPct)` but this
-     * method has it as `(voteQuorumPct, vetoQuorumPct)`. As a result, use caution when editing this method to avoid
-     * accidentally introducing a bug or breaking change.
      */
-    function push(History storage self, uint16 delayPeriodPct, uint16 castingPeriodPct, uint16 submissionPeriodPct) internal returns (uint16, uint16, uint16) {
+    function push(History storage self, uint16 delayPeriodPct, uint16 castingPeriodPct, uint16 submissionPeriodPct) internal {
         return _insert(self._checkpoints, LlamaUtils.toUint48(block.timestamp), LlamaUtils.toUint16(delayPeriodPct), LlamaUtils.toUint16(castingPeriodPct), LlamaUtils.toUint16(submissionPeriodPct));
     }
 
     /**
-     * @dev Returns the quorum in the most recent checkpoint, or zero if there are no checkpoints.
+     * @dev Returns the period in the most recent checkpoint, or zero if there are no checkpoints.
      */
     function latest(History storage self) internal view returns (uint16, uint16, uint16) {
         uint256 pos = self._checkpoints.length;
@@ -87,7 +80,7 @@ library PeriodPctCheckpoints {
 
     /**
      * @dev Returns whether there is a checkpoint in the structure (i.e. it is not empty), and if so the timestamp and
-     * quorum in the most recent checkpoint.
+     * peiod in the most recent checkpoint.
      */
     function latestCheckpoint(History storage self)
         internal
@@ -117,7 +110,7 @@ library PeriodPctCheckpoints {
     }
 
     /**
-     * @dev Pushes a (`timestamp`, `voteQuorumPct`, `vetoQuorumPct`) pair into an ordered list of checkpoints, either by inserting a new
+     * @dev Pushes a (`timestamp`, `delayPeriodPct`, `castingPeriodPct`, `submissionPeriodPct`) group into an ordered list of checkpoints, either by inserting a new
      * checkpoint, or by updating the last one.
      */
     function _insert(

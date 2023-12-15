@@ -70,7 +70,7 @@ library QuorumCheckpoints {
      * method has it as `(voteQuorumPct, vetoQuorumPct)`. As a result, use caution when editing this method to avoid
      * accidentally introducing a bug or breaking change.
      */
-    function push(History storage self, uint256 vetoQuorumPct, uint256 voteQuorumPct) internal returns (uint16, uint16) {
+    function push(History storage self, uint256 vetoQuorumPct, uint256 voteQuorumPct) internal {
         return _insert(self._checkpoints, LlamaUtils.toUint48(block.timestamp), LlamaUtils.toUint16(voteQuorumPct), LlamaUtils.toUint16(vetoQuorumPct));
     }
 
