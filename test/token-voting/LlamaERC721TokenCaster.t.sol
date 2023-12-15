@@ -608,10 +608,9 @@ contract SubmitDisapprovals is LlamaERC721TokenCasterTest {
   }
 
   function test_RevertsIf_AlreadySubmittedDisapproval() public {
-    Action memory action = CORE.getAction(actionInfo.id);
-    vm.warp(action.minExecutionTime - (actionInfo.strategy.queuingPeriod() * ONE_QUARTER_IN_BPS) / ONE_HUNDRED_IN_BPS);
-
     castVetosFor();
+
+    vm.warp(block.timestamp + (1 days * TWO_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS);
 
     vm.startPrank(tokenHolder1);
     llamaERC721TokenCaster.submitDisapproval(actionInfo);
@@ -654,8 +653,8 @@ contract SubmitDisapprovals is LlamaERC721TokenCasterTest {
     llamaERC721TokenCaster.castVeto(actionInfo, uint8(VoteType.Against), "");
     vm.prank(tokenHolder3);
     llamaERC721TokenCaster.castVeto(actionInfo, uint8(VoteType.Against), "");
-    // TODO why add 1 here?
-    vm.warp(block.timestamp + 1 + (1 days * THREE_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS);
+
+    vm.warp(block.timestamp + (1 days * TWO_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS);
     vm.expectRevert(abi.encodeWithSelector(LlamaTokenCaster.ForDoesNotSurpassAgainst.selector, 1, 2));
     llamaERC721TokenCaster.submitDisapproval(actionInfo);
   }
@@ -663,8 +662,7 @@ contract SubmitDisapprovals is LlamaERC721TokenCasterTest {
   function test_SubmitsDisapprovalsCorrectly() public {
     castVetosFor();
 
-    //TODO why add 1 here?
-    vm.warp(block.timestamp + 1 + (1 days * THREE_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS);
+    vm.warp(block.timestamp + (1 days * TWO_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS);
     vm.expectEmit();
     emit DisapprovalSubmitted(actionInfo.id, address(this), 3, 0, 0);
     llamaERC721TokenCaster.submitDisapproval(actionInfo);
