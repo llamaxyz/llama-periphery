@@ -80,7 +80,7 @@ contract LlamaTokenVotingFactory {
     returns (LlamaTokenActionCreator actionCreator, LlamaTokenCaster caster)
   {
     bytes32 salt = keccak256(
-      abi.encode(
+      abi.encodePacked(
         msg.sender, address(tokenVotingConfig.llamaCore), tokenVotingConfig.adapterConfig, tokenVotingConfig.nonce
       )
     );
@@ -93,6 +93,7 @@ contract LlamaTokenVotingFactory {
     // Check to see if token adapter was correctly initialized
     if (address(tokenAdapter.token()) == address(0)) revert InvalidTokenAdapterConfig();
     if (tokenAdapter.timestampToTimepoint(block.timestamp) == 0) revert InvalidTokenAdapterConfig();
+    if (tokenAdapter.clock() == 0) revert InvalidTokenAdapterConfig();
 
     // Reverts if clock is inconsistent
     tokenAdapter.checkIfInconsistentClock();
