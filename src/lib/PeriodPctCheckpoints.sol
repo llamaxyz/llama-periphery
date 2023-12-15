@@ -134,7 +134,7 @@ library PeriodPctCheckpoints {
             Checkpoint memory last = _unsafeAccess(self, pos - 1);
 
             // Checkpoints timestamps must be increasing.
-            require(last.timestamp <= timestamp, "Role Checkpoint: invalid timestamp");
+            require(last.timestamp <= timestamp, "Period Pct Checkpoint: invalid timestamp");
 
             // Update or push new checkpoint
             if (last.timestamp == timestamp) {
