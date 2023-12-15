@@ -79,13 +79,15 @@ contract LlamaTokenVotingFactory {
     external
     returns (LlamaTokenActionCreator actionCreator, LlamaTokenCaster caster)
   {
-    // Deploy and initialize token adapter based on provided logic address and config
-    ILlamaTokenAdapter tokenAdapter = ILlamaTokenAdapter(
-      Clones.cloneDeterministic(
-        address(tokenVotingConfig.tokenAdapterLogic),
-        keccak256(abi.encode(tokenVotingConfig.adapterConfig, tokenVotingConfig.nonce))
+    bytes32 salt = keccak256(
+      abi.encode(
+        msg.sender, address(tokenVotingConfig.llamaCore), tokenVotingConfig.adapterConfig, tokenVotingConfig.nonce
       )
     );
+
+    // Deploy and initialize token adapter based on provided logic address and config
+    ILlamaTokenAdapter tokenAdapter =
+      ILlamaTokenAdapter(Clones.cloneDeterministic(address(tokenVotingConfig.tokenAdapterLogic), salt));
     tokenAdapter.initialize(tokenVotingConfig.adapterConfig);
 
     // Check to see if token adapter was correctly initialized
@@ -96,19 +98,7 @@ contract LlamaTokenVotingFactory {
     tokenAdapter.checkIfInconsistentClock();
 
     // Deploy and initialize `LlamaTokenActionCreator` contract
-    actionCreator = LlamaTokenActionCreator(
-      Clones.cloneDeterministic(
-        address(LLAMA_TOKEN_ACTION_CREATOR_LOGIC),
-        keccak256(
-          abi.encodePacked(
-            msg.sender,
-            address(tokenVotingConfig.llamaCore),
-            address(tokenVotingConfig.tokenAdapterLogic),
-            tokenVotingConfig.nonce
-          )
-        )
-      )
-    );
+    actionCreator = LlamaTokenActionCreator(Clones.cloneDeterministic(address(LLAMA_TOKEN_ACTION_CREATOR_LOGIC), salt));
 
     actionCreator.initialize(
       tokenVotingConfig.llamaCore,
@@ -118,19 +108,7 @@ contract LlamaTokenVotingFactory {
     );
 
     // Deploy and initialize `LlamaTokenCaster` contract
-    caster = LlamaTokenCaster(
-      Clones.cloneDeterministic(
-        address(LLAMA_TOKEN_CASTER_LOGIC),
-        keccak256(
-          abi.encodePacked(
-            msg.sender,
-            address(tokenVotingConfig.llamaCore),
-            address(tokenVotingConfig.tokenAdapterLogic),
-            tokenVotingConfig.nonce
-          )
-        )
-      )
-    );
+    caster = LlamaTokenCaster(Clones.cloneDeterministic(address(LLAMA_TOKEN_CASTER_LOGIC), salt));
 
     caster.initialize(
       tokenVotingConfig.llamaCore,

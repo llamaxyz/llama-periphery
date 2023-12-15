@@ -97,34 +97,27 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     bytes memory data = abi.encodeWithSelector(LlamaTokenVotingFactory.deploy.selector, config);
     ActionInfo memory actionInfo = _setPermissionCreateApproveAndQueueAction(data);
 
+    bytes32 salt = keccak256(abi.encode(address(EXECUTOR), address(CORE), adapterConfig, uint256(0)));
+
     // Compute addresses of ERC20 Token Voting Module
     LlamaTokenActionCreator llamaERC20TokenActionCreator = LlamaTokenActionCreator(
       Clones.predictDeterministicAddress(
         address(llamaTokenActionCreatorLogic),
-        keccak256(
-          abi.encodePacked(address(EXECUTOR), address(CORE), address(llamaTokenAdapterTimestampLogic), uint256(0))
-        ), // salt
+        salt,
         address(tokenVotingFactory) // deployer
       )
     );
     LlamaTokenCaster llamaERC20TokenCaster = LlamaTokenCaster(
       Clones.predictDeterministicAddress(
         address(llamaTokenCasterLogic),
-        keccak256(
-          abi.encodePacked(address(EXECUTOR), address(CORE), address(llamaTokenAdapterTimestampLogic), uint256(0))
-        ), // salt
+        salt,
         address(tokenVotingFactory) // deployer
       )
     );
     ILlamaTokenAdapter llamaERC20TokenAdapter = ILlamaTokenAdapter(
       Clones.predictDeterministicAddress(
         address(llamaTokenAdapterTimestampLogic),
-        keccak256(
-          abi.encode(
-            abi.encode(address(erc20VotesToken)), // salt
-            0
-          )
-        ),
+        salt,
         address(tokenVotingFactory) // deployer
       )
     );
@@ -180,35 +173,27 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     bytes memory data = abi.encodeWithSelector(LlamaTokenVotingFactory.deploy.selector, config);
     ActionInfo memory actionInfo = _setPermissionCreateApproveAndQueueAction(data);
 
+    bytes32 salt = keccak256(abi.encode(address(EXECUTOR), address(CORE), adapterConfig, uint256(0)));
+
     // Compute addresses of ERC721 Token Voting Module
     LlamaTokenActionCreator llamaERC721TokenActionCreator = LlamaTokenActionCreator(
       Clones.predictDeterministicAddress(
         address(llamaTokenActionCreatorLogic),
-        keccak256(
-          abi.encodePacked(address(EXECUTOR), address(CORE), address(llamaTokenAdapterTimestampLogic), uint256(0))
-        ), // salt
+        salt,
         address(tokenVotingFactory) // deployer
       )
     );
     LlamaTokenCaster llamaERC721TokenCaster = LlamaTokenCaster(
       Clones.predictDeterministicAddress(
         address(llamaTokenCasterLogic),
-        keccak256(
-          abi.encodePacked(address(EXECUTOR), address(CORE), address(llamaTokenAdapterTimestampLogic), uint256(0))
-        ), // salt
+        salt,
         address(tokenVotingFactory) // deployer
       )
     );
-
     ILlamaTokenAdapter llamaERC721TokenAdapter = ILlamaTokenAdapter(
       Clones.predictDeterministicAddress(
         address(llamaTokenAdapterTimestampLogic),
-        keccak256(
-          abi.encode(
-            abi.encode(address(erc721VotesToken)), // salt
-            0
-          )
-        ),
+        salt,
         address(tokenVotingFactory) // deployer
       )
     );
@@ -250,10 +235,13 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     vm.assume(randomCaller != address(0));
     vm.deal(randomCaller, 1 ether);
 
+    bytes memory adapterConfig = abi.encode(LlamaTokenAdapterVotesTimestamp.Config(address(erc20VotesToken)));
+    bytes32 salt = keccak256(abi.encode(randomCaller, address(CORE), adapterConfig, uint256(0)));
+
     LlamaTokenActionCreator llamaERC20TokenActionCreator = LlamaTokenActionCreator(
       Clones.predictDeterministicAddress(
         address(llamaTokenActionCreatorLogic),
-        keccak256(abi.encodePacked(randomCaller, address(CORE), address(llamaTokenAdapterTimestampLogic), uint256(0))), // salt
+        salt,
         address(tokenVotingFactory) // deployer
       )
     );
@@ -261,19 +249,14 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     LlamaTokenCaster llamaERC20TokenCaster = LlamaTokenCaster(
       Clones.predictDeterministicAddress(
         address(llamaTokenCasterLogic),
-        keccak256(abi.encodePacked(randomCaller, address(CORE), address(llamaTokenAdapterTimestampLogic), uint256(0))), // salt
+        salt,
         address(tokenVotingFactory) // deployer
       )
     );
     ILlamaTokenAdapter llamaERC20TokenAdapter = ILlamaTokenAdapter(
       Clones.predictDeterministicAddress(
         address(llamaTokenAdapterTimestampLogic),
-        keccak256(
-          abi.encode(
-            abi.encode(address(erc20VotesToken)), // salt
-            0
-          )
-        ),
+        salt,
         address(tokenVotingFactory) // deployer
       )
     );
@@ -297,7 +280,6 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
       block.chainid
     );
 
-    bytes memory adapterConfig = abi.encode(LlamaTokenAdapterVotesTimestamp.Config(address(erc20VotesToken)));
     LlamaTokenVotingFactory.LlamaTokenVotingConfig memory config = LlamaTokenVotingFactory.LlamaTokenVotingConfig(
       CORE,
       llamaTokenAdapterTimestampLogic,
@@ -348,34 +330,27 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
 
     ActionInfo memory actionInfo = _setPermissionCreateApproveAndQueueAction(data);
 
+    bytes32 salt = keccak256(abi.encode(address(EXECUTOR), address(CORE), adapterConfig, uint256(0)));
+
     // Compute addresses of ERC20 Token Voting Module
     LlamaTokenActionCreator llamaERC20TokenActionCreator = LlamaTokenActionCreator(
       Clones.predictDeterministicAddress(
         address(llamaTokenActionCreatorLogic),
-        keccak256(
-          abi.encodePacked(address(EXECUTOR), address(CORE), address(llamaTokenAdapterTimestampLogic), uint256(0))
-        ), // salt
+        salt,
         address(tokenVotingFactory) // deployer
       )
     );
     LlamaTokenCaster llamaERC20TokenCaster = LlamaTokenCaster(
       Clones.predictDeterministicAddress(
         address(llamaTokenCasterLogic),
-        keccak256(
-          abi.encodePacked(address(EXECUTOR), address(CORE), address(llamaTokenAdapterTimestampLogic), uint256(0))
-        ), // salt
+        salt,
         address(tokenVotingFactory) // deployer
       )
     );
     ILlamaTokenAdapter llamaERC20TokenAdapter = ILlamaTokenAdapter(
       Clones.predictDeterministicAddress(
         address(llamaTokenAdapterTimestampLogic),
-        keccak256(
-          abi.encode(
-            abi.encode(address(erc20VotesToken)), // salt
-            0
-          )
-        ),
+        salt,
         address(tokenVotingFactory) // deployer
       )
     );
@@ -419,34 +394,27 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
 
     actionInfo = _setPermissionCreateApproveAndQueueAction(data);
 
+    salt = keccak256(abi.encode(address(EXECUTOR), address(CORE), adapterConfig, uint256(1)));
+
     // Compute addresses of ERC20 Token Voting Module
     llamaERC20TokenActionCreator = LlamaTokenActionCreator(
       Clones.predictDeterministicAddress(
         address(llamaTokenActionCreatorLogic),
-        keccak256(
-          abi.encodePacked(address(EXECUTOR), address(CORE), address(llamaTokenAdapterTimestampLogic), uint256(1))
-        ), // salt
+        salt, // salt
         address(tokenVotingFactory) // deployer
       )
     );
     llamaERC20TokenCaster = LlamaTokenCaster(
       Clones.predictDeterministicAddress(
         address(llamaTokenCasterLogic),
-        keccak256(
-          abi.encodePacked(address(EXECUTOR), address(CORE), address(llamaTokenAdapterTimestampLogic), uint256(1))
-        ), // salt
+        salt, // salt
         address(tokenVotingFactory) // deployer
       )
     );
     llamaERC20TokenAdapter = ILlamaTokenAdapter(
       Clones.predictDeterministicAddress(
         address(llamaTokenAdapterTimestampLogic),
-        keccak256(
-          abi.encode(
-            abi.encode(address(erc20VotesToken)), // salt
-            1
-          )
-        ),
+        salt,
         address(tokenVotingFactory) // deployer
       )
     );

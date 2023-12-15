@@ -92,11 +92,12 @@ contract LlamaERC721TokenCasterTest is LlamaTokenVotingTestSetup, LlamaCoreSigUt
     llamaERC721TokenCaster.castVeto(actionInfo, uint8(VoteType.For), "");
   }
 
-  function createTimestampTokenAdapter(address token) public returns (ILlamaTokenAdapter tokenAdapter) {
+  function createTimestampTokenAdapter(address token, uint256 nonce) public returns (ILlamaTokenAdapter tokenAdapter) {
     bytes memory adapterConfig = abi.encode(LlamaTokenAdapterVotesTimestamp.Config(address(token)));
 
-    tokenAdapter =
-      ILlamaTokenAdapter(Clones.cloneDeterministic(address(llamaTokenAdapterTimestampLogic), keccak256(adapterConfig)));
+    bytes32 salt = keccak256(abi.encode(msg.sender, address(CORE), adapterConfig, nonce));
+
+    tokenAdapter = ILlamaTokenAdapter(Clones.cloneDeterministic(address(llamaTokenAdapterTimestampLogic), salt));
     tokenAdapter.initialize(adapterConfig);
   }
 }
@@ -120,7 +121,7 @@ contract CastVote is LlamaERC721TokenCasterTest {
   }
 
   function test_RevertsIf_ApprovalNotEnabled() public {
-    ILlamaTokenAdapter tokenAdapter = createTimestampTokenAdapter(address(erc721VotesToken));
+    ILlamaTokenAdapter tokenAdapter = createTimestampTokenAdapter(address(erc721VotesToken), 0);
 
     LlamaTokenCaster casterWithWrongRole = LlamaTokenCaster(
       Clones.cloneDeterministic(
@@ -336,7 +337,7 @@ contract CastVeto is LlamaERC721TokenCasterTest {
   }
 
   function test_RevertsIf_DisapprovalNotEnabled() public {
-    ILlamaTokenAdapter tokenAdapter = createTimestampTokenAdapter(address(erc721VotesToken));
+    ILlamaTokenAdapter tokenAdapter = createTimestampTokenAdapter(address(erc721VotesToken), 0);
 
     LlamaTokenCaster casterWithWrongRole = LlamaTokenCaster(
       Clones.cloneDeterministic(
@@ -596,7 +597,7 @@ contract SubmitApprovals is LlamaERC721TokenCasterTest {
   }
 
   function test_RevertsIf_ApprovalNotEnabled() public {
-    ILlamaTokenAdapter tokenAdapter = createTimestampTokenAdapter(address(erc721VotesToken));
+    ILlamaTokenAdapter tokenAdapter = createTimestampTokenAdapter(address(erc721VotesToken), 0);
 
     LlamaTokenCaster casterWithWrongRole = LlamaTokenCaster(
       Clones.cloneDeterministic(
@@ -686,7 +687,7 @@ contract SubmitDisapprovals is LlamaERC721TokenCasterTest {
         address(llamaTokenCasterLogic), keccak256(abi.encodePacked(address(erc721VotesToken), msg.sender))
       )
     );
-    ILlamaTokenAdapter tokenAdapter = createTimestampTokenAdapter(address(erc721VotesToken));
+    ILlamaTokenAdapter tokenAdapter = createTimestampTokenAdapter(address(erc721VotesToken), 0);
     casterWithWrongRole.initialize(CORE, tokenAdapter, madeUpRole, ERC721_VOTE_QUORUM_PCT, ERC721_VETO_QUORUM_PCT);
     vm.expectRevert(abi.encodeWithSelector(ILlamaRelativeStrategyBase.InvalidRole.selector, tokenVotingCasterRole));
     casterWithWrongRole.submitDisapproval(actionInfo);
