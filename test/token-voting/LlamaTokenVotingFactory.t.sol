@@ -394,7 +394,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
 
     actionInfo = _setPermissionCreateApproveAndQueueAction(data);
 
-    salt = keccak256(abi.encode(address(EXECUTOR), address(CORE), adapterConfig, uint256(1)));
+    salt = keccak256(abi.encodePacked(address(EXECUTOR), address(CORE), adapterConfig, uint256(1)));
 
     // Compute addresses of ERC20 Token Voting Module
     llamaERC20TokenActionCreator = LlamaTokenActionCreator(
