@@ -45,7 +45,7 @@ contract LlamaTokenAdapter is ILlamaTokenAdapter {
     if (hasClockChanged || hasClockModeChanged) revert ERC6372InconsistentClock();
   }
 
-  function timestampToTimepoint(uint256 timestamp) external view returns (uint48 timepoint) {
+  function timestampToTimepoint(uint256 timestamp) external pure returns (uint48 timepoint) {
     return LlamaUtils.toUint48(timestamp);
   }
 

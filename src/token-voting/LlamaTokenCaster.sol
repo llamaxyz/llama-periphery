@@ -282,6 +282,9 @@ abstract contract LlamaTokenCaster is Initializable {
 
     if (block.timestamp > action.creationTime + approvalPeriod) revert SubmissionPeriodOver();
 
+    // Reverts if clock or CLOCK_MODE() has changed
+    tokenAdapter.checkIfInconsistentClock();
+
     uint256 totalSupply = tokenAdapter.getPastTotalSupply(tokenAdapter.timestampToTimepoint(action.creationTime) - 1);
     uint96 votesFor = casts[actionInfo.id].votesFor;
     uint96 votesAgainst = casts[actionInfo.id].votesAgainst;
@@ -311,6 +314,9 @@ abstract contract LlamaTokenCaster is Initializable {
       revert CannotSubmitYet();
     }
     if (block.timestamp >= action.minExecutionTime) revert SubmissionPeriodOver();
+
+    // Reverts if clock or CLOCK_MODE() has changed
+    tokenAdapter.checkIfInconsistentClock();
 
     uint256 totalSupply = tokenAdapter.getPastTotalSupply(tokenAdapter.timestampToTimepoint(action.creationTime) - 1);
     uint96 vetoesFor = casts[actionInfo.id].vetoesFor;
@@ -426,8 +432,11 @@ abstract contract LlamaTokenCaster is Initializable {
     return weight;
   }
 
-  function _preCastAssertions(uint8 support) internal pure {
+  function _preCastAssertions(uint8 support) internal view {
     if (support > uint8(VoteType.Abstain)) revert InvalidSupport(support);
+
+    // Reverts if clock or CLOCK_MODE() has changed
+    tokenAdapter.checkIfInconsistentClock();
   }
 
   /// @dev Sets the voting quorum and vetoing quorum.

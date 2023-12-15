@@ -244,6 +244,9 @@ abstract contract LlamaTokenActionCreator is Initializable {
     bytes calldata data,
     string memory description
   ) internal returns (uint256 actionId) {
+    // Reverts if clock or CLOCK_MODE() has changed
+    tokenAdapter.checkIfInconsistentClock();
+
     uint256 balance = tokenAdapter.getPastVotes(tokenHolder, tokenAdapter.clock() - 1);
     if (balance < creationThreshold) revert InsufficientBalance(balance);
 
