@@ -5,7 +5,7 @@ import {ERC721Votes} from "@openzeppelin/token/ERC721/extensions/ERC721Votes.sol
 import {IERC721} from "@openzeppelin/token/ERC721/IERC721.sol";
 
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
-import {ILlamaTokenClockAdapter} from "src/token-voting/ILlamaTokenClockAdapter.sol";
+import {ILlamaTokenAdapter} from "src/token-voting/interfaces/ILlamaTokenAdapter.sol";
 import {LlamaTokenCaster} from "src/token-voting/LlamaTokenCaster.sol";
 /// @title LlamaERC721TokenCaster
 /// @author Llama (devsdosomething@llama.xyz)
@@ -33,30 +33,15 @@ contract LlamaERC721TokenCaster is LlamaTokenCaster {
   function initialize(
     ERC721Votes _token,
     ILlamaCore _llamaCore,
-    ILlamaTokenClockAdapter _clockAdapter,
+    ILlamaTokenAdapter _tokenAdapter,
     uint8 _role,
     uint16 _voteQuorumPct,
     uint16 _vetoQuorumPct
   ) external initializer {
-    __initializeLlamaTokenCasterMinimalProxy(_llamaCore, _clockAdapter, _role, _voteQuorumPct, _vetoQuorumPct);
+    __initializeLlamaTokenCasterMinimalProxy(_llamaCore, _tokenAdapter, _role, _voteQuorumPct, _vetoQuorumPct);
     token = _token;
     if (!token.supportsInterface(type(IERC721).interfaceId)) revert InvalidTokenAddress();
-    uint256 totalSupply = token.getPastTotalSupply(_currentTimepointMinusOne());
+    uint256 totalSupply = tokenAdapter.getPastTotalSupply(tokenAdapter.clock() - 1);
     if (totalSupply == 0) revert InvalidTokenAddress();
-  }
-
-  /// @inheritdoc LlamaTokenCaster
-  function _getPastVotes(address account, uint48 timepoint) internal view virtual override returns (uint256) {
-    return token.getPastVotes(account, timepoint);
-  }
-
-  /// @inheritdoc LlamaTokenCaster
-  function _getPastTotalSupply(uint48 timepoint) internal view virtual override returns (uint256) {
-    return token.getPastTotalSupply(timepoint);
-  }
-
-  /// @inheritdoc LlamaTokenCaster
-  function _getClockMode() internal view virtual override returns (string memory clockmode) {
-    return token.CLOCK_MODE();
   }
 }

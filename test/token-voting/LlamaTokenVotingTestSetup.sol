@@ -15,7 +15,7 @@ import {ILlamaPolicy} from "src/interfaces/ILlamaPolicy.sol";
 import {ILlamaRelativeStrategyBase} from "src/interfaces/ILlamaRelativeStrategyBase.sol";
 import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
 import {RoleDescription} from "src/lib/UDVTs.sol";
-import {ILlamaTokenClockAdapter} from "src/token-voting/ILlamaTokenClockAdapter.sol";
+import {ILlamaTokenAdapter} from "src/token-voting/interfaces/ILlamaTokenAdapter.sol";
 import {LlamaERC20TokenActionCreator} from "src/token-voting/LlamaERC20TokenActionCreator.sol";
 import {LlamaERC20TokenCaster} from "src/token-voting/LlamaERC20TokenCaster.sol";
 import {LlamaERC721TokenActionCreator} from "src/token-voting/LlamaERC721TokenActionCreator.sol";
@@ -38,8 +38,8 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
   uint16 public constant ERC721_VETO_QUORUM_PCT = 1000;
 
   // When deploying a token-voting module with timestamp checkpointing on the token, we pass in address(0) for the clock
-  // adapter.
-  ILlamaTokenClockAdapter constant LLAMA_TOKEN_TIMESTAMP_ADAPTER = ILlamaTokenClockAdapter(address(0));
+  // tokenAdapter.
+  ILlamaTokenAdapter constant LLAMA_TOKEN_TIMESTAMP_ADAPTER = ILlamaTokenAdapter(address(0));
 
   // Votes Tokens
   MockERC20Votes public erc20VotesToken;

@@ -5,7 +5,7 @@ import {ERC721Votes} from "@openzeppelin/token/ERC721/extensions/ERC721Votes.sol
 import {IERC721} from "@openzeppelin/token/ERC721/IERC721.sol";
 
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
-import {ILlamaTokenClockAdapter} from "src/token-voting/ILlamaTokenClockAdapter.sol";
+import {ILlamaTokenAdapter} from "src/token-voting/interfaces/ILlamaTokenAdapter.sol";
 import {LlamaTokenActionCreator} from "src/token-voting/LlamaTokenActionCreator.sol";
 
 /// @title LlamaERC721TokenActionCreator
@@ -34,30 +34,15 @@ contract LlamaERC721TokenActionCreator is LlamaTokenActionCreator {
   function initialize(
     ERC721Votes _token,
     ILlamaCore _llamaCore,
-    ILlamaTokenClockAdapter _clockAdapter,
+    ILlamaTokenAdapter _tokenAdapter,
     uint8 _role,
     uint256 _creationThreshold
   ) external initializer {
-    __initializeLlamaTokenActionCreatorMinimalProxy(_llamaCore, _clockAdapter, _role, _creationThreshold);
+    __initializeLlamaTokenActionCreatorMinimalProxy(_llamaCore, _tokenAdapter, _role, _creationThreshold);
     token = _token;
     if (!token.supportsInterface(type(IERC721).interfaceId)) revert InvalidTokenAddress();
-    uint256 totalSupply = token.getPastTotalSupply(_currentTimepointMinusOne());
+    uint256 totalSupply = tokenAdapter.getPastTotalSupply(tokenAdapter.clock() - 1);
     if (totalSupply == 0) revert InvalidTokenAddress();
     if (_creationThreshold > totalSupply) revert InvalidCreationThreshold();
-  }
-
-  /// @inheritdoc LlamaTokenActionCreator
-  function _getPastVotes(address account, uint48 timepoint) internal view virtual override returns (uint256) {
-    return token.getPastVotes(account, timepoint);
-  }
-
-  /// @inheritdoc LlamaTokenActionCreator
-  function _getPastTotalSupply(uint48 timepoint) internal view virtual override returns (uint256) {
-    return token.getPastTotalSupply(timepoint);
-  }
-
-  /// @inheritdoc LlamaTokenActionCreator
-  function _getClockMode() internal view virtual override returns (string memory clockmode) {
-    return token.CLOCK_MODE();
   }
 }
