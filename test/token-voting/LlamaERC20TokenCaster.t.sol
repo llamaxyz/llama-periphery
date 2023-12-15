@@ -610,12 +610,9 @@ contract SubmitDisapprovals is LlamaERC20TokenCasterTest {
   }
 
   function test_RevertsIf_AlreadySubmittedDisapproval() public {
-    Action memory action = CORE.getAction(actionInfo.id);
-    vm.warp(
-      action.minExecutionTime - (actionInfo.strategy.queuingPeriod() * THREE_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS
-    );
-
     castVetosFor();
+
+    vm.warp(block.timestamp + (1 days * TWO_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS);
 
     vm.startPrank(tokenHolder1);
     llamaERC20TokenCaster.submitDisapproval(actionInfo);
@@ -672,8 +669,7 @@ contract SubmitDisapprovals is LlamaERC20TokenCasterTest {
   function test_SubmitsDisapprovalsCorrectly() public {
     castVetosFor();
 
-    //TODO why add 1 here?
-    vm.warp(block.timestamp + 1 + (1 days * THREE_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS);
+    vm.warp(block.timestamp + (1 days * TWO_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS);
     vm.expectEmit();
     emit DisapprovalSubmitted(actionInfo.id, address(this), 750_000e18, 0, 0);
     llamaERC20TokenCaster.submitDisapproval(actionInfo);
