@@ -97,7 +97,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     bytes memory data = abi.encodeWithSelector(LlamaTokenVotingFactory.deploy.selector, config);
     ActionInfo memory actionInfo = _setPermissionCreateApproveAndQueueAction(data);
 
-    bytes32 salt = keccak256(abi.encode(address(EXECUTOR), address(CORE), adapterConfig, uint256(0)));
+    bytes32 salt = keccak256(abi.encodePacked(address(EXECUTOR), address(CORE), adapterConfig, uint256(0)));
 
     // Compute addresses of ERC20 Token Voting Module
     LlamaTokenActionCreator llamaERC20TokenActionCreator = LlamaTokenActionCreator(
@@ -173,7 +173,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     bytes memory data = abi.encodeWithSelector(LlamaTokenVotingFactory.deploy.selector, config);
     ActionInfo memory actionInfo = _setPermissionCreateApproveAndQueueAction(data);
 
-    bytes32 salt = keccak256(abi.encode(address(EXECUTOR), address(CORE), adapterConfig, uint256(0)));
+    bytes32 salt = keccak256(abi.encodePacked(address(EXECUTOR), address(CORE), adapterConfig, uint256(0)));
 
     // Compute addresses of ERC721 Token Voting Module
     LlamaTokenActionCreator llamaERC721TokenActionCreator = LlamaTokenActionCreator(
@@ -236,7 +236,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     vm.deal(randomCaller, 1 ether);
 
     bytes memory adapterConfig = abi.encode(LlamaTokenAdapterVotesTimestamp.Config(address(erc20VotesToken)));
-    bytes32 salt = keccak256(abi.encode(randomCaller, address(CORE), adapterConfig, uint256(0)));
+    bytes32 salt = keccak256(abi.encodePacked(randomCaller, address(CORE), adapterConfig, uint256(0)));
 
     LlamaTokenActionCreator llamaERC20TokenActionCreator = LlamaTokenActionCreator(
       Clones.predictDeterministicAddress(
@@ -330,7 +330,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
 
     ActionInfo memory actionInfo = _setPermissionCreateApproveAndQueueAction(data);
 
-    bytes32 salt = keccak256(abi.encode(address(EXECUTOR), address(CORE), adapterConfig, uint256(0)));
+    bytes32 salt = keccak256(abi.encodePacked(address(EXECUTOR), address(CORE), adapterConfig, uint256(0)));
 
     // Compute addresses of ERC20 Token Voting Module
     LlamaTokenActionCreator llamaERC20TokenActionCreator = LlamaTokenActionCreator(

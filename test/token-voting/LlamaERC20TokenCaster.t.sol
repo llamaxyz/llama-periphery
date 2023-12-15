@@ -95,7 +95,7 @@ contract LlamaERC20TokenCasterTest is LlamaTokenVotingTestSetup, LlamaCoreSigUti
   function createTimestampTokenAdapter(address token, uint256 nonce) public returns (ILlamaTokenAdapter tokenAdapter) {
     bytes memory adapterConfig = abi.encode(LlamaTokenAdapterVotesTimestamp.Config(address(token)));
 
-    bytes32 salt = keccak256(abi.encode(msg.sender, address(CORE), adapterConfig, nonce));
+    bytes32 salt = keccak256(abi.encodePacked(msg.sender, address(CORE), adapterConfig, nonce));
 
     tokenAdapter = ILlamaTokenAdapter(Clones.cloneDeterministic(address(llamaTokenAdapterTimestampLogic), salt));
     tokenAdapter.initialize(adapterConfig);
