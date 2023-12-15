@@ -71,7 +71,7 @@ library QuorumCheckpoints {
      * accidentally introducing a bug or breaking change.
      */
     function push(History storage self, uint256 vetoQuorumPct, uint256 voteQuorumPct) internal {
-        return _insert(self._checkpoints, LlamaUtils.toUint48(block.timestamp), LlamaUtils.toUint16(voteQuorumPct), LlamaUtils.toUint16(vetoQuorumPct));
+        _insert(self._checkpoints, LlamaUtils.toUint48(block.timestamp), LlamaUtils.toUint16(voteQuorumPct), LlamaUtils.toUint16(vetoQuorumPct));
     }
 
     /**

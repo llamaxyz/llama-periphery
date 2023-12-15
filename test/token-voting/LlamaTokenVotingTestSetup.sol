@@ -10,7 +10,7 @@ import {LlamaPeripheryTestSetup} from "test/LlamaPeripheryTestSetup.sol";
 
 import {DeployLlamaTokenVotingFactory} from "script/DeployLlamaTokenVotingFactory.s.sol";
 
-import {ActionInfo} from "src/lib/Structs.sol";
+import {ActionInfo, CasterConfig} from "src/lib/Structs.sol";
 import {ILlamaPolicy} from "src/interfaces/ILlamaPolicy.sol";
 import {ILlamaRelativeStrategyBase} from "src/interfaces/ILlamaRelativeStrategyBase.sol";
 import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
@@ -41,6 +41,8 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
   MockERC20Votes public erc20VotesToken;
   MockERC721Votes public erc721VotesToken;
 
+  CasterConfig public defaultCasterConfig;
+
   // Token Voting Roles
   uint8 tokenVotingActionCreatorRole;
   uint8 tokenVotingCasterRole;
@@ -67,6 +69,14 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
     // Deploy the ERC20 and ERC721 tokens.
     erc20VotesToken = new MockERC20Votes();
     erc721VotesToken = new MockERC721Votes();
+
+    defaultCasterConfig = CasterConfig({
+      voteQuorumPct: ERC20_VOTE_QUORUM_PCT,
+      vetoQuorumPct: ERC20_VETO_QUORUM_PCT,
+      delayPeriodPct: uint16(ONE_QUARTER_IN_BPS),
+      castingPeriodPct: uint16(TWO_QUARTERS_IN_BPS),
+      submissionPeriodPct: uint16(ONE_QUARTER_IN_BPS)
+    });
 
     //Deploy
 
@@ -102,8 +112,7 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
       tokenVotingActionCreatorRole,
       tokenVotingCasterRole,
       ERC20_CREATION_THRESHOLD,
-      ERC20_VOTE_QUORUM_PCT,
-      ERC20_VETO_QUORUM_PCT
+      defaultCasterConfig
     );
 
     vm.startPrank(address(EXECUTOR));
@@ -132,8 +141,7 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
       tokenVotingActionCreatorRole,
       tokenVotingCasterRole,
       ERC721_CREATION_THRESHOLD,
-      ERC721_VOTE_QUORUM_PCT,
-      ERC721_VETO_QUORUM_PCT
+      defaultCasterConfig
     );
 
     vm.startPrank(address(EXECUTOR));

@@ -65,7 +65,7 @@ library PeriodPctCheckpoints {
      * `timestamp`.
      */
     function push(History storage self, uint16 delayPeriodPct, uint16 castingPeriodPct, uint16 submissionPeriodPct) internal {
-        return _insert(self._checkpoints, LlamaUtils.toUint48(block.timestamp), LlamaUtils.toUint16(delayPeriodPct), LlamaUtils.toUint16(castingPeriodPct), LlamaUtils.toUint16(submissionPeriodPct));
+        _insert(self._checkpoints, LlamaUtils.toUint48(block.timestamp), LlamaUtils.toUint16(delayPeriodPct), LlamaUtils.toUint16(castingPeriodPct), LlamaUtils.toUint16(submissionPeriodPct));
     }
 
     /**

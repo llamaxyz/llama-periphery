@@ -7,6 +7,7 @@ import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
 import {ILlamaTokenAdapter} from "src/token-voting/interfaces/ILlamaTokenAdapter.sol";
 import {ActionState, VoteType} from "src/lib/Enums.sol";
+import {CasterConfig} from "src/lib/Structs.sol";
 import {LlamaUtils} from "src/lib/LlamaUtils.sol";
 import {PeriodPctCheckpoints} from "src/lib/PeriodPctCheckpoints.sol";
 import {QuorumCheckpoints} from "src/lib/QuorumCheckpoints.sol";
@@ -202,15 +203,12 @@ contract LlamaTokenCaster is Initializable {
   /// The `initializer` modifier ensures that this function can be invoked at most once.
   /// @param _llamaCore The `LlamaCore` contract for this Llama instance.
   /// @param _role The role used by this contract to cast approvals and disapprovals.
-  /// @param _voteQuorumPct The minimum % of votes required to submit an approval to `LlamaCore`.
-  /// @param _vetoQuorumPct The minimum % of vetoes required to submit a disapproval to `LlamaCore`.
-
+  /// @param casterConfig Contains the quorum and period pct values to initialize the contract with.
   function initialize(
     ILlamaCore _llamaCore,
     ILlamaTokenAdapter _tokenAdapter,
     uint8 _role,
-    uint16 _voteQuorumPct,
-    uint16 _vetoQuorumPct
+    CasterConfig memory casterConfig
   ) external initializer {
     if (_llamaCore.actionsCount() < 0) revert InvalidLlamaCoreAddress();
     if (_role > _llamaCore.policy().numRoles()) revert RoleNotInitialized(_role);
@@ -218,8 +216,8 @@ contract LlamaTokenCaster is Initializable {
     llamaCore = _llamaCore;
     tokenAdapter = _tokenAdapter;
     role = _role;
-    _setQuorumPct(_voteQuorumPct, _vetoQuorumPct);
-    _setPeriodPcts(2500, 5000, 2500); // default to 25% delay, 50% casting, 25% submission periods
+    _setQuorumPct(casterConfig.voteQuorumPct, casterConfig.vetoQuorumPct);
+    _setPeriodPcts(casterConfig.delayPeriodPct, casterConfig.castingPeriodPct, casterConfig.submissionPeriodPct);
   }
 
   // ===========================================

@@ -129,7 +129,7 @@ contract CastVote is LlamaERC721TokenCasterTest {
       )
     );
 
-    casterWithWrongRole.initialize(CORE, tokenAdapter, madeUpRole, ERC721_VOTE_QUORUM_PCT, ERC721_VETO_QUORUM_PCT);
+    casterWithWrongRole.initialize(CORE, tokenAdapter, madeUpRole, defaultCasterConfig);
 
     vm.expectRevert(abi.encodeWithSelector(ILlamaRelativeStrategyBase.InvalidRole.selector, tokenVotingCasterRole));
     casterWithWrongRole.castVote(actionInfo, uint8(VoteType.For), "");
@@ -344,7 +344,7 @@ contract CastVeto is LlamaERC721TokenCasterTest {
         address(llamaTokenCasterLogic), keccak256(abi.encodePacked(address(erc721VotesToken), msg.sender))
       )
     );
-    casterWithWrongRole.initialize(CORE, tokenAdapter, madeUpRole, ERC721_VOTE_QUORUM_PCT, ERC721_VETO_QUORUM_PCT);
+    casterWithWrongRole.initialize(CORE, tokenAdapter, madeUpRole, defaultCasterConfig);
 
     vm.expectRevert(abi.encodeWithSelector(ILlamaRelativeStrategyBase.InvalidRole.selector, tokenVotingCasterRole));
     casterWithWrongRole.castVeto(actionInfo, uint8(VoteType.For), "");
@@ -604,7 +604,7 @@ contract SubmitApprovals is LlamaERC721TokenCasterTest {
         address(llamaTokenCasterLogic), keccak256(abi.encodePacked(address(erc721VotesToken), msg.sender))
       )
     );
-    casterWithWrongRole.initialize(CORE, tokenAdapter, madeUpRole, ERC721_VOTE_QUORUM_PCT, ERC721_VETO_QUORUM_PCT);
+    casterWithWrongRole.initialize(CORE, tokenAdapter, madeUpRole, defaultCasterConfig);
     vm.expectRevert(abi.encodeWithSelector(ILlamaRelativeStrategyBase.InvalidRole.selector, tokenVotingCasterRole));
     casterWithWrongRole.submitApproval(actionInfo);
   }
@@ -688,7 +688,7 @@ contract SubmitDisapprovals is LlamaERC721TokenCasterTest {
       )
     );
     ILlamaTokenAdapter tokenAdapter = createTimestampTokenAdapter(address(erc721VotesToken), 0);
-    casterWithWrongRole.initialize(CORE, tokenAdapter, madeUpRole, ERC721_VOTE_QUORUM_PCT, ERC721_VETO_QUORUM_PCT);
+    casterWithWrongRole.initialize(CORE, tokenAdapter, madeUpRole, defaultCasterConfig);
     vm.expectRevert(abi.encodeWithSelector(ILlamaRelativeStrategyBase.InvalidRole.selector, tokenVotingCasterRole));
     casterWithWrongRole.submitDisapproval(actionInfo);
   }
