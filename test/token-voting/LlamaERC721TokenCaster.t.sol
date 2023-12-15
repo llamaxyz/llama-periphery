@@ -51,7 +51,7 @@ contract LlamaERC721TokenCasterTest is LlamaTokenVotingTestSetup, LlamaCoreSigUt
     // during deployment.
     mineBlock();
 
-    // Deploy ERC20 Token Voting Module.
+    // Deploy ERC721 Token Voting Module.
     (, llamaERC721TokenCaster) = _deployERC721TokenVotingModuleAndSetRole();
 
     // Mine block so that Token Voting Caster Role will have supply during action creation (due to past timestamp check)
@@ -165,7 +165,7 @@ contract CastVote is LlamaERC721TokenCasterTest {
     );
     vm.prank(tokenHolder1);
     uint96 weight = llamaERC721TokenCaster.castVote(actionInfo, support, "");
-    assertEq(weight, erc20VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1));
+    assertEq(weight, erc721VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1));
   }
 
   function test_CastsVoteCorrectly_WithReason() public {
@@ -267,7 +267,7 @@ contract CastVoteBySig is LlamaERC721TokenCasterTest {
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
     castVoteBySig(actionInfo, uint8(VoteType.For), v, r, s);
     // Invalid Signature error since the recovered signer address during the second call is not the same as
-    // erc20VotesTokenholder since nonce has increased.
+    // erc721VotesTokenholder since nonce has increased.
     vm.expectRevert(LlamaTokenCaster.InvalidSignature.selector);
     castVoteBySig(actionInfo, uint8(VoteType.For), v, r, s);
   }
@@ -275,7 +275,7 @@ contract CastVoteBySig is LlamaERC721TokenCasterTest {
   function test_RevertIf_SignerIsNotTokenHolder() public {
     (, uint256 randomSignerPrivateKey) = makeAddrAndKey("randomSigner");
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, randomSignerPrivateKey);
-    // Invalid Signature error since the recovered signer address is not the same as the erc20VotesTokenholder passed
+    // Invalid Signature error since the recovered signer address is not the same as the erc721VotesTokenholder passed
     // in as parameter.
     vm.expectRevert(LlamaTokenCaster.InvalidSignature.selector);
     castVoteBySig(actionInfo, uint8(VoteType.For), v, r, s);
@@ -296,7 +296,7 @@ contract CastVoteBySig is LlamaERC721TokenCasterTest {
     llamaERC721TokenCaster.incrementNonce(LlamaTokenCaster.castVoteBySig.selector);
 
     // Invalid Signature error since the recovered signer address during the call is not the same as
-    // erc20VotesTokenholder since nonce has increased.
+    // erc721VotesTokenholder since nonce has increased.
     vm.expectRevert(LlamaTokenCaster.InvalidSignature.selector);
     castVoteBySig(actionInfo, uint8(VoteType.For), v, r, s);
   }
@@ -389,7 +389,7 @@ contract CastVeto is LlamaERC721TokenCasterTest {
     );
     vm.prank(tokenHolder1);
     uint96 weight = llamaERC721TokenCaster.castVeto(actionInfo, support, "");
-    assertEq(weight, erc20VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1));
+    assertEq(weight, erc721VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1));
   }
 
   function test_CastsVetoCorrectly_WithReason() public {
@@ -502,7 +502,7 @@ contract CastVetoBySig is LlamaERC721TokenCasterTest {
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, tokenHolder1PrivateKey);
     castVetoBySig(actionInfo, v, r, s);
     // Invalid Signature error since the recovered signer address during the second call is not the same as
-    // erc20VotesTokenholder
+    // erc721VotesTokenholder
     // since nonce has increased.
     vm.expectRevert(LlamaTokenCaster.InvalidSignature.selector);
     castVetoBySig(actionInfo, v, r, s);
@@ -512,7 +512,7 @@ contract CastVetoBySig is LlamaERC721TokenCasterTest {
     (, uint256 randomSignerPrivateKey) = makeAddrAndKey("randomSigner");
     (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(actionInfo, randomSignerPrivateKey);
     // Invalid Signature error since the recovered signer address during the second call is not the same as
-    // erc20VotesTokenholder
+    // erc721VotesTokenholder
     // since nonce has increased.
     vm.expectRevert(LlamaTokenCaster.InvalidSignature.selector);
     castVetoBySig(actionInfo, v, r, s);
@@ -750,19 +750,19 @@ contract SetQuorumPct is LlamaERC721TokenCasterTest {
     vm.assume(notLlamaExecutor != address(EXECUTOR));
     vm.expectRevert(LlamaTokenCaster.OnlyLlamaExecutor.selector);
     vm.prank(notLlamaExecutor);
-    llamaERC721TokenCaster.setQuorumPct(ERC20_VOTE_QUORUM_PCT, ERC20_VETO_QUORUM_PCT);
+    llamaERC721TokenCaster.setQuorumPct(ERC721_VOTE_QUORUM_PCT, ERC721_VETO_QUORUM_PCT);
   }
 
   function test_RevertsIf_InvalidQuorumPct() public {
     vm.startPrank(address(EXECUTOR));
     vm.expectRevert(abi.encodeWithSelector(LlamaTokenCaster.InvalidVetoQuorumPct.selector, uint256(0)));
-    llamaERC721TokenCaster.setQuorumPct(ERC20_VOTE_QUORUM_PCT, 0);
+    llamaERC721TokenCaster.setQuorumPct(ERC721_VOTE_QUORUM_PCT, 0);
     vm.expectRevert(abi.encodeWithSelector(LlamaTokenCaster.InvalidVoteQuorumPct.selector, uint256(0)));
-    llamaERC721TokenCaster.setQuorumPct(0, ERC20_VETO_QUORUM_PCT);
+    llamaERC721TokenCaster.setQuorumPct(0, ERC721_VETO_QUORUM_PCT);
     vm.expectRevert(abi.encodeWithSelector(LlamaTokenCaster.InvalidVetoQuorumPct.selector, uint256(10_001)));
-    llamaERC721TokenCaster.setQuorumPct(ERC20_VOTE_QUORUM_PCT, 10_001);
+    llamaERC721TokenCaster.setQuorumPct(ERC721_VOTE_QUORUM_PCT, 10_001);
     vm.expectRevert(abi.encodeWithSelector(LlamaTokenCaster.InvalidVoteQuorumPct.selector, uint256(10_001)));
-    llamaERC721TokenCaster.setQuorumPct(10_001, ERC20_VETO_QUORUM_PCT);
+    llamaERC721TokenCaster.setQuorumPct(10_001, ERC721_VETO_QUORUM_PCT);
     vm.stopPrank();
   }
 
