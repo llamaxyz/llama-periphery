@@ -99,8 +99,8 @@ contract LlamaTokenActionCreator is Initializable {
   mapping(uint256 => address) public actionCreators;
 
   /// @notice Mapping of token holder to function selectors to current nonces for EIP-712 signatures.
-  /// @dev This is used to prevent replay attacks by incrementing the nonce for each operation (`createAction`,
-  /// `cancelAction`, `castApproval` and `castDisapproval`) signed by the token holder.
+  /// @dev This is used to prevent replay attacks by incrementing the nonce for each operation (`createAction` and
+  /// `cancelAction`) signed by the token holder.
   mapping(address tokenHolder => mapping(bytes4 selector => uint256 currentNonce)) public nonces;
 
   // ================================

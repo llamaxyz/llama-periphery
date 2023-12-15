@@ -181,8 +181,8 @@ contract LlamaTokenCaster is Initializable {
   mapping(uint256 actionId => CastData) public casts;
 
   /// @notice Mapping of tokenholders to function selectors to current nonces for EIP-712 signatures.
-  /// @dev This is used to prevent replay attacks by incrementing the nonce for each operation (`createAction`,
-  /// `cancelAction`, `castVote` and `castVeto`) signed by the tokenholders.
+  /// @dev This is used to prevent replay attacks by incrementing the nonce for each operation (`castVote` and
+  /// `castVeto`) signed by the tokenholders.
   mapping(address tokenholders => mapping(bytes4 selector => uint256 currentNonce)) public nonces;
 
   // ================================
