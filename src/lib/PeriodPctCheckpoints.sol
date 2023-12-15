@@ -36,7 +36,7 @@ library PeriodPctCheckpoints {
      * timestamp of checkpoints.
      */
     function getAtProbablyRecentTimestamp(History storage self, uint256 timestamp) internal view returns (uint16, uint16, uint16) {
-        require(timestamp < block.timestamp, "PolicyholderCheckpoints: timestamp is not in the past");
+        require(timestamp < block.timestamp, "PeriodPctCheckpoints: timestamp is not in the past");
         uint48 _timestamp = LlamaUtils.toUint48(timestamp);
 
         uint256 len = self._checkpoints.length;
