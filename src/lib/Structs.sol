@@ -34,6 +34,7 @@ struct Action {
   uint96 totalDisapprovals; // The total quantity of policyholder disapprovals.
 }
 
+/// @dev Quorum and period data for token voting caster contracts.
 struct CasterConfig {
   uint16 voteQuorumPct;
   uint16 vetoQuorumPct;
