@@ -124,10 +124,10 @@ contract LlamaTokenCaster is Initializable {
   );
 
   /// @dev Emitted when the casting and submission period ratio is set.
-  event PeriodsPctSet(uint16 delayPeriodPct, uint16 castingPeriodPct, uint16 submissionPeriodPct);
+  event PeriodPctSet(uint16 delayPeriodPct, uint16 castingPeriodPct, uint16 submissionPeriodPct);
 
   /// @dev Emitted when the voting quorum and/or vetoing quorum is set.
-  event QuorumSet(uint16 voteQuorumPct, uint16 vetoQuorumPct);
+  event QuorumPctSet(uint16 voteQuorumPct, uint16 vetoQuorumPct);
 
   /// @dev Emitted when a veto is cast.
   event VetoCast(uint256 id, address indexed tokenholder, uint8 indexed support, uint256 weight, string reason);
@@ -216,7 +216,7 @@ contract LlamaTokenCaster is Initializable {
     tokenAdapter = _tokenAdapter;
     role = _role;
     _setQuorumPct(casterConfig.voteQuorumPct, casterConfig.vetoQuorumPct);
-    _setPeriodPcts(casterConfig.delayPeriodPct, casterConfig.castingPeriodPct, casterConfig.submissionPeriodPct);
+    _setPeriodPct(casterConfig.delayPeriodPct, casterConfig.castingPeriodPct, casterConfig.submissionPeriodPct);
   }
 
   // ===========================================
@@ -387,6 +387,15 @@ contract LlamaTokenCaster is Initializable {
     _setQuorumPct(_voteQuorumPct, _vetoQuorumPct);
   }
 
+  /// @notice Sets the delay period, casting period and submission period.
+  /// @param _delayPeriodPct The % of the total period that must pass before voting can begin.
+  /// @param _castingPeriodPct The % of the total period that voting can occur.
+  /// @param _submissionPeriodPct The % of the total period withing which the (dis)approval must be submitted.
+  function setPeriodPct(uint16 _delayPeriodPct, uint16 _castingPeriodPct, uint16 _submissionPeriodPct) external {
+    if (msg.sender != llamaCore.executor()) revert OnlyLlamaExecutor();
+    _setPeriodPct(_delayPeriodPct, _castingPeriodPct, _submissionPeriodPct);
+  }
+
   // -------- User Nonce Management --------
 
   /// @notice Increments the caller's nonce for the given `selector`. This is useful for revoking
@@ -540,16 +549,16 @@ contract LlamaTokenCaster is Initializable {
     if (_voteQuorumPct > ONE_HUNDRED_IN_BPS || _voteQuorumPct <= 0) revert InvalidVoteQuorumPct(_voteQuorumPct);
     if (_vetoQuorumPct > ONE_HUNDRED_IN_BPS || _vetoQuorumPct <= 0) revert InvalidVetoQuorumPct(_vetoQuorumPct);
     quorumCheckpoints.push(_voteQuorumPct, _vetoQuorumPct);
-    emit QuorumSet(_voteQuorumPct, _vetoQuorumPct);
+    emit QuorumPctSet(_voteQuorumPct, _vetoQuorumPct);
   }
 
   /// @dev Sets the delay, casting and submission period ratio.
-  function _setPeriodPcts(uint16 _delayPeriodPct, uint16 _castingPeriodPct, uint16 _submissionPeriodPct) internal {
+  function _setPeriodPct(uint16 _delayPeriodPct, uint16 _castingPeriodPct, uint16 _submissionPeriodPct) internal {
     if (_delayPeriodPct + _castingPeriodPct + _submissionPeriodPct != ONE_HUNDRED_IN_BPS) {
       revert InvalidPeriodPcts(_delayPeriodPct, _castingPeriodPct, _submissionPeriodPct);
     }
     periodPctsCheckpoint.push(_delayPeriodPct, _castingPeriodPct, _submissionPeriodPct);
-    emit PeriodsPctSet(_delayPeriodPct, _castingPeriodPct, _submissionPeriodPct);
+    emit PeriodPctSet(_delayPeriodPct, _castingPeriodPct, _submissionPeriodPct);
   }
 
   /// @dev Returns the current nonce for a given tokenholder and selector, and increments it. Used to prevent

@@ -26,7 +26,7 @@ contract LlamaERC721TokenCasterTest is LlamaTokenVotingTestSetup, LlamaCoreSigUt
   event DisapprovalSubmitted(
     uint256 id, address indexed caller, uint256 weightFor, uint256 weightAgainst, uint256 weightAbstain
   );
-  event QuorumSet(uint16 voteQuorumPct, uint16 vetoQuorumPct);
+  event QuorumPctSet(uint16 voteQuorumPct, uint16 vetoQuorumPct);
 
   ActionInfo actionInfo;
   LlamaTokenCaster llamaERC721TokenCaster;
@@ -780,7 +780,7 @@ contract SetQuorumPct is LlamaERC721TokenCasterTest {
     _voteQuorum = uint16(bound(_voteQuorum, 1, ONE_HUNDRED_IN_BPS));
     _vetoQuorum = uint16(bound(_vetoQuorum, 1, ONE_HUNDRED_IN_BPS));
     vm.expectEmit();
-    emit QuorumSet(_voteQuorum, _vetoQuorum);
+    emit QuorumPctSet(_voteQuorum, _vetoQuorum);
     vm.prank(address(EXECUTOR));
     llamaERC721TokenCaster.setQuorumPct(_voteQuorum, _vetoQuorum);
   }
