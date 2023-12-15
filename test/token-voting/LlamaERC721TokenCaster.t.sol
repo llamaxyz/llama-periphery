@@ -204,7 +204,7 @@ contract CastVoteBySig is LlamaERC721TokenCasterTest {
   }
 
   function castVoteBySig(ActionInfo memory _actionInfo, uint8 support, uint8 v, bytes32 r, bytes32 s) internal {
-    llamaERC721TokenCaster.castVoteBySig(tokenHolder1, support, _actionInfo, "", v, r, s);
+    llamaERC721TokenCaster.castVoteBySig(tokenHolder1, _actionInfo, support, "", v, r, s);
   }
 
   function test_CastsVoteBySig() public {
@@ -404,7 +404,7 @@ contract CastVetoBySig is LlamaERC721TokenCasterTest {
   }
 
   function castVetoBySig(ActionInfo memory _actionInfo, uint8 v, bytes32 r, bytes32 s) internal {
-    llamaERC721TokenCaster.castVetoBySig(tokenHolder1, uint8(VoteType.For), _actionInfo, "", v, r, s);
+    llamaERC721TokenCaster.castVetoBySig(tokenHolder1, _actionInfo, uint8(VoteType.For), "", v, r, s);
   }
 
   function test_CastsVetoBySig() public {

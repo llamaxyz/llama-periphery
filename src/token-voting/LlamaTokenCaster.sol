@@ -150,12 +150,12 @@ abstract contract LlamaTokenCaster is Initializable {
 
   /// @notice EIP-712 castVote typehash.
   bytes32 internal constant CAST_VOTE_TYPEHASH = keccak256(
-    "CastVote(address tokenHolder,uint8 support,ActionInfo actionInfo,string reason,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
+    "CastVote(address tokenHolder,ActionInfo actionInfo,uint8 support,string reason,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
   );
 
   /// @notice EIP-712 castVeto typehash.
   bytes32 internal constant CAST_VETO_TYPEHASH = keccak256(
-    "CastVeto(address tokenHolder,uint8 role,ActionInfo actionInfo,string reason,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
+    "CastVeto(address tokenHolder,ActionInfo actionInfo,uint8 support,string reason,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
   );
 
   /// @dev EIP-712 actionInfo typehash.
@@ -169,8 +169,10 @@ abstract contract LlamaTokenCaster is Initializable {
   /// @notice The core contract for this Llama instance.
   ILlamaCore public llamaCore;
 
+  /// @dev The quorum checkpoints for this token voting module.
   QuorumCheckpoints.History internal quorumCheckpoints;
 
+  /// @dev The period pct checkpoints for this token voting module.
   PeriodPctCheckpoints.History internal periodPctsCheckpoint;
 
   /// @notice The contract that manages the timepoints for this token voting module.
@@ -226,22 +228,37 @@ abstract contract LlamaTokenCaster is Initializable {
   /// @param support The tokenholder's support of the approval of the action.
   ///   0 = Against
   ///   1 = For
-  ///   2 = Abstain, but this is not currently supported.
+  ///   2 = Abstain
   /// @param reason The reason given for the approval by the tokenholder.
+  /// @return The weight of the cast.
   function castVote(ActionInfo calldata actionInfo, uint8 support, string calldata reason) external returns (uint96) {
     return _castVote(msg.sender, actionInfo, support, reason);
   }
 
+  /// @notice How tokenholders add their support of the approval of an action with a reason via an off-chain
+  /// signature.
+  /// @dev Use `""` for `reason` if there is no reason.
+  /// @param caster The tokenholder that signed the message.
+  /// @param actionInfo Data required to create an action.
+  /// @param support The tokenholder's support of the approval of the action.
+  ///   0 = Against
+  ///   1 = For
+  ///   2 = Abstain
+  /// @param reason The reason given for the approval by the tokenholder.
+  /// @param v ECDSA signature component: Parity of the `y` coordinate of point `R`
+  /// @param r ECDSA signature component: x-coordinate of `R`
+  /// @param s ECDSA signature component: `s` value of the signature
+  /// @return The weight of the cast.
   function castVoteBySig(
     address caster,
-    uint8 support,
     ActionInfo calldata actionInfo,
+    uint8 support,
     string calldata reason,
     uint8 v,
     bytes32 r,
     bytes32 s
   ) external returns (uint96) {
-    bytes32 digest = _getCastVoteTypedDataHash(caster, support, actionInfo, reason);
+    bytes32 digest = _getCastVoteTypedDataHash(caster, actionInfo, support, reason);
     address signer = ecrecover(digest, v, r, s);
     if (signer == address(0) || signer != caster) revert InvalidSignature();
     return _castVote(signer, actionInfo, support, reason);
@@ -253,22 +270,37 @@ abstract contract LlamaTokenCaster is Initializable {
   /// @param support The tokenholder's support of the approval of the action.
   ///   0 = Against
   ///   1 = For
-  ///   2 = Abstain, but this is not currently supported.
+  ///   2 = Abstain
   /// @param reason The reason given for the approval by the tokenholder.
+  /// @return The weight of the cast.
   function castVeto(ActionInfo calldata actionInfo, uint8 support, string calldata reason) external returns (uint96) {
     return _castVeto(msg.sender, actionInfo, support, reason);
   }
 
+  /// @notice How tokenholders add their support of the disapproval of an action with a reason via an off-chain
+  /// signature.
+  /// @dev Use `""` for `reason` if there is no reason.
+  /// @param caster The tokenholder that signed the message.
+  /// @param actionInfo Data required to create an action.
+  /// @param support The tokenholder's support of the approval of the action.
+  ///   0 = Against
+  ///   1 = For
+  ///   2 = Abstain
+  /// @param reason The reason given for the approval by the tokenholder.
+  /// @param v ECDSA signature component: Parity of the `y` coordinate of point `R`
+  /// @param r ECDSA signature component: x-coordinate of `R`
+  /// @param s ECDSA signature component: `s` value of the signature
+  /// @return The weight of the cast.
   function castVetoBySig(
     address caster,
-    uint8 support,
     ActionInfo calldata actionInfo,
+    uint8 support,
     string calldata reason,
     uint8 v,
     bytes32 r,
     bytes32 s
   ) external returns (uint96) {
-    bytes32 digest = _getCastVetoTypedDataHash(caster, support, actionInfo, reason);
+    bytes32 digest = _getCastVetoTypedDataHash(caster, actionInfo, support, reason);
     address signer = ecrecover(digest, v, r, s);
     if (signer == address(0) || signer != caster) revert InvalidSignature();
     return _castVeto(signer, actionInfo, support, reason);
@@ -566,16 +598,16 @@ abstract contract LlamaTokenCaster is Initializable {
   /// recover the signer.
   function _getCastVoteTypedDataHash(
     address tokenholder,
-    uint8 support,
     ActionInfo calldata actionInfo,
+    uint8 support,
     string calldata reason
   ) internal returns (bytes32) {
     bytes32 castVoteHash = keccak256(
       abi.encode(
         CAST_VOTE_TYPEHASH,
         tokenholder,
-        support,
         _getActionInfoHash(actionInfo),
+        support,
         keccak256(bytes(reason)),
         _useNonce(tokenholder, msg.sig)
       )
@@ -588,16 +620,16 @@ abstract contract LlamaTokenCaster is Initializable {
   /// recover the signer.
   function _getCastVetoTypedDataHash(
     address tokenholder,
-    uint8 support,
     ActionInfo calldata actionInfo,
+    uint8 support,
     string calldata reason
   ) internal returns (bytes32) {
     bytes32 castVetoHash = keccak256(
       abi.encode(
         CAST_VETO_TYPEHASH,
         tokenholder,
-        support,
         _getActionInfoHash(actionInfo),
+        support,
         keccak256(bytes(reason)),
         _useNonce(tokenholder, msg.sig)
       )
