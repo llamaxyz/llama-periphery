@@ -34,6 +34,9 @@ contract LlamaTokenActionCreator is Initializable {
   /// @dev The recovered signer does not match the expected token holder.
   error InvalidSignature();
 
+  /// @dev Thrown when a `token` with an invalid totaly supply is passed to the constructor.
+  error InvalidTotalSupply();
+
   /// @dev Thrown when an invalid `creationThreshold` is passed to the constructor.
   error InvalidCreationThreshold();
 
