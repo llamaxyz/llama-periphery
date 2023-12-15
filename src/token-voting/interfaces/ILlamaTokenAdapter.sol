@@ -1,10 +1,25 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
+import {IVotes} from "@openzeppelin/governance/utils/IVotes.sol";
+
 /// @title ILlamaTokenAdapter
 /// @author Llama (devsdosomething@llama.xyz)
 /// @notice This contract provides an interface for voting token adapters.
 interface ILlamaTokenAdapter {
+  /// @notice Initializes a new clone of the token adapter.
+  /// @dev This function is called by the `deploy` function in the `LlamaTokenVotingFactory` contract. The `initializer`
+  /// modifier ensures that this function can be invoked at most once.
+  /// @param config The token adapter configuration, encoded as bytes to support differing constructor arguments in
+  /// different token adapters.
+  /// @return This return statement must be hardcoded to `true` to ensure that initializing an EOA
+  /// (like the zero address) will revert.
+  function initialize(bytes memory config) external returns (bool);
+
+  /// @notice Returns the token voting module's `IVotes` voting token.
+  /// @return token The voting token.
+  function token() external view returns (IVotes token);
+
   /// @notice Returns the current timepoint according to the token's clock.
   /// @return timepoint the current timepoint
   function clock() external view returns (uint48 timepoint);

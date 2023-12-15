@@ -19,7 +19,7 @@ import {Action, ActionInfo} from "src/lib/Structs.sol";
 /// it must hold a Policy from the specified `LlamaCore` instance to actually be able to cast on an action. This
 /// contract does not verify that it holds the correct policy when voting and relies on `LlamaCore` to
 /// verify that during submission.
-abstract contract LlamaTokenCaster is Initializable {
+contract LlamaTokenCaster is Initializable {
   using QuorumCheckpoints for QuorumCheckpoints.History;
   // =========================
   // ======== Structs ========
@@ -185,18 +185,27 @@ abstract contract LlamaTokenCaster is Initializable {
   // ======== Initialization ========
   // ================================
 
-  /// @dev This will be called by the `initialize` of the inheriting contract.
+  /// @dev This contract is deployed as a minimal proxy from the factory's `deploy` function. The
+  /// `_disableInitializers` locks the implementation (logic) contract, preventing any future initialization of it.
+  constructor() {
+    _disableInitializers();
+  }
+
+  /// @notice Initializes a new `LlamaERC20TokenCaster` clone.
+  /// @dev This function is called by the `deploy` function in the `LlamaTokenVotingFactory` contract.
+  /// The `initializer` modifier ensures that this function can be invoked at most once.
   /// @param _llamaCore The `LlamaCore` contract for this Llama instance.
   /// @param _role The role used by this contract to cast approvals and disapprovals.
   /// @param _voteQuorumPct The minimum % of votes required to submit an approval to `LlamaCore`.
   /// @param _vetoQuorumPct The minimum % of vetoes required to submit a disapproval to `LlamaCore`.
-  function __initializeLlamaTokenCasterMinimalProxy(
+
+  function initialize(
     ILlamaCore _llamaCore,
     ILlamaTokenAdapter _tokenAdapter,
     uint8 _role,
     uint16 _voteQuorumPct,
     uint16 _vetoQuorumPct
-  ) internal {
+  ) external initializer {
     if (_llamaCore.actionsCount() < 0) revert InvalidLlamaCoreAddress();
     if (_role > _llamaCore.policy().numRoles()) revert RoleNotInitialized(_role);
 
@@ -204,6 +213,9 @@ abstract contract LlamaTokenCaster is Initializable {
     tokenAdapter = _tokenAdapter;
     role = _role;
     _setQuorumPct(_voteQuorumPct, _vetoQuorumPct);
+
+    uint256 totalSupply = tokenAdapter.getPastTotalSupply(tokenAdapter.clock() - 1);
+    if (totalSupply == 0) revert InvalidTokenAddress();
   }
 
   // ===========================================

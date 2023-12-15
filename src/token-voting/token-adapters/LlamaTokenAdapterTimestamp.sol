@@ -1,23 +1,37 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
+import {Initializable} from "@openzeppelin/proxy/utils/Initializable.sol";
 import {IVotes} from "@openzeppelin/governance/utils/IVotes.sol";
 import {IERC6372} from "@openzeppelin/interfaces/IERC6372.sol";
 
 import {LlamaUtils} from "src/lib/LlamaUtils.sol";
 import {ILlamaTokenAdapter} from "src/token-voting/interfaces/ILlamaTokenAdapter.sol";
 
-contract LlamaTokenAdapterTimestamp is ILlamaTokenAdapter {
+/// @dev Llama token adapter initialization configuration.
+struct Config {
+  IVotes token; // The address of the voting token.
+}
+
+contract LlamaTokenAdapterTimestamp is ILlamaTokenAdapter, Initializable {
   /// @dev The clock was incorrectly modified.
   error ERC6372InconsistentClock();
 
   /// @notice The token to be used for voting.
-  IVotes public immutable token;
+  IVotes public token;
 
-  string CLOCK_MODE;
+  string public CLOCK_MODE;
 
-  constructor(IVotes _token) {
-    token = _token;
+  /// @dev This contract is deployed as a minimal proxy from the factory's `deploy` function. The
+  /// `_disableInitializers` locks the implementation (logic) contract, preventing any future initialization of it.
+  constructor() {
+    _disableInitializers();
+  }
+
+  /// @inheritdoc ILlamaTokenAdapter
+  function initialize(bytes memory config) external initializer returns (bool) {
+    Config memory adapterConfig = abi.decode(config, (Config));
+    token = adapterConfig.token;
     CLOCK_MODE = "mode=timestamp";
   }
 

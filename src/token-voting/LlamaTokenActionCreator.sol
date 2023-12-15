@@ -17,7 +17,7 @@ import {LlamaUtils} from "src/lib/LlamaUtils.sol";
 /// it must hold a Policy from the specified `LlamaCore` instance to actually be able to create an action. The
 /// instance's policy encodes what actions this contract is allowed to create, and attempting to create an action that
 /// is not allowed by the policy will result in a revert.
-abstract contract LlamaTokenActionCreator is Initializable {
+contract LlamaTokenActionCreator is Initializable {
   // ========================
   // ======== Errors ========
   // ========================
@@ -110,18 +110,24 @@ abstract contract LlamaTokenActionCreator is Initializable {
   // ======== Initialization ========
   // ================================
 
-  /// @dev This will be called by the `initialize` of the inheriting contract.
+  /// @dev This contract is deployed as a minimal proxy from the factory's `deploy` function. The
+  /// `_disableInitializers` locks the implementation (logic) contract, preventing any future initialization of it.
+  constructor() {
+    _disableInitializers();
+  }
+
+  /// @notice Initializes a new `LlamaERC20TokenActionCreator` clone.
+  /// @dev This function is called by the `deploy` function in the `LlamaTokenVotingFactory` contract.
+  /// The `initializer` modifier ensures that this function can be invoked at most once.
   /// @param _llamaCore The `LlamaCore` contract for this Llama instance.
   /// @param _role The role used by this contract to cast approvals and disapprovals.
   /// @param _creationThreshold The default number of tokens required to create an action. This must
   /// be in the same decimals as the token. For example, if the token has 18 decimals and you want a
   /// creation threshold of 1000 tokens, pass in 1000e18.
-  function __initializeLlamaTokenActionCreatorMinimalProxy(
-    ILlamaCore _llamaCore,
-    ILlamaTokenAdapter _tokenAdapter,
-    uint8 _role,
-    uint256 _creationThreshold
-  ) internal {
+  function initialize(ILlamaCore _llamaCore, ILlamaTokenAdapter _tokenAdapter, uint8 _role, uint256 _creationThreshold)
+    external
+    initializer
+  {
     if (_llamaCore.actionsCount() < 0) revert InvalidLlamaCoreAddress();
     if (_role > _llamaCore.policy().numRoles()) revert RoleNotInitialized(_role);
 
@@ -129,6 +135,10 @@ abstract contract LlamaTokenActionCreator is Initializable {
     tokenAdapter = _tokenAdapter;
     role = _role;
     _setActionThreshold(_creationThreshold);
+
+    uint256 totalSupply = tokenAdapter.getPastTotalSupply(tokenAdapter.clock() - 1);
+    if (totalSupply == 0) revert InvalidTokenAddress();
+    if (_creationThreshold > totalSupply) revert InvalidCreationThreshold();
   }
 
   // ===========================================
