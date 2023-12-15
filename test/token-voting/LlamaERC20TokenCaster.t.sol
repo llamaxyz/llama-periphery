@@ -164,7 +164,8 @@ contract CastVote is LlamaERC20TokenCasterTest {
       actionInfo.id, tokenHolder1, support, erc20VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1), ""
     );
     vm.prank(tokenHolder1);
-    llamaERC20TokenCaster.castVote(actionInfo, support, "");
+    uint96 weight = llamaERC20TokenCaster.castVote(actionInfo, support, "");
+    assertEq(weight, erc20VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1));
   }
 
   function test_CastsVoteCorrectly_WithReason() public {
@@ -357,7 +358,8 @@ contract CastVeto is LlamaERC20TokenCasterTest {
       actionInfo.id, tokenHolder1, support, erc20VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1), ""
     );
     vm.prank(tokenHolder1);
-    llamaERC20TokenCaster.castVeto(actionInfo, support, "");
+    uint96 weight = llamaERC20TokenCaster.castVeto(actionInfo, support, "");
+    assertEq(weight, erc20VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1));
   }
 
   function test_CastsVetoCorrectly_WithReason() public {
