@@ -2,7 +2,6 @@
 pragma solidity ^0.8.23;
 
 import {Clones} from "@openzeppelin/proxy/Clones.sol";
-import {IVotes} from "@openzeppelin/governance/utils/IVotes.sol";
 
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
 import {ILlamaTokenAdapter} from "src/token-voting/interfaces/ILlamaTokenAdapter.sol";
@@ -20,7 +19,6 @@ contract LlamaTokenVotingFactory {
   /// @dev Configuration of a new Llama token voting module.
   struct LlamaTokenVotingConfig {
     ILlamaCore llamaCore; // The address of the Llama core.
-    IVotes token; // The address of the token to be used for voting.
     ILlamaTokenAdapter tokenAdapterLogic; // The logic contract of the token adapter.
     bytes adapterConfig; // The configuration of the token adapter.
     uint256 nonce; // The nonce to be used in the salt of the deterministic deployment.
@@ -46,7 +44,7 @@ contract LlamaTokenVotingFactory {
   event LlamaTokenVotingInstanceCreated(
     address indexed deployer,
     ILlamaCore indexed llamaCore,
-    IVotes indexed token,
+    address indexed token,
     ILlamaTokenAdapter tokenAdapter,
     uint256 nonce,
     uint8 actionCreatorRole,

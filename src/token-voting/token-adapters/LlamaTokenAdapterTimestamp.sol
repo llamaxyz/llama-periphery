@@ -10,7 +10,7 @@ import {ILlamaTokenAdapter} from "src/token-voting/interfaces/ILlamaTokenAdapter
 
 /// @dev Llama token adapter initialization configuration.
 struct Config {
-  IVotes token; // The address of the voting token.
+  address token; // The address of the voting token.
 }
 
 contract LlamaTokenAdapterTimestamp is ILlamaTokenAdapter, Initializable {
@@ -18,7 +18,7 @@ contract LlamaTokenAdapterTimestamp is ILlamaTokenAdapter, Initializable {
   error ERC6372InconsistentClock();
 
   /// @notice The token to be used for voting.
-  IVotes public token;
+  address public token;
 
   string public CLOCK_MODE;
 
@@ -33,6 +33,8 @@ contract LlamaTokenAdapterTimestamp is ILlamaTokenAdapter, Initializable {
     Config memory adapterConfig = abi.decode(config, (Config));
     token = adapterConfig.token;
     CLOCK_MODE = "mode=timestamp";
+
+    return true;
   }
 
   /// @inheritdoc ILlamaTokenAdapter
@@ -59,16 +61,16 @@ contract LlamaTokenAdapterTimestamp is ILlamaTokenAdapter, Initializable {
 
   /// @inheritdoc ILlamaTokenAdapter
   function getPastVotes(address account, uint48 timepoint) external view returns (uint256) {
-    return token.getPastVotes(account, timepoint);
+    return IVotes(token).getPastVotes(account, timepoint);
   }
 
   /// @inheritdoc ILlamaTokenAdapter
   function getPastTotalSupply(uint48 timepoint) external view returns (uint256) {
-    return token.getPastTotalSupply(timepoint);
+    return IVotes(token).getPastTotalSupply(timepoint);
   }
 
   function _hasClockModeChanged() internal view returns (bool) {
-    try IERC6372(address(token)).CLOCK_MODE() returns (string memory mode) {
+    try IERC6372(token).CLOCK_MODE() returns (string memory mode) {
       return keccak256(abi.encodePacked(mode)) != keccak256(abi.encodePacked(CLOCK_MODE));
     } catch {
       return false;

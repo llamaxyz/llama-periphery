@@ -18,7 +18,7 @@ interface ILlamaTokenAdapter {
 
   /// @notice Returns the token voting module's `IVotes` voting token.
   /// @return token The voting token.
-  function token() external view returns (IVotes token);
+  function token() external view returns (address token);
 
   /// @notice Returns the current timepoint according to the token's clock.
   /// @return timepoint the current timepoint
