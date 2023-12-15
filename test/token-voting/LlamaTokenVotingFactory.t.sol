@@ -271,8 +271,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
       tokenVotingActionCreatorRole,
       tokenVotingCasterRole,
       ERC20_CREATION_THRESHOLD,
-      ERC20_VOTE_QUORUM_PCT,
-      ERC20_VETO_QUORUM_PCT
+      defaultCasterConfig
     );
 
     assertEq(address(llamaERC20TokenActionCreator.token()), address(erc20VotesToken));
