@@ -212,8 +212,7 @@ abstract contract LlamaTokenCaster is Initializable {
     clockAdapter = _clockAdapter;
     role = _role;
     _setQuorumPct(casterConfig.voteQuorumPct, casterConfig.vetoQuorumPct);
-    _setPeriodPcts(casterConfig.delayPeriodPct, casterConfig.castingPeriodPct, casterConfig.submissionPeriodPct); // default
-      // to 25% delay, 50% casting, 25% submission periods
+    _setPeriodPcts(casterConfig.delayPeriodPct, casterConfig.castingPeriodPct, casterConfig.submissionPeriodPct); 
   }
 
   // ===========================================
