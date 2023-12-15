@@ -82,7 +82,8 @@ contract LlamaTokenVotingFactory {
     // Deploy and initialize token adapter based on provided logic address and config
     ILlamaTokenAdapter tokenAdapter = ILlamaTokenAdapter(
       Clones.cloneDeterministic(
-        address(tokenVotingConfig.tokenAdapterLogic), keccak256(tokenVotingConfig.adapterConfig)
+        address(tokenVotingConfig.tokenAdapterLogic),
+        keccak256(abi.encode(tokenVotingConfig.adapterConfig, tokenVotingConfig.nonce))
       )
     );
     tokenAdapter.initialize(tokenVotingConfig.adapterConfig);
