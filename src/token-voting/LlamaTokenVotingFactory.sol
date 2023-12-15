@@ -45,6 +45,7 @@ contract LlamaTokenVotingFactory {
     address indexed deployer,
     ILlamaCore indexed llamaCore,
     address indexed token,
+    ILlamaTokenAdapter tokenAdapterLogic,
     ILlamaTokenAdapter tokenAdapter,
     uint256 nonce,
     uint8 actionCreatorRole,
@@ -99,7 +100,10 @@ contract LlamaTokenVotingFactory {
         address(LLAMA_TOKEN_ACTION_CREATOR_LOGIC),
         keccak256(
           abi.encodePacked(
-            msg.sender, address(tokenVotingConfig.llamaCore), address(tokenAdapter), tokenVotingConfig.nonce
+            msg.sender,
+            address(tokenVotingConfig.llamaCore),
+            address(tokenVotingConfig.tokenAdapterLogic),
+            tokenVotingConfig.nonce
           )
         )
       )
@@ -118,7 +122,10 @@ contract LlamaTokenVotingFactory {
         address(LLAMA_TOKEN_CASTER_LOGIC),
         keccak256(
           abi.encodePacked(
-            msg.sender, address(tokenVotingConfig.llamaCore), address(tokenAdapter), tokenVotingConfig.nonce
+            msg.sender,
+            address(tokenVotingConfig.llamaCore),
+            address(tokenVotingConfig.tokenAdapterLogic),
+            tokenVotingConfig.nonce
           )
         )
       )
@@ -136,6 +143,7 @@ contract LlamaTokenVotingFactory {
       msg.sender,
       tokenVotingConfig.llamaCore,
       tokenAdapter.token(),
+      tokenVotingConfig.tokenAdapterLogic,
       tokenAdapter,
       tokenVotingConfig.nonce,
       tokenVotingConfig.actionCreatorRole,

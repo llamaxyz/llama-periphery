@@ -170,12 +170,11 @@ contract CastVote is LlamaERC20TokenCasterTest {
   function test_RevertsIf_ApprovalNotEnabled() public {
     LlamaTokenCaster casterWithWrongRole = LlamaTokenCaster(
       Clones.cloneDeterministic(
-        address(llamaERC20TokenCasterLogic), keccak256(abi.encodePacked(address(erc20VotesToken), msg.sender))
+        address(llamaTokenCasterLogic), keccak256(abi.encodePacked(address(erc20VotesToken), msg.sender))
       )
     );
-    casterWithWrongRole.initialize(
-      erc20VotesToken, CORE, LLAMA_TOKEN_TIMESTAMP_ADAPTER, madeUpRole, ERC20_VOTE_QUORUM_PCT, ERC20_VETO_QUORUM_PCT
-    );
+    ILlamaTokenAdapter tokenAdapter = createTimestampTokenAdapter(address(erc20VotesToken));
+    casterWithWrongRole.initialize(CORE, tokenAdapter, madeUpRole, ERC20_VOTE_QUORUM_PCT, ERC20_VETO_QUORUM_PCT);
 
     vm.expectRevert(abi.encodeWithSelector(ILlamaRelativeStrategyBase.InvalidRole.selector, tokenVotingCasterRole));
     casterWithWrongRole.castVote(actionInfo, uint8(VoteType.For), "");
@@ -345,12 +344,11 @@ contract CastVeto is LlamaERC20TokenCasterTest {
   function test_RevertsIf_DisapprovalNotEnabled() public {
     LlamaTokenCaster casterWithWrongRole = LlamaTokenCaster(
       Clones.cloneDeterministic(
-        address(llamaERC20TokenCasterLogic), keccak256(abi.encodePacked(address(erc20VotesToken), msg.sender))
+        address(llamaTokenCasterLogic), keccak256(abi.encodePacked(address(erc20VotesToken), msg.sender))
       )
     );
-    casterWithWrongRole.initialize(
-      erc20VotesToken, CORE, LLAMA_TOKEN_TIMESTAMP_ADAPTER, madeUpRole, ERC20_VOTE_QUORUM_PCT, ERC20_VETO_QUORUM_PCT
-    );
+    ILlamaTokenAdapter tokenAdapter = createTimestampTokenAdapter(address(erc20VotesToken));
+    casterWithWrongRole.initialize(CORE, tokenAdapter, madeUpRole, ERC20_VOTE_QUORUM_PCT, ERC20_VETO_QUORUM_PCT);
 
     vm.expectRevert(abi.encodeWithSelector(ILlamaRelativeStrategyBase.InvalidRole.selector, tokenVotingCasterRole));
     casterWithWrongRole.castVeto(actionInfo, uint8(VoteType.For), "");
@@ -566,12 +564,11 @@ contract SubmitApprovals is LlamaERC20TokenCasterTest {
   function test_RevertsIf_ApprovalNotEnabled() public {
     LlamaTokenCaster casterWithWrongRole = LlamaTokenCaster(
       Clones.cloneDeterministic(
-        address(llamaERC20TokenCasterLogic), keccak256(abi.encodePacked(address(erc20VotesToken), msg.sender))
+        address(llamaTokenCasterLogic), keccak256(abi.encodePacked(address(erc20VotesToken), msg.sender))
       )
     );
-    casterWithWrongRole.initialize(
-      erc20VotesToken, CORE, LLAMA_TOKEN_TIMESTAMP_ADAPTER, madeUpRole, ERC20_VOTE_QUORUM_PCT, ERC20_VETO_QUORUM_PCT
-    );
+    ILlamaTokenAdapter tokenAdapter = createTimestampTokenAdapter(address(erc20VotesToken));
+    casterWithWrongRole.initialize(CORE, tokenAdapter, madeUpRole, ERC20_VOTE_QUORUM_PCT, ERC20_VETO_QUORUM_PCT);
     vm.expectRevert(abi.encodeWithSelector(ILlamaRelativeStrategyBase.InvalidRole.selector, tokenVotingCasterRole));
     casterWithWrongRole.submitApproval(actionInfo);
   }
@@ -649,12 +646,11 @@ contract SubmitDisapprovals is LlamaERC20TokenCasterTest {
     vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
     LlamaTokenCaster casterWithWrongRole = LlamaTokenCaster(
       Clones.cloneDeterministic(
-        address(llamaERC20TokenCasterLogic), keccak256(abi.encodePacked(address(erc20VotesToken), msg.sender))
+        address(llamaTokenCasterLogic), keccak256(abi.encodePacked(address(erc20VotesToken), msg.sender))
       )
     );
-    casterWithWrongRole.initialize(
-      erc20VotesToken, CORE, LLAMA_TOKEN_TIMESTAMP_ADAPTER, madeUpRole, ERC20_VOTE_QUORUM_PCT, ERC20_VETO_QUORUM_PCT
-    );
+    ILlamaTokenAdapter tokenAdapter = createTimestampTokenAdapter(address(erc20VotesToken));
+    casterWithWrongRole.initialize(CORE, tokenAdapter, madeUpRole, ERC20_VOTE_QUORUM_PCT, ERC20_VETO_QUORUM_PCT);
     vm.expectRevert(abi.encodeWithSelector(ILlamaRelativeStrategyBase.InvalidRole.selector, tokenVotingCasterRole));
     casterWithWrongRole.submitDisapproval(actionInfo);
   }
