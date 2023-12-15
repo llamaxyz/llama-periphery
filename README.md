@@ -12,7 +12,9 @@ repository.
 
 ## Modules
 
-- **Token Voting:** smart contract policies that allow `ERC20Votes` or `ERC721Votes` tokenholders to create actions enforced by delegated token thresholds or collectively approve or disapprove an action through token voting.
+Llama modules are extensions to Llama instances that can be adopted by using a Llama action to configure and deploy.
+
+- **Token Voting:** smart contract policies that allow voting token holders to create actions enforced by delegated token thresholds or collectively approve or disapprove an action through token voting.
 
 ## Prerequisites
 

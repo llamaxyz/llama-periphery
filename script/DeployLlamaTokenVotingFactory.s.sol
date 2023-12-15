@@ -34,13 +34,13 @@ contract DeployLlamaTokenVotingFactory is Script {
     DeployUtils.print(string.concat("  LlamaTokenCasterLogic: ", vm.toString(address(llamaTokenCasterLogic))));
 
     vm.broadcast();
+    tokenVotingFactory = new LlamaTokenVotingFactory(llamaTokenActionCreatorLogic, llamaTokenCasterLogic);
+    DeployUtils.print(string.concat("  LlamaTokenVotingFactory: ", vm.toString(address(tokenVotingFactory))));
+
+    vm.broadcast();
     llamaTokenAdapterTimestampLogic = new LlamaTokenAdapterTimestamp();
     DeployUtils.print(
       string.concat("  LlamaTokenAdapterTimestamp: ", vm.toString(address(llamaTokenAdapterTimestampLogic)))
     );
-
-    vm.broadcast();
-    tokenVotingFactory = new LlamaTokenVotingFactory(llamaTokenActionCreatorLogic, llamaTokenCasterLogic);
-    DeployUtils.print(string.concat("  LlamaTokenVotingFactory: ", vm.toString(address(tokenVotingFactory))));
   }
 }
