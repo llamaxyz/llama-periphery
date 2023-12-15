@@ -28,12 +28,6 @@ library QuorumCheckpoints {
         uint16 vetoQuorumPct;
     }
 
-    //     struct Checkpoint {
-    //     uint64 timestamp;
-    //     uint64 expiration;
-    //     uint96 quantity;
-    // }
-
     /**
      * @dev Returns the quorums at a given block timestamp. If a checkpoint is not available at that time, the closest
      * one before it is returned, or zero otherwise. Similar to {upperLookup} but optimized for the case when the
