@@ -23,8 +23,9 @@ import {LlamaTokenCaster} from "src/token-voting/LlamaTokenCaster.sol";
 contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenVotingFactory {
   // Percentages
   uint16 internal constant ONE_HUNDRED_IN_BPS = 10_000;
-  uint256 internal constant ONE_THIRD_IN_BPS = 3333;
-  uint256 internal constant TWO_THIRDS_IN_BPS = 6667;
+  uint256 internal constant ONE_QUARTER_IN_BPS = 2500;
+  uint256 internal constant TWO_QUARTERS_IN_BPS = 5000;
+  uint256 internal constant THREE_QUARTERS_IN_BPS = 7500;
 
   // ERC20 Token Voting Constants.
   uint256 public constant ERC20_CREATION_THRESHOLD = 500_000e18;
@@ -209,5 +210,9 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
     vm.prank(coreTeam1);
     uint256 actionId = CORE.createAction(CORE_TEAM_ROLE, _tokenVotingStrategy, address(mockProtocol), 0, data, "");
     _actionInfo = ActionInfo(actionId, coreTeam1, CORE_TEAM_ROLE, _tokenVotingStrategy, address(mockProtocol), 0, data);
+  }
+
+  function _skipVotingDelay() internal {
+    vm.warp(block.timestamp + (1 days * ONE_QUARTER_IN_BPS) / ONE_HUNDRED_IN_BPS);
   }
 }

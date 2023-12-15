@@ -8,6 +8,7 @@ import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
 import {ILlamaTokenAdapter} from "src/token-voting/interfaces/ILlamaTokenAdapter.sol";
 import {ActionState, VoteType} from "src/lib/Enums.sol";
 import {LlamaUtils} from "src/lib/LlamaUtils.sol";
+import {PeriodPctCheckpoints} from "src/lib/PeriodPctCheckpoints.sol";
 import {QuorumCheckpoints} from "src/lib/QuorumCheckpoints.sol";
 import {Action, ActionInfo} from "src/lib/Structs.sol";
 
@@ -20,6 +21,7 @@ import {Action, ActionInfo} from "src/lib/Structs.sol";
 /// contract does not verify that it holds the correct policy when voting and relies on `LlamaCore` to
 /// verify that during submission.
 contract LlamaTokenCaster is Initializable {
+  using PeriodPctCheckpoints for PeriodPctCheckpoints.History;
   using QuorumCheckpoints for QuorumCheckpoints.History;
   // =========================
   // ======== Structs ========
@@ -79,6 +81,9 @@ contract LlamaTokenCaster is Initializable {
   /// @dev Thrown when a user tries to submit an approval but there are not enough votes.
   error InsufficientVotes(uint256 votes, uint256 threshold);
 
+  /// @dev Thrown when an invalid `castingPeriodPct` and `submissionPeriodPct` are set.
+  error InvalidPeriodPcts(uint16 delayPeriodPct, uint16 castingPeriodPct, uint16 submissionPeriodPct);
+
   /// @dev Thrown when an invalid `voteQuorumPct` is passed to the constructor.
   error InvalidVoteQuorumPct(uint16 voteQuorumPct);
 
@@ -106,28 +111,34 @@ contract LlamaTokenCaster is Initializable {
   /// @dev Thrown when a user tries to submit (dis)approval but the submission period has ended.
   error SubmissionPeriodOver();
 
+  /// @dev Thrown when a user tries to cast a vote or veto but the voting delay has not passed.
+  error VotingDelayNotOver();
+
   // ========================
   // ======== Events ========
   // ========================
-
-  /// @dev Emitted when a vote is cast.
-  event VoteCast(uint256 id, address indexed tokenholder, uint8 indexed support, uint256 weight, string reason);
 
   /// @dev Emitted when a cast approval is submitted to the `LlamaCore` contract.
   event ApprovalSubmitted(
     uint256 id, address indexed caller, uint256 weightFor, uint256 weightAgainst, uint256 weightAbstain
   );
 
-  /// @dev Emitted when a veto is cast.
-  event VetoCast(uint256 id, address indexed tokenholder, uint8 indexed support, uint256 weight, string reason);
-
   /// @dev Emitted when a cast disapproval is submitted to the `LlamaCore` contract.
   event DisapprovalSubmitted(
     uint256 id, address indexed caller, uint256 weightFor, uint256 weightAgainst, uint256 weightAbstain
   );
 
+  /// @dev Emitted when the casting and submission period ratio is set.
+  event PeriodsPctSet(uint16 delayPeriodPct, uint16 castingPeriodPct, uint16 submissionPeriodPct);
+
   /// @dev Emitted when the voting quorum and/or vetoing quorum is set.
   event QuorumSet(uint16 voteQuorumPct, uint16 vetoQuorumPct);
+
+  /// @dev Emitted when a veto is cast.
+  event VetoCast(uint256 id, address indexed tokenholder, uint8 indexed support, uint256 weight, string reason);
+
+  /// @dev Emitted when a vote is cast.
+  event VoteCast(uint256 id, address indexed tokenholder, uint8 indexed support, uint256 weight, string reason);
 
   // =================================================
   // ======== Constants and Storage Variables ========
@@ -139,12 +150,12 @@ contract LlamaTokenCaster is Initializable {
 
   /// @notice EIP-712 castVote typehash.
   bytes32 internal constant CAST_VOTE_TYPEHASH = keccak256(
-    "CastVote(address tokenHolder,uint8 support,ActionInfo actionInfo,string reason,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
+    "CastVote(address tokenHolder,ActionInfo actionInfo,uint8 support,string reason,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
   );
 
   /// @notice EIP-712 castVeto typehash.
   bytes32 internal constant CAST_VETO_TYPEHASH = keccak256(
-    "CastVeto(address tokenHolder,uint8 role,ActionInfo actionInfo,string reason,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
+    "CastVeto(address tokenHolder,ActionInfo actionInfo,uint8 support,string reason,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
   );
 
   /// @dev EIP-712 actionInfo typehash.
@@ -155,16 +166,14 @@ contract LlamaTokenCaster is Initializable {
   /// @dev Equivalent to 100%, but in basis points.
   uint256 internal constant ONE_HUNDRED_IN_BPS = 10_000;
 
-  /// @dev Equivalent to 1/3, but in basis points.
-  uint256 internal constant ONE_THIRD_IN_BPS = 3333;
-
-  /// @dev Equivalent to 2/3, but in basis points.
-  uint256 internal constant TWO_THIRDS_IN_BPS = 6667;
-
   /// @notice The core contract for this Llama instance.
   ILlamaCore public llamaCore;
 
+  /// @dev The quorum checkpoints for this token voting module.
   QuorumCheckpoints.History internal quorumCheckpoints;
+
+  /// @dev The period pct checkpoints for this token voting module.
+  PeriodPctCheckpoints.History internal periodPctsCheckpoint;
 
   /// @notice The contract that manages the timepoints for this token voting module.
   ILlamaTokenAdapter public tokenAdapter;
@@ -213,6 +222,7 @@ contract LlamaTokenCaster is Initializable {
     tokenAdapter = _tokenAdapter;
     role = _role;
     _setQuorumPct(_voteQuorumPct, _vetoQuorumPct);
+    _setPeriodPcts(2500, 5000, 2500); // default to 25% delay, 50% casting, 25% submission periods
   }
 
   // ===========================================
@@ -227,22 +237,37 @@ contract LlamaTokenCaster is Initializable {
   /// @param support The tokenholder's support of the approval of the action.
   ///   0 = Against
   ///   1 = For
-  ///   2 = Abstain, but this is not currently supported.
+  ///   2 = Abstain
   /// @param reason The reason given for the approval by the tokenholder.
+  /// @return The weight of the cast.
   function castVote(ActionInfo calldata actionInfo, uint8 support, string calldata reason) external returns (uint96) {
     return _castVote(msg.sender, actionInfo, support, reason);
   }
 
+  /// @notice How tokenholders add their support of the approval of an action with a reason via an off-chain
+  /// signature.
+  /// @dev Use `""` for `reason` if there is no reason.
+  /// @param caster The tokenholder that signed the message.
+  /// @param actionInfo Data required to create an action.
+  /// @param support The tokenholder's support of the approval of the action.
+  ///   0 = Against
+  ///   1 = For
+  ///   2 = Abstain
+  /// @param reason The reason given for the approval by the tokenholder.
+  /// @param v ECDSA signature component: Parity of the `y` coordinate of point `R`
+  /// @param r ECDSA signature component: x-coordinate of `R`
+  /// @param s ECDSA signature component: `s` value of the signature
+  /// @return The weight of the cast.
   function castVoteBySig(
     address caster,
-    uint8 support,
     ActionInfo calldata actionInfo,
+    uint8 support,
     string calldata reason,
     uint8 v,
     bytes32 r,
     bytes32 s
   ) external returns (uint96) {
-    bytes32 digest = _getCastVoteTypedDataHash(caster, support, actionInfo, reason);
+    bytes32 digest = _getCastVoteTypedDataHash(caster, actionInfo, support, reason);
     address signer = ecrecover(digest, v, r, s);
     if (signer == address(0) || signer != caster) revert InvalidSignature();
     return _castVote(signer, actionInfo, support, reason);
@@ -254,22 +279,37 @@ contract LlamaTokenCaster is Initializable {
   /// @param support The tokenholder's support of the approval of the action.
   ///   0 = Against
   ///   1 = For
-  ///   2 = Abstain, but this is not currently supported.
+  ///   2 = Abstain
   /// @param reason The reason given for the approval by the tokenholder.
+  /// @return The weight of the cast.
   function castVeto(ActionInfo calldata actionInfo, uint8 support, string calldata reason) external returns (uint96) {
     return _castVeto(msg.sender, actionInfo, support, reason);
   }
 
+  /// @notice How tokenholders add their support of the disapproval of an action with a reason via an off-chain
+  /// signature.
+  /// @dev Use `""` for `reason` if there is no reason.
+  /// @param caster The tokenholder that signed the message.
+  /// @param actionInfo Data required to create an action.
+  /// @param support The tokenholder's support of the approval of the action.
+  ///   0 = Against
+  ///   1 = For
+  ///   2 = Abstain
+  /// @param reason The reason given for the approval by the tokenholder.
+  /// @param v ECDSA signature component: Parity of the `y` coordinate of point `R`
+  /// @param r ECDSA signature component: x-coordinate of `R`
+  /// @param s ECDSA signature component: `s` value of the signature
+  /// @return The weight of the cast.
   function castVetoBySig(
     address caster,
-    uint8 support,
     ActionInfo calldata actionInfo,
+    uint8 support,
     string calldata reason,
     uint8 v,
     bytes32 r,
     bytes32 s
   ) external returns (uint96) {
-    bytes32 digest = _getCastVetoTypedDataHash(caster, support, actionInfo, reason);
+    bytes32 digest = _getCastVetoTypedDataHash(caster, actionInfo, support, reason);
     address signer = ecrecover(digest, v, r, s);
     if (signer == address(0) || signer != caster) revert InvalidSignature();
     return _castVeto(signer, actionInfo, support, reason);
@@ -285,7 +325,8 @@ contract LlamaTokenCaster is Initializable {
     if (casts[actionInfo.id].approvalSubmitted) revert AlreadySubmittedApproval();
     // check to make sure the casting period has ended
     uint256 approvalPeriod = actionInfo.strategy.approvalPeriod();
-    if (block.timestamp < action.creationTime + (approvalPeriod * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS) {
+    (, uint16 castingPeriodPct,) = periodPctsCheckpoint.getAtProbablyRecentTimestamp(action.creationTime - 1);
+    if (block.timestamp < action.creationTime + (approvalPeriod * castingPeriodPct) / ONE_HUNDRED_IN_BPS) {
       revert CannotSubmitYet();
     }
 
@@ -318,8 +359,9 @@ contract LlamaTokenCaster is Initializable {
     if (casts[actionInfo.id].disapprovalSubmitted) revert AlreadySubmittedDisapproval();
 
     uint256 queuingPeriod = actionInfo.strategy.queuingPeriod();
+    (,, uint16 submissionPeriodPct) = periodPctsCheckpoint.getAtProbablyRecentTimestamp(action.creationTime - 1);
     // check to make sure the current timestamp is within the submitDisapprovalBuffer 9period
-    if (block.timestamp < action.minExecutionTime - (queuingPeriod * ONE_THIRD_IN_BPS) / ONE_HUNDRED_IN_BPS) {
+    if (block.timestamp < action.minExecutionTime - (queuingPeriod * submissionPeriodPct) / ONE_HUNDRED_IN_BPS) {
       revert CannotSubmitYet();
     }
     if (block.timestamp >= action.minExecutionTime) revert SubmissionPeriodOver();
@@ -367,10 +409,12 @@ contract LlamaTokenCaster is Initializable {
     return quorumCheckpoints.latest();
   }
 
+  /// @notice Returns the voting quorum and vetoing quorum at a given timestamp.
   function getPastQuorum(uint256 timestamp) external view returns (uint16 voteQuorumPct, uint16 vetoQuorumPct) {
     return quorumCheckpoints.getAtProbablyRecentTimestamp(timestamp);
   }
 
+  /// @notice Returns the quorum checkpoints array from a given set of indices.
   function getQuorumCheckpoints(uint256 start, uint256 end) external view returns (QuorumCheckpoints.History memory) {
     if (start > end) revert InvalidIndices();
     uint256 checkpointsLength = quorumCheckpoints._checkpoints.length;
@@ -381,6 +425,41 @@ contract LlamaTokenCaster is Initializable {
       checkpoints[i - start] = quorumCheckpoints._checkpoints[i];
     }
     return QuorumCheckpoints.History(checkpoints);
+  }
+
+  /// @notice Returns the current delay, casting and submission period ratio.
+  function getPeriodPcts()
+    external
+    view
+    returns (uint16 delayPeriodPct, uint16 castingPeriodPct, uint16 submissionPeriodPct)
+  {
+    return periodPctsCheckpoint.latest();
+  }
+
+  /// @notice Returns the delay, casting and submission period ratio at a given timestamp.
+  function getPastPeriodPcts(uint256 timestamp)
+    external
+    view
+    returns (uint16 delayPeriodPct, uint16 castingPeriodPct, uint16 submissionPeriodPct)
+  {
+    return periodPctsCheckpoint.getAtProbablyRecentTimestamp(timestamp);
+  }
+
+  /// @notice Returns the period pct checkpoints array from a given set of indices.
+  function getPeriodPctCheckpoints(uint256 start, uint256 end)
+    external
+    view
+    returns (PeriodPctCheckpoints.History memory)
+  {
+    if (start > end) revert InvalidIndices();
+    uint256 checkpointsLength = periodPctsCheckpoint._checkpoints.length;
+    if (end > checkpointsLength) revert InvalidIndices();
+    uint256 sliceLength = end - start;
+    PeriodPctCheckpoints.Checkpoint[] memory checkpoints = new PeriodPctCheckpoints.Checkpoint[](sliceLength);
+    for (uint256 i = start; i < end; i = LlamaUtils.uncheckedIncrement(i)) {
+      checkpoints[i - start] = periodPctsCheckpoint._checkpoints[i];
+    }
+    return PeriodPctCheckpoints.History(checkpoints);
   }
 
   // ================================
@@ -396,13 +475,18 @@ contract LlamaTokenCaster is Initializable {
     actionInfo.strategy.checkIfApprovalEnabled(actionInfo, address(this), role); // Reverts if not allowed.
     if (llamaCore.getActionState(actionInfo) != uint8(ActionState.Active)) revert ActionNotActive();
     if (casts[actionInfo.id].castVote[caster]) revert AlreadyCastedVote();
-    if (
-      block.timestamp
-        > action.creationTime + (actionInfo.strategy.approvalPeriod() * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS
-    ) revert CastingPeriodOver();
+    (uint16 delayPeriodPct, uint16 castingPeriodPct,) =
+      periodPctsCheckpoint.getAtProbablyRecentTimestamp(action.creationTime - 1);
+    uint256 approvalPeriod = actionInfo.strategy.approvalPeriod();
+    uint256 delayPeriodTimestamp = action.creationTime + (approvalPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS;
+    if (block.timestamp < delayPeriodTimestamp) revert VotingDelayNotOver();
+    if (block.timestamp > action.creationTime + (approvalPeriod * castingPeriodPct) / ONE_HUNDRED_IN_BPS) {
+      revert CastingPeriodOver();
+    }
 
-    uint96 weight =
-      LlamaUtils.toUint96(tokenAdapter.getPastVotes(caster, tokenAdapter.timestampToTimepoint(action.creationTime) - 1));
+    uint96 weight = LlamaUtils.toUint96(
+      tokenAdapter.getPastVotes(caster, tokenAdapter.timestampToTimepoint(delayPeriodTimestamp) - 1)
+    );
     _preCastAssertions(support);
 
     if (support == uint8(VoteType.Against)) casts[actionInfo.id].votesAgainst += weight;
@@ -423,13 +507,19 @@ contract LlamaTokenCaster is Initializable {
     actionInfo.strategy.checkIfDisapprovalEnabled(actionInfo, address(this), role); // Reverts if not allowed.
     if (llamaCore.getActionState(actionInfo) != uint8(ActionState.Queued)) revert ActionNotQueued();
     if (casts[actionInfo.id].castVeto[caster]) revert AlreadyCastedVeto();
-    if (
-      block.timestamp
-        > action.minExecutionTime - (actionInfo.strategy.queuingPeriod() * ONE_THIRD_IN_BPS) / ONE_HUNDRED_IN_BPS
-    ) revert CastingPeriodOver();
+    (uint16 delayPeriodPct,, uint16 submissionPeriodPct) =
+      periodPctsCheckpoint.getAtProbablyRecentTimestamp(action.creationTime - 1);
+    uint256 queuingPeriod = actionInfo.strategy.queuingPeriod();
+    uint256 delayPeriodTimestamp =
+      action.minExecutionTime - queuingPeriod + (queuingPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS;
+    if (block.timestamp < delayPeriodTimestamp) revert VotingDelayNotOver();
+    if (block.timestamp > action.minExecutionTime - (queuingPeriod * submissionPeriodPct) / ONE_HUNDRED_IN_BPS) {
+      revert CastingPeriodOver();
+    }
 
-    uint96 weight =
-      LlamaUtils.toUint96(tokenAdapter.getPastVotes(caster, tokenAdapter.timestampToTimepoint(action.creationTime) - 1));
+    uint96 weight = LlamaUtils.toUint96(
+      tokenAdapter.getPastVotes(caster, tokenAdapter.timestampToTimepoint(delayPeriodTimestamp) - 1)
+    );
     _preCastAssertions(support);
 
     if (support == uint8(VoteType.Against)) casts[actionInfo.id].vetoesAgainst += weight;
@@ -456,8 +546,17 @@ contract LlamaTokenCaster is Initializable {
     emit QuorumSet(_voteQuorumPct, _vetoQuorumPct);
   }
 
+  /// @dev Sets the delay, casting and submission period ratio.
+  function _setPeriodPcts(uint16 _delayPeriodPct, uint16 _castingPeriodPct, uint16 _submissionPeriodPct) internal {
+    if (_delayPeriodPct + _castingPeriodPct + _submissionPeriodPct != ONE_HUNDRED_IN_BPS) {
+      revert InvalidPeriodPcts(_delayPeriodPct, _castingPeriodPct, _submissionPeriodPct);
+    }
+    periodPctsCheckpoint.push(_delayPeriodPct, _castingPeriodPct, _submissionPeriodPct);
+    emit PeriodsPctSet(_delayPeriodPct, _castingPeriodPct, _submissionPeriodPct);
+  }
   /// @dev Returns the current nonce for a given tokenholder and selector, and increments it. Used to prevent
   /// replay attacks.
+
   function _useNonce(address tokenholder, bytes4 selector) internal returns (uint256 nonce) {
     nonce = nonces[tokenholder][selector];
     nonces[tokenholder][selector] = LlamaUtils.uncheckedIncrement(nonce);
@@ -478,16 +577,16 @@ contract LlamaTokenCaster is Initializable {
   /// recover the signer.
   function _getCastVoteTypedDataHash(
     address tokenholder,
-    uint8 support,
     ActionInfo calldata actionInfo,
+    uint8 support,
     string calldata reason
   ) internal returns (bytes32) {
     bytes32 castVoteHash = keccak256(
       abi.encode(
         CAST_VOTE_TYPEHASH,
         tokenholder,
-        support,
         _getActionInfoHash(actionInfo),
+        support,
         keccak256(bytes(reason)),
         _useNonce(tokenholder, msg.sig)
       )
@@ -500,16 +599,16 @@ contract LlamaTokenCaster is Initializable {
   /// recover the signer.
   function _getCastVetoTypedDataHash(
     address tokenholder,
-    uint8 support,
     ActionInfo calldata actionInfo,
+    uint8 support,
     string calldata reason
   ) internal returns (bytes32) {
     bytes32 castVetoHash = keccak256(
       abi.encode(
         CAST_VETO_TYPEHASH,
         tokenholder,
-        support,
         _getActionInfoHash(actionInfo),
+        support,
         keccak256(bytes(reason)),
         _useNonce(tokenholder, msg.sig)
       )
