@@ -8,7 +8,7 @@ import {IERC6372} from "@openzeppelin/interfaces/IERC6372.sol";
 import {LlamaUtils} from "src/lib/LlamaUtils.sol";
 import {ILlamaTokenAdapter} from "src/token-voting/interfaces/ILlamaTokenAdapter.sol";
 
-contract LlamaTokenAdapterTimestamp is ILlamaTokenAdapter, Initializable {
+contract LlamaTokenAdapterVotesTimestamp is ILlamaTokenAdapter, Initializable {
   // =========================
   // ======== Structs ========
   // =========================
@@ -95,10 +95,6 @@ contract LlamaTokenAdapterTimestamp is ILlamaTokenAdapter, Initializable {
   }
 
   function _hasClockChanged() internal view returns (bool) {
-    if (keccak256(abi.encodePacked(CLOCK_MODE)) == keccak256(abi.encodePacked("mode=timestamp"))) {
-      return clock() != LlamaUtils.toUint48(block.timestamp);
-    } else {
-      return clock() != LlamaUtils.toUint48(block.number);
-    }
+    return clock() != LlamaUtils.toUint48(block.timestamp);
   }
 }

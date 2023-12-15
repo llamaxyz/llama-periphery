@@ -15,7 +15,7 @@ import {ILlamaPolicy} from "src/interfaces/ILlamaPolicy.sol";
 import {ILlamaRelativeStrategyBase} from "src/interfaces/ILlamaRelativeStrategyBase.sol";
 import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
 import {RoleDescription} from "src/lib/UDVTs.sol";
-import {LlamaTokenAdapterTimestamp} from "src/token-voting/token-adapters/LlamaTokenAdapterTimestamp.sol";
+import {LlamaTokenAdapterVotesTimestamp} from "src/token-voting/token-adapters/LlamaTokenAdapterVotesTimestamp.sol";
 import {LlamaTokenVotingFactory} from "src/token-voting/LlamaTokenVotingFactory.sol";
 import {LlamaTokenActionCreator} from "src/token-voting/LlamaTokenActionCreator.sol";
 import {LlamaTokenCaster} from "src/token-voting/LlamaTokenCaster.sol";
@@ -92,7 +92,7 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
   // =========================
 
   function _deployERC20TokenVotingModuleAndSetRole() internal returns (LlamaTokenActionCreator, LlamaTokenCaster) {
-    bytes memory adapterConfig = abi.encode(LlamaTokenAdapterTimestamp.Config(address(erc20VotesToken)));
+    bytes memory adapterConfig = abi.encode(LlamaTokenAdapterVotesTimestamp.Config(address(erc20VotesToken)));
     LlamaTokenVotingFactory.LlamaTokenVotingConfig memory config = LlamaTokenVotingFactory.LlamaTokenVotingConfig(
       CORE,
       llamaTokenAdapterTimestampLogic,
@@ -122,7 +122,7 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
   }
 
   function _deployERC721TokenVotingModuleAndSetRole() internal returns (LlamaTokenActionCreator, LlamaTokenCaster) {
-    bytes memory adapterConfig = abi.encode(LlamaTokenAdapterTimestamp.Config(address(erc721VotesToken)));
+    bytes memory adapterConfig = abi.encode(LlamaTokenAdapterVotesTimestamp.Config(address(erc721VotesToken)));
     LlamaTokenVotingFactory.LlamaTokenVotingConfig memory config = LlamaTokenVotingFactory.LlamaTokenVotingConfig(
       CORE,
       llamaTokenAdapterTimestampLogic,

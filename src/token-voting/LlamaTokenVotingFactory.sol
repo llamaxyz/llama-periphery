@@ -79,7 +79,7 @@ contract LlamaTokenVotingFactory {
     external
     returns (LlamaTokenActionCreator actionCreator, LlamaTokenCaster caster)
   {
-    // Initialize token adapter based on provided logic address and config
+    // Deploy and initialize token adapter based on provided logic address and config
     ILlamaTokenAdapter tokenAdapter = ILlamaTokenAdapter(
       Clones.cloneDeterministic(
         address(tokenVotingConfig.tokenAdapterLogic), keccak256(tokenVotingConfig.adapterConfig)

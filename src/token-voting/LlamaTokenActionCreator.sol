@@ -135,10 +135,6 @@ contract LlamaTokenActionCreator is Initializable {
     tokenAdapter = _tokenAdapter;
     role = _role;
     _setActionThreshold(_creationThreshold);
-
-    uint256 totalSupply = tokenAdapter.getPastTotalSupply(tokenAdapter.clock() - 1);
-    if (totalSupply == 0) revert InvalidTokenAddress();
-    if (_creationThreshold > totalSupply) revert InvalidCreationThreshold();
   }
 
   // ===========================================
@@ -225,9 +221,6 @@ contract LlamaTokenActionCreator is Initializable {
   /// @dev This must be in the same decimals as the token.
   function setActionThreshold(uint256 _creationThreshold) external {
     if (msg.sender != address(llamaCore.executor())) revert OnlyLlamaExecutor();
-    if (_creationThreshold > tokenAdapter.getPastTotalSupply(tokenAdapter.clock() - 1)) {
-      revert InvalidCreationThreshold();
-    }
     _setActionThreshold(_creationThreshold);
   }
 
@@ -274,7 +267,12 @@ contract LlamaTokenActionCreator is Initializable {
 
   /// @dev Sets the default number of tokens required to create an action.
   function _setActionThreshold(uint256 _creationThreshold) internal {
+    uint256 totalSupply = tokenAdapter.getPastTotalSupply(tokenAdapter.clock() - 1);
+    if (totalSupply == 0) revert InvalidTokenAddress();
+    if (_creationThreshold > totalSupply) revert InvalidCreationThreshold();
+
     creationThreshold = _creationThreshold;
+
     emit ActionThresholdSet(_creationThreshold);
   }
 

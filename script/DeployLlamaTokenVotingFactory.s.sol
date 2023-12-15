@@ -7,13 +7,13 @@ import {DeployUtils} from "script/DeployUtils.sol";
 import {LlamaTokenActionCreator} from "src/token-voting/LlamaTokenActionCreator.sol";
 import {LlamaTokenCaster} from "src/token-voting/LlamaTokenCaster.sol";
 import {LlamaTokenVotingFactory} from "src/token-voting/LlamaTokenVotingFactory.sol";
-import {LlamaTokenAdapterTimestamp} from "src/token-voting/token-adapters/LlamaTokenAdapterTimestamp.sol";
+import {LlamaTokenAdapterVotesTimestamp} from "src/token-voting/token-adapters/LlamaTokenAdapterVotesTimestamp.sol";
 
 contract DeployLlamaTokenVotingFactory is Script {
   // Logic contracts.
   LlamaTokenActionCreator llamaTokenActionCreatorLogic;
   LlamaTokenCaster llamaTokenCasterLogic;
-  LlamaTokenAdapterTimestamp llamaTokenAdapterTimestampLogic;
+  LlamaTokenAdapterVotesTimestamp llamaTokenAdapterTimestampLogic;
 
   // Factory contracts.
   LlamaTokenVotingFactory tokenVotingFactory;
@@ -38,9 +38,9 @@ contract DeployLlamaTokenVotingFactory is Script {
     DeployUtils.print(string.concat("  LlamaTokenVotingFactory: ", vm.toString(address(tokenVotingFactory))));
 
     vm.broadcast();
-    llamaTokenAdapterTimestampLogic = new LlamaTokenAdapterTimestamp();
+    llamaTokenAdapterTimestampLogic = new LlamaTokenAdapterVotesTimestamp();
     DeployUtils.print(
-      string.concat("  LlamaTokenAdapterTimestamp: ", vm.toString(address(llamaTokenAdapterTimestampLogic)))
+      string.concat("  LlamaTokenAdapterVotesTimestamp: ", vm.toString(address(llamaTokenAdapterTimestampLogic)))
     );
   }
 }

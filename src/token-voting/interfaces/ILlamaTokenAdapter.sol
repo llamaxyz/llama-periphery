@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {IVotes} from "@openzeppelin/governance/utils/IVotes.sol";
-
 /// @title ILlamaTokenAdapter
 /// @author Llama (devsdosomething@llama.xyz)
 /// @notice This contract provides an interface for voting token adapters.
@@ -16,7 +14,7 @@ interface ILlamaTokenAdapter {
   /// (like the zero address) will revert.
   function initialize(bytes memory config) external returns (bool);
 
-  /// @notice Returns the token voting module's `IVotes` voting token.
+  /// @notice Returns the token voting module's voting token address.
   /// @return token The voting token.
   function token() external view returns (address token);
 

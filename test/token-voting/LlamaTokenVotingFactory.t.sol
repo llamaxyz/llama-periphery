@@ -11,7 +11,7 @@ import {ActionInfo} from "src/lib/Structs.sol";
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
 import {ILlamaPolicy} from "src/interfaces/ILlamaPolicy.sol";
 import {ILlamaTokenAdapter} from "src/token-voting/interfaces/ILlamaTokenAdapter.sol";
-import {LlamaTokenAdapterTimestamp} from "src/token-voting/token-adapters/LlamaTokenAdapterTimestamp.sol";
+import {LlamaTokenAdapterVotesTimestamp} from "src/token-voting/token-adapters/LlamaTokenAdapterVotesTimestamp.sol";
 import {LlamaTokenActionCreator} from "src/token-voting/LlamaTokenActionCreator.sol";
 import {LlamaTokenCaster} from "src/token-voting/LlamaTokenCaster.sol";
 import {LlamaTokenVotingFactory} from "src/token-voting/LlamaTokenVotingFactory.sol";
@@ -80,7 +80,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
   }
 
   function test_CanDeployERC20TokenVotingModule() public {
-    bytes memory adapterConfig = abi.encode(LlamaTokenAdapterTimestamp.Config(address(erc20VotesToken)));
+    bytes memory adapterConfig = abi.encode(LlamaTokenAdapterVotesTimestamp.Config(address(erc20VotesToken)));
     LlamaTokenVotingFactory.LlamaTokenVotingConfig memory config = LlamaTokenVotingFactory.LlamaTokenVotingConfig(
       CORE,
       llamaTokenAdapterTimestampLogic,
@@ -156,7 +156,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
   }
 
   function test_CanDeployERC721TokenVotingModule() public {
-    bytes memory adapterConfig = abi.encode(LlamaTokenAdapterTimestamp.Config(address(erc721VotesToken)));
+    bytes memory adapterConfig = abi.encode(LlamaTokenAdapterVotesTimestamp.Config(address(erc721VotesToken)));
     LlamaTokenVotingFactory.LlamaTokenVotingConfig memory config = LlamaTokenVotingFactory.LlamaTokenVotingConfig(
       CORE,
       llamaTokenAdapterTimestampLogic,
@@ -283,7 +283,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
       block.chainid
     );
 
-    bytes memory adapterConfig = abi.encode(LlamaTokenAdapterTimestamp.Config(address(erc20VotesToken)));
+    bytes memory adapterConfig = abi.encode(LlamaTokenAdapterVotesTimestamp.Config(address(erc20VotesToken)));
     LlamaTokenVotingFactory.LlamaTokenVotingConfig memory config = LlamaTokenVotingFactory.LlamaTokenVotingConfig(
       CORE,
       llamaTokenAdapterTimestampLogic,
@@ -316,7 +316,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     // First deployment//
     /////////////////////
 
-    bytes memory adapterConfig = abi.encode(LlamaTokenAdapterTimestamp.Config(address(erc20VotesToken)));
+    bytes memory adapterConfig = abi.encode(LlamaTokenAdapterVotesTimestamp.Config(address(erc20VotesToken)));
     LlamaTokenVotingFactory.LlamaTokenVotingConfig memory config = LlamaTokenVotingFactory.LlamaTokenVotingConfig(
       CORE,
       llamaTokenAdapterTimestampLogic,
@@ -380,7 +380,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     // Second deployment//
     //////////////////////
 
-    bytes memory adapterConfig2 = abi.encode(LlamaTokenAdapterTimestamp.Config(address(erc20VotesToken)));
+    bytes memory adapterConfig2 = abi.encode(LlamaTokenAdapterVotesTimestamp.Config(address(erc20VotesToken)));
     LlamaTokenVotingFactory.LlamaTokenVotingConfig memory config2 = LlamaTokenVotingFactory.LlamaTokenVotingConfig(
       CORE,
       llamaTokenAdapterTimestampLogic,
