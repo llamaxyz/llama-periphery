@@ -8,7 +8,7 @@ import {LlamaUtils} from "src/lib/LlamaUtils.sol";
  * @dev This library defines the `History` struct, for checkpointing values as they change at different points in
  * time, and later looking up past values by block timestamp.
  *
- * To create a history of checkpoints define a variable type `PolicyholderCheckpoints.History` in your contract, and store a new
+ * To create a history of checkpoints define a variable type `PeriodPctCheckpoints.History` in your contract, and store a new
  * checkpoint for the current transaction timestamp using the {push} function.
  *
  * @dev This was created by modifying then running the OpenZeppelin `Checkpoints.js` script, which generated a version
@@ -126,7 +126,7 @@ library PeriodPctCheckpoints {
         uint16 delayPeriodPct,
         uint16 castingPeriodPct,
         uint16 submissionPeriodPct
-    ) private returns (uint16, uint16, uint16) {
+    ) private {
         uint256 pos = self.length;
 
         if (pos > 0) {
@@ -145,10 +145,8 @@ library PeriodPctCheckpoints {
             } else {
                 self.push(Checkpoint({timestamp: timestamp, delayPeriodPct: delayPeriodPct, castingPeriodPct: castingPeriodPct, submissionPeriodPct: submissionPeriodPct}));
             }
-            return (delayPeriodPct, castingPeriodPct, submissionPeriodPct);
         } else {
             self.push(Checkpoint({timestamp: timestamp, delayPeriodPct: delayPeriodPct, castingPeriodPct: castingPeriodPct, submissionPeriodPct: submissionPeriodPct}));
-            return (delayPeriodPct, castingPeriodPct, submissionPeriodPct);
         }
     }
 

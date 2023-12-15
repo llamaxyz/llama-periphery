@@ -123,7 +123,7 @@ library QuorumCheckpoints {
         uint48 timestamp,
         uint16 voteQuorumPct,
         uint16 vetoQuorumPct
-    ) private returns (uint16, uint16) {
+    ) private {
         uint256 pos = self.length;
 
         if (pos > 0) {
@@ -141,10 +141,8 @@ library QuorumCheckpoints {
             } else {
                 self.push(Checkpoint({timestamp: timestamp, voteQuorumPct: voteQuorumPct, vetoQuorumPct: vetoQuorumPct}));
             }
-            return (last.vetoQuorumPct, vetoQuorumPct);
         } else {
             self.push(Checkpoint({timestamp: timestamp, voteQuorumPct: voteQuorumPct, vetoQuorumPct: vetoQuorumPct}));
-            return (0, vetoQuorumPct);
         }
     }
 
