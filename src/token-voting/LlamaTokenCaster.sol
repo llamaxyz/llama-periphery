@@ -211,6 +211,7 @@ abstract contract LlamaTokenCaster is Initializable {
     clockAdapter = _clockAdapter;
     role = _role;
     _setQuorumPct(_voteQuorumPct, _vetoQuorumPct);
+    _setPeriodPcts(2500, 5000, 2500);
   }
 
   // ===========================================
