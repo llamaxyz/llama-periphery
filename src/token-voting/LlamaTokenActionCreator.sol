@@ -117,6 +117,8 @@ contract LlamaTokenActionCreator is Initializable {
   /// @dev This function is called by the `deploy` function in the `LlamaTokenVotingFactory` contract.
   /// The `initializer` modifier ensures that this function can be invoked at most once.
   /// @param _llamaCore The `LlamaCore` contract for this Llama instance.
+  /// @param _tokenAdapter The token adapter that manages the clock, timepoints, past votes and past supply for this
+  /// token voting module.
   /// @param _role The role used by this contract to cast approvals and disapprovals.
   /// @param _creationThreshold The default number of tokens required to create an action. This must
   /// be in the same decimals as the token. For example, if the token has 18 decimals and you want a

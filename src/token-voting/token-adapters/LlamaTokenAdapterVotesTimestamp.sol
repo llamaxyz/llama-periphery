@@ -8,6 +8,9 @@ import {IERC6372} from "@openzeppelin/interfaces/IERC6372.sol";
 import {LlamaUtils} from "src/lib/LlamaUtils.sol";
 import {ILlamaTokenAdapter} from "src/token-voting/interfaces/ILlamaTokenAdapter.sol";
 
+/// @title LlamaTokenAdapterVotesTimestamp
+/// @author Llama (devsdosomething@llama.xyz)
+/// @notice A token adapter for tokens that implement IVotes, IERC6372 and use timestamp as their clock.
 contract LlamaTokenAdapterVotesTimestamp is ILlamaTokenAdapter, Initializable {
   // =========================
   // ======== Structs ========
