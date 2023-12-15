@@ -50,11 +50,11 @@ contract LlamaTokenActionCreator is Initializable {
   // ======== Events ========
   // ========================
 
-  /// @dev Emitted when an action is created.
-  event ActionCreated(uint256 id, address indexed creator);
-
   /// @dev Emitted when an action is canceled.
   event ActionCanceled(uint256 id, address indexed creator);
+
+  /// @dev Emitted when an action is created.
+  event ActionCreated(uint256 id, address indexed creator);
 
   /// @dev Emitted when the default number of tokens required to create an action is changed.
   event ActionThresholdSet(uint256 newThreshold);
