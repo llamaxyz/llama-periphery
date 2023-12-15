@@ -199,11 +199,15 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
         address(tokenVotingFactory) // deployer
       )
     );
+
     ILlamaTokenAdapter llamaERC721TokenAdapter = ILlamaTokenAdapter(
       Clones.predictDeterministicAddress(
         address(llamaTokenAdapterTimestampLogic),
         keccak256(
-          abi.encode(address(erc721VotesToken)) // salt
+          abi.encode(
+            abi.encode(address(erc721VotesToken)), // salt
+            0
+          )
         ),
         address(tokenVotingFactory) // deployer
       )
