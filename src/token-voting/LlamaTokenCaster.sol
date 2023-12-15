@@ -460,6 +460,7 @@ contract LlamaTokenCaster is Initializable {
   // ======== Internal Logic ========
   // ================================
 
+  /// @dev How token holders add their support of the approval of an action with a reason.
   function _castVote(address caster, ActionInfo calldata actionInfo, uint8 support, string calldata reason)
     internal
     returns (uint96)
@@ -492,6 +493,7 @@ contract LlamaTokenCaster is Initializable {
     return weight;
   }
 
+  /// @dev How token holders add their support of the disapproval of an action with a reason.
   function _castVeto(address caster, ActionInfo calldata actionInfo, uint8 support, string calldata reason)
     internal
     returns (uint96)
@@ -525,6 +527,7 @@ contract LlamaTokenCaster is Initializable {
     return weight;
   }
 
+  /// @dev The only `support` values allowed to be passed into this method are Against (0), For (1) or Abstain (2).
   function _preCastAssertions(uint8 support) internal view {
     if (support > uint8(VoteType.Abstain)) revert InvalidSupport(support);
 
@@ -548,9 +551,9 @@ contract LlamaTokenCaster is Initializable {
     periodPctsCheckpoint.push(_delayPeriodPct, _castingPeriodPct, _submissionPeriodPct);
     emit PeriodsPctSet(_delayPeriodPct, _castingPeriodPct, _submissionPeriodPct);
   }
+
   /// @dev Returns the current nonce for a given tokenholder and selector, and increments it. Used to prevent
   /// replay attacks.
-
   function _useNonce(address tokenholder, bytes4 selector) internal returns (uint256 nonce) {
     nonce = nonces[tokenholder][selector];
     nonces[tokenholder][selector] = LlamaUtils.uncheckedIncrement(nonce);
