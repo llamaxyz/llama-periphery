@@ -14,7 +14,6 @@ import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
 import {ILlamaExecutor} from "src/interfaces/ILlamaExecutor.sol";
 import {ILlamaLens} from "src/interfaces/ILlamaLens.sol";
 import {ILlamaPolicy} from "src/interfaces/ILlamaPolicy.sol";
-import {ActionInfo, PermissionData, RoleHolderData} from "src/lib/Structs.sol";
 
 contract LlamaPeripheryTestSetup is Test {
   string MAINNET_RPC_URL = vm.envString("MAINNET_RPC_URL"); // can't use constant here

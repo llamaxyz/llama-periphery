@@ -13,7 +13,8 @@ import {Action, ActionInfo} from "src/lib/Structs.sol";
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
 import {ILlamaRelativeStrategyBase} from "src/interfaces/ILlamaRelativeStrategyBase.sol";
 import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
-import {LlamaERC721TokenCaster} from "src/token-voting/LlamaERC721TokenCaster.sol";
+import {ILlamaTokenAdapter} from "src/token-voting/interfaces/ILlamaTokenAdapter.sol";
+import {LlamaTokenAdapterVotesTimestamp} from "src/token-voting/token-adapters/LlamaTokenAdapterVotesTimestamp.sol";
 import {LlamaTokenCaster} from "src/token-voting/LlamaTokenCaster.sol";
 
 contract LlamaERC721TokenCasterTest is LlamaTokenVotingTestSetup, LlamaCoreSigUtils {
@@ -28,7 +29,7 @@ contract LlamaERC721TokenCasterTest is LlamaTokenVotingTestSetup, LlamaCoreSigUt
   event QuorumSet(uint16 voteQuorumPct, uint16 vetoQuorumPct);
 
   ActionInfo actionInfo;
-  LlamaERC721TokenCaster llamaERC721TokenCaster;
+  LlamaTokenCaster llamaERC721TokenCaster;
   ILlamaStrategy tokenVotingStrategy;
 
   function setUp() public virtual override {
@@ -60,7 +61,7 @@ contract LlamaERC721TokenCasterTest is LlamaTokenVotingTestSetup, LlamaCoreSigUt
     tokenVotingStrategy = _deployRelativeQuantityQuorumAndSetRolePermissionToCoreTeam(tokenVotingCasterRole);
     actionInfo = _createActionWithTokenVotingStrategy(tokenVotingStrategy);
 
-    // Setting LlamaERC721TokenCaster's EIP-712 Domain Hash
+    // Setting LlamaTokenCaster's EIP-712 Domain Hash
     setDomainHash(
       LlamaCoreSigUtils.EIP712Domain({
         name: CORE.name(),
@@ -90,6 +91,15 @@ contract LlamaERC721TokenCasterTest is LlamaTokenVotingTestSetup, LlamaCoreSigUt
     vm.prank(tokenHolder3);
     llamaERC721TokenCaster.castVeto(actionInfo, uint8(VoteType.For), "");
   }
+
+  function createTimestampTokenAdapter(address token, uint256 nonce) public returns (ILlamaTokenAdapter tokenAdapter) {
+    bytes memory adapterConfig = abi.encode(LlamaTokenAdapterVotesTimestamp.Config(address(token)));
+
+    bytes32 salt = keccak256(abi.encodePacked(msg.sender, address(CORE), adapterConfig, nonce));
+
+    tokenAdapter = ILlamaTokenAdapter(Clones.cloneDeterministic(address(llamaTokenAdapterTimestampLogic), salt));
+    tokenAdapter.initialize(adapterConfig);
+  }
 }
 
 contract CastVote is LlamaERC721TokenCasterTest {
@@ -111,14 +121,15 @@ contract CastVote is LlamaERC721TokenCasterTest {
   }
 
   function test_RevertsIf_ApprovalNotEnabled() public {
-    LlamaERC721TokenCaster casterWithWrongRole = LlamaERC721TokenCaster(
+    ILlamaTokenAdapter tokenAdapter = createTimestampTokenAdapter(address(erc721VotesToken), 0);
+
+    LlamaTokenCaster casterWithWrongRole = LlamaTokenCaster(
       Clones.cloneDeterministic(
-        address(llamaERC721TokenCasterLogic), keccak256(abi.encodePacked(address(erc721VotesToken), msg.sender))
+        address(llamaTokenCasterLogic), keccak256(abi.encodePacked(address(erc721VotesToken), msg.sender))
       )
     );
-    casterWithWrongRole.initialize(
-      erc721VotesToken, CORE, LLAMA_TOKEN_TIMESTAMP_ADAPTER, madeUpRole, ERC721_VOTE_QUORUM_PCT, ERC721_VETO_QUORUM_PCT
-    );
+
+    casterWithWrongRole.initialize(CORE, tokenAdapter, madeUpRole, ERC721_VOTE_QUORUM_PCT, ERC721_VETO_QUORUM_PCT);
 
     vm.expectRevert(abi.encodeWithSelector(ILlamaRelativeStrategyBase.InvalidRole.selector, tokenVotingCasterRole));
     casterWithWrongRole.castVote(actionInfo, uint8(VoteType.For), "");
@@ -326,14 +337,14 @@ contract CastVeto is LlamaERC721TokenCasterTest {
   }
 
   function test_RevertsIf_DisapprovalNotEnabled() public {
-    LlamaERC721TokenCaster casterWithWrongRole = LlamaERC721TokenCaster(
+    ILlamaTokenAdapter tokenAdapter = createTimestampTokenAdapter(address(erc721VotesToken), 0);
+
+    LlamaTokenCaster casterWithWrongRole = LlamaTokenCaster(
       Clones.cloneDeterministic(
-        address(llamaERC721TokenCasterLogic), keccak256(abi.encodePacked(address(erc721VotesToken), msg.sender))
+        address(llamaTokenCasterLogic), keccak256(abi.encodePacked(address(erc721VotesToken), msg.sender))
       )
     );
-    casterWithWrongRole.initialize(
-      erc721VotesToken, CORE, LLAMA_TOKEN_TIMESTAMP_ADAPTER, madeUpRole, ERC721_VOTE_QUORUM_PCT, ERC721_VETO_QUORUM_PCT
-    );
+    casterWithWrongRole.initialize(CORE, tokenAdapter, madeUpRole, ERC721_VOTE_QUORUM_PCT, ERC721_VETO_QUORUM_PCT);
 
     vm.expectRevert(abi.encodeWithSelector(ILlamaRelativeStrategyBase.InvalidRole.selector, tokenVotingCasterRole));
     casterWithWrongRole.castVeto(actionInfo, uint8(VoteType.For), "");
@@ -586,14 +597,14 @@ contract SubmitApprovals is LlamaERC721TokenCasterTest {
   }
 
   function test_RevertsIf_ApprovalNotEnabled() public {
-    LlamaERC721TokenCaster casterWithWrongRole = LlamaERC721TokenCaster(
+    ILlamaTokenAdapter tokenAdapter = createTimestampTokenAdapter(address(erc721VotesToken), 0);
+
+    LlamaTokenCaster casterWithWrongRole = LlamaTokenCaster(
       Clones.cloneDeterministic(
-        address(llamaERC721TokenCasterLogic), keccak256(abi.encodePacked(address(erc721VotesToken), msg.sender))
+        address(llamaTokenCasterLogic), keccak256(abi.encodePacked(address(erc721VotesToken), msg.sender))
       )
     );
-    casterWithWrongRole.initialize(
-      erc721VotesToken, CORE, LLAMA_TOKEN_TIMESTAMP_ADAPTER, madeUpRole, ERC721_VOTE_QUORUM_PCT, ERC721_VETO_QUORUM_PCT
-    );
+    casterWithWrongRole.initialize(CORE, tokenAdapter, madeUpRole, ERC721_VOTE_QUORUM_PCT, ERC721_VETO_QUORUM_PCT);
     vm.expectRevert(abi.encodeWithSelector(ILlamaRelativeStrategyBase.InvalidRole.selector, tokenVotingCasterRole));
     casterWithWrongRole.submitApproval(actionInfo);
   }
@@ -671,14 +682,13 @@ contract SubmitDisapprovals is LlamaERC721TokenCasterTest {
 
   function test_RevertsIf_DisapprovalNotEnabled() public {
     vm.warp(block.timestamp + (1 days * THREE_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS);
-    LlamaERC721TokenCaster casterWithWrongRole = LlamaERC721TokenCaster(
+    LlamaTokenCaster casterWithWrongRole = LlamaTokenCaster(
       Clones.cloneDeterministic(
-        address(llamaERC721TokenCasterLogic), keccak256(abi.encodePacked(address(erc721VotesToken), msg.sender))
+        address(llamaTokenCasterLogic), keccak256(abi.encodePacked(address(erc721VotesToken), msg.sender))
       )
     );
-    casterWithWrongRole.initialize(
-      erc721VotesToken, CORE, LLAMA_TOKEN_TIMESTAMP_ADAPTER, madeUpRole, ERC721_VOTE_QUORUM_PCT, ERC721_VETO_QUORUM_PCT
-    );
+    ILlamaTokenAdapter tokenAdapter = createTimestampTokenAdapter(address(erc721VotesToken), 0);
+    casterWithWrongRole.initialize(CORE, tokenAdapter, madeUpRole, ERC721_VOTE_QUORUM_PCT, ERC721_VETO_QUORUM_PCT);
     vm.expectRevert(abi.encodeWithSelector(ILlamaRelativeStrategyBase.InvalidRole.selector, tokenVotingCasterRole));
     casterWithWrongRole.submitDisapproval(actionInfo);
   }

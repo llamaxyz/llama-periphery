@@ -4,18 +4,16 @@ pragma solidity 0.8.23;
 import {Script} from "forge-std/Script.sol";
 
 import {DeployUtils} from "script/DeployUtils.sol";
-import {LlamaERC20TokenActionCreator} from "src/token-voting/LlamaERC20TokenActionCreator.sol";
-import {LlamaERC20TokenCaster} from "src/token-voting/LlamaERC20TokenCaster.sol";
-import {LlamaERC721TokenActionCreator} from "src/token-voting/LlamaERC721TokenActionCreator.sol";
-import {LlamaERC721TokenCaster} from "src/token-voting/LlamaERC721TokenCaster.sol";
+import {LlamaTokenActionCreator} from "src/token-voting/LlamaTokenActionCreator.sol";
+import {LlamaTokenCaster} from "src/token-voting/LlamaTokenCaster.sol";
 import {LlamaTokenVotingFactory} from "src/token-voting/LlamaTokenVotingFactory.sol";
+import {LlamaTokenAdapterVotesTimestamp} from "src/token-voting/token-adapters/LlamaTokenAdapterVotesTimestamp.sol";
 
 contract DeployLlamaTokenVotingFactory is Script {
   // Logic contracts.
-  LlamaERC20TokenActionCreator llamaERC20TokenActionCreatorLogic;
-  LlamaERC20TokenCaster llamaERC20TokenCasterLogic;
-  LlamaERC721TokenActionCreator llamaERC721TokenActionCreatorLogic;
-  LlamaERC721TokenCaster llamaERC721TokenCasterLogic;
+  LlamaTokenActionCreator llamaTokenActionCreatorLogic;
+  LlamaTokenCaster llamaTokenCasterLogic;
+  LlamaTokenAdapterVotesTimestamp llamaTokenAdapterTimestampLogic;
 
   // Factory contracts.
   LlamaTokenVotingFactory tokenVotingFactory;
@@ -26,36 +24,23 @@ contract DeployLlamaTokenVotingFactory is Script {
     );
 
     vm.broadcast();
-    llamaERC20TokenActionCreatorLogic = new LlamaERC20TokenActionCreator();
+    llamaTokenActionCreatorLogic = new LlamaTokenActionCreator();
     DeployUtils.print(
-      string.concat("  LlamaERC20TokenActionCreatorLogic: ", vm.toString(address(llamaERC20TokenActionCreatorLogic)))
+      string.concat("  LlamaTokenActionCreatorLogic: ", vm.toString(address(llamaTokenActionCreatorLogic)))
     );
 
     vm.broadcast();
-    llamaERC20TokenCasterLogic = new LlamaERC20TokenCaster();
-    DeployUtils.print(string.concat("  LlamaERC20TokenCasterLogic: ", vm.toString(address(llamaERC20TokenCasterLogic))));
+    llamaTokenCasterLogic = new LlamaTokenCaster();
+    DeployUtils.print(string.concat("  LlamaTokenCasterLogic: ", vm.toString(address(llamaTokenCasterLogic))));
 
     vm.broadcast();
-    llamaERC721TokenActionCreatorLogic = new LlamaERC721TokenActionCreator();
-    DeployUtils.print(
-      string.concat("  LlamaERC721TokenActionCreatorLogic: ", vm.toString(address(llamaERC721TokenActionCreatorLogic)))
-    );
-
-    vm.broadcast();
-    llamaERC721TokenCasterLogic = new LlamaERC721TokenCaster();
-    DeployUtils.print(
-      string.concat("  LlamaERC721TokenCasterLogic: ", vm.toString(address(llamaERC721TokenCasterLogic)))
-    );
-
-    vm.broadcast();
-    tokenVotingFactory = new LlamaTokenVotingFactory(
-      llamaERC20TokenActionCreatorLogic,
-      llamaERC20TokenCasterLogic,
-      llamaERC721TokenActionCreatorLogic,
-      llamaERC721TokenCasterLogic
-    );
+    tokenVotingFactory = new LlamaTokenVotingFactory(llamaTokenActionCreatorLogic, llamaTokenCasterLogic);
     DeployUtils.print(string.concat("  LlamaTokenVotingFactory: ", vm.toString(address(tokenVotingFactory))));
 
-    // Deploy the timestamp managers here when we develop them.
+    vm.broadcast();
+    llamaTokenAdapterTimestampLogic = new LlamaTokenAdapterVotesTimestamp();
+    DeployUtils.print(
+      string.concat("  LlamaTokenAdapterVotesTimestamp: ", vm.toString(address(llamaTokenAdapterTimestampLogic)))
+    );
   }
 }

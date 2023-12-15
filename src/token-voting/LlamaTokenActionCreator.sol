@@ -5,7 +5,7 @@ import {Initializable} from "@openzeppelin/proxy/utils/Initializable.sol";
 
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
 import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
-import {ILlamaTokenClockAdapter} from "src/token-voting/ILlamaTokenClockAdapter.sol";
+import {ILlamaTokenAdapter} from "src/token-voting/interfaces/ILlamaTokenAdapter.sol";
 import {Action, ActionInfo} from "src/lib/Structs.sol";
 import {LlamaUtils} from "src/lib/LlamaUtils.sol";
 
@@ -17,7 +17,7 @@ import {LlamaUtils} from "src/lib/LlamaUtils.sol";
 /// it must hold a Policy from the specified `LlamaCore` instance to actually be able to create an action. The
 /// instance's policy encodes what actions this contract is allowed to create, and attempting to create an action that
 /// is not allowed by the policy will result in a revert.
-abstract contract LlamaTokenActionCreator is Initializable {
+contract LlamaTokenActionCreator is Initializable {
   // ========================
   // ======== Errors ========
   // ========================
@@ -34,8 +34,8 @@ abstract contract LlamaTokenActionCreator is Initializable {
   /// @dev The recovered signer does not match the expected token holder.
   error InvalidSignature();
 
-  /// @dev Thrown when an invalid `token` address is passed to the constructor.
-  error InvalidTokenAddress();
+  /// @dev Thrown when a `token` with an invalid totaly supply is passed to the constructor.
+  error InvalidTotalSupply();
 
   /// @dev Thrown when an invalid `creationThreshold` is passed to the constructor.
   error InvalidCreationThreshold();
@@ -89,7 +89,7 @@ abstract contract LlamaTokenActionCreator is Initializable {
   ILlamaCore public llamaCore;
 
   /// @notice The contract that manages the timepoints for this token voting module.
-  ILlamaTokenClockAdapter public clockAdapter;
+  ILlamaTokenAdapter public tokenAdapter;
 
   /// @notice The default number of tokens required to create an action.
   uint256 public creationThreshold;
@@ -110,23 +110,29 @@ abstract contract LlamaTokenActionCreator is Initializable {
   // ======== Initialization ========
   // ================================
 
-  /// @dev This will be called by the `initialize` of the inheriting contract.
+  /// @dev This contract is deployed as a minimal proxy from the factory's `deploy` function. The
+  /// `_disableInitializers` locks the implementation (logic) contract, preventing any future initialization of it.
+  constructor() {
+    _disableInitializers();
+  }
+
+  /// @notice Initializes a new `LlamaERC20TokenActionCreator` clone.
+  /// @dev This function is called by the `deploy` function in the `LlamaTokenVotingFactory` contract.
+  /// The `initializer` modifier ensures that this function can be invoked at most once.
   /// @param _llamaCore The `LlamaCore` contract for this Llama instance.
   /// @param _role The role used by this contract to cast approvals and disapprovals.
   /// @param _creationThreshold The default number of tokens required to create an action. This must
   /// be in the same decimals as the token. For example, if the token has 18 decimals and you want a
   /// creation threshold of 1000 tokens, pass in 1000e18.
-  function __initializeLlamaTokenActionCreatorMinimalProxy(
-    ILlamaCore _llamaCore,
-    ILlamaTokenClockAdapter _clockAdapter,
-    uint8 _role,
-    uint256 _creationThreshold
-  ) internal {
+  function initialize(ILlamaCore _llamaCore, ILlamaTokenAdapter _tokenAdapter, uint8 _role, uint256 _creationThreshold)
+    external
+    initializer
+  {
     if (_llamaCore.actionsCount() < 0) revert InvalidLlamaCoreAddress();
     if (_role > _llamaCore.policy().numRoles()) revert RoleNotInitialized(_role);
 
     llamaCore = _llamaCore;
-    clockAdapter = _clockAdapter;
+    tokenAdapter = _tokenAdapter;
     role = _role;
     _setActionThreshold(_creationThreshold);
   }
@@ -215,7 +221,6 @@ abstract contract LlamaTokenActionCreator is Initializable {
   /// @dev This must be in the same decimals as the token.
   function setActionThreshold(uint256 _creationThreshold) external {
     if (msg.sender != address(llamaCore.executor())) revert OnlyLlamaExecutor();
-    if (_creationThreshold > _getPastTotalSupply(_currentTimepointMinusOne())) revert InvalidCreationThreshold();
     _setActionThreshold(_creationThreshold);
   }
 
@@ -242,10 +247,10 @@ abstract contract LlamaTokenActionCreator is Initializable {
     bytes calldata data,
     string memory description
   ) internal returns (uint256 actionId) {
-    /// @dev only timestamp mode is supported for now
-    _isClockModeSupported(); // reverts if clock mode is not supported
+    // Reverts if clock or CLOCK_MODE() has changed
+    tokenAdapter.checkIfInconsistentClock();
 
-    uint256 balance = _getPastVotes(tokenHolder, _currentTimepointMinusOne());
+    uint256 balance = tokenAdapter.getPastVotes(tokenHolder, tokenAdapter.clock() - 1);
     if (balance < creationThreshold) revert InsufficientBalance(balance);
 
     actionId = llamaCore.createAction(role, strategy, target, value, data, description);
@@ -262,39 +267,14 @@ abstract contract LlamaTokenActionCreator is Initializable {
 
   /// @dev Sets the default number of tokens required to create an action.
   function _setActionThreshold(uint256 _creationThreshold) internal {
+    uint256 totalSupply = tokenAdapter.getPastTotalSupply(tokenAdapter.clock() - 1);
+    if (totalSupply == 0) revert InvalidTotalSupply();
+    if (_creationThreshold > totalSupply) revert InvalidCreationThreshold();
+
     creationThreshold = _creationThreshold;
+
     emit ActionThresholdSet(_creationThreshold);
   }
-
-  ///@dev Reverts if the clock mode is not supported.
-  function _isClockModeSupported() internal view {
-    if (!_isClockModeTimestamp()) {
-      string memory clockMode = _getClockMode();
-      bool supported = clockAdapter.isClockModeSupported(clockMode);
-      if (!supported) revert ClockModeNotSupported(clockMode);
-    }
-  }
-
-  /// @dev Returns the current timepoint minus one.
-  function _currentTimepointMinusOne() internal view returns (uint48) {
-    if (_isClockModeTimestamp()) return LlamaUtils.toUint48(block.timestamp - 1);
-    return clockAdapter.clock() - 1;
-  }
-
-  // Returns true if the clock mode is timestamp
-  function _isClockModeTimestamp() internal view returns (bool) {
-    string memory clockMode = _getClockMode();
-    return keccak256(abi.encodePacked(clockMode)) == keccak256(abi.encodePacked("mode=timestamp"));
-  }
-
-  /// @dev Returns the number of votes for a given token holder at a given timestamp.
-  function _getPastVotes(address account, uint48 timepoint) internal view virtual returns (uint256) {}
-
-  /// @dev Returns the total supply of the token at a given timestamp.
-  function _getPastTotalSupply(uint48 timepoint) internal view virtual returns (uint256) {}
-
-  /// @dev Returns the clock mode of the token (https://eips.ethereum.org/EIPS/eip-6372).
-  function _getClockMode() internal view virtual returns (string memory) {}
 
   /// @dev Returns the current nonce for a given tokenHolder and selector, and increments it. Used to prevent
   /// replay attacks.

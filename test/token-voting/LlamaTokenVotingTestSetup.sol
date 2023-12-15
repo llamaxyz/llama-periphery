@@ -15,11 +15,10 @@ import {ILlamaPolicy} from "src/interfaces/ILlamaPolicy.sol";
 import {ILlamaRelativeStrategyBase} from "src/interfaces/ILlamaRelativeStrategyBase.sol";
 import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
 import {RoleDescription} from "src/lib/UDVTs.sol";
-import {ILlamaTokenClockAdapter} from "src/token-voting/ILlamaTokenClockAdapter.sol";
-import {LlamaERC20TokenActionCreator} from "src/token-voting/LlamaERC20TokenActionCreator.sol";
-import {LlamaERC20TokenCaster} from "src/token-voting/LlamaERC20TokenCaster.sol";
-import {LlamaERC721TokenActionCreator} from "src/token-voting/LlamaERC721TokenActionCreator.sol";
-import {LlamaERC721TokenCaster} from "src/token-voting/LlamaERC721TokenCaster.sol";
+import {LlamaTokenAdapterVotesTimestamp} from "src/token-voting/token-adapters/LlamaTokenAdapterVotesTimestamp.sol";
+import {LlamaTokenVotingFactory} from "src/token-voting/LlamaTokenVotingFactory.sol";
+import {LlamaTokenActionCreator} from "src/token-voting/LlamaTokenActionCreator.sol";
+import {LlamaTokenCaster} from "src/token-voting/LlamaTokenCaster.sol";
 
 contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenVotingFactory {
   // Percentages
@@ -37,10 +36,6 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
   uint256 public constant ERC721_CREATION_THRESHOLD = 1;
   uint16 public constant ERC721_VOTE_QUORUM_PCT = 1000;
   uint16 public constant ERC721_VETO_QUORUM_PCT = 1000;
-
-  // When deploying a token-voting module with timestamp checkpointing on the token, we pass in address(0) for the clock
-  // adapter.
-  ILlamaTokenClockAdapter constant LLAMA_TOKEN_TIMESTAMP_ADAPTER = ILlamaTokenClockAdapter(address(0));
 
   // Votes Tokens
   MockERC20Votes public erc20VotesToken;
@@ -97,61 +92,64 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
   // ======== Helpers ========
   // =========================
 
-  function _deployERC20TokenVotingModuleAndSetRole()
-    internal
-    returns (LlamaERC20TokenActionCreator, LlamaERC20TokenCaster)
-  {
-    vm.startPrank(address(EXECUTOR));
-    // Deploy Token Voting Module
-    (address llamaERC20TokenActionCreator, address llamaERC20TokenCaster) = tokenVotingFactory.deploy(
+  function _deployERC20TokenVotingModuleAndSetRole() internal returns (LlamaTokenActionCreator, LlamaTokenCaster) {
+    bytes memory adapterConfig = abi.encode(LlamaTokenAdapterVotesTimestamp.Config(address(erc20VotesToken)));
+    LlamaTokenVotingFactory.LlamaTokenVotingConfig memory config = LlamaTokenVotingFactory.LlamaTokenVotingConfig(
       CORE,
-      address(erc20VotesToken),
-      LLAMA_TOKEN_TIMESTAMP_ADAPTER,
+      llamaTokenAdapterTimestampLogic,
+      adapterConfig,
       0,
-      true,
       tokenVotingActionCreatorRole,
       tokenVotingCasterRole,
       ERC20_CREATION_THRESHOLD,
       ERC20_VOTE_QUORUM_PCT,
       ERC20_VETO_QUORUM_PCT
     );
-    // Assign roles to Token Voting Modules
-    POLICY.setRoleHolder(
-      tokenVotingActionCreatorRole, llamaERC20TokenActionCreator, DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION
-    );
-    POLICY.setRoleHolder(tokenVotingCasterRole, llamaERC20TokenCaster, DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION);
-    vm.stopPrank();
 
-    return (LlamaERC20TokenActionCreator(llamaERC20TokenActionCreator), LlamaERC20TokenCaster(llamaERC20TokenCaster));
-  }
-
-  function _deployERC721TokenVotingModuleAndSetRole()
-    internal
-    returns (LlamaERC721TokenActionCreator, LlamaERC721TokenCaster)
-  {
     vm.startPrank(address(EXECUTOR));
     // Deploy Token Voting Module
-    (address llamaERC721TokenActionCreator, address llamaERC721TokenCaster) = tokenVotingFactory.deploy(
+    (LlamaTokenActionCreator llamaERC20TokenActionCreator, LlamaTokenCaster llamaERC20TokenCaster) =
+      tokenVotingFactory.deploy(config);
+    // Assign roles to Token Voting Modules
+    POLICY.setRoleHolder(
+      tokenVotingActionCreatorRole, address(llamaERC20TokenActionCreator), DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION
+    );
+    POLICY.setRoleHolder(
+      tokenVotingCasterRole, address(llamaERC20TokenCaster), DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION
+    );
+    vm.stopPrank();
+
+    return (LlamaTokenActionCreator(llamaERC20TokenActionCreator), LlamaTokenCaster(llamaERC20TokenCaster));
+  }
+
+  function _deployERC721TokenVotingModuleAndSetRole() internal returns (LlamaTokenActionCreator, LlamaTokenCaster) {
+    bytes memory adapterConfig = abi.encode(LlamaTokenAdapterVotesTimestamp.Config(address(erc721VotesToken)));
+    LlamaTokenVotingFactory.LlamaTokenVotingConfig memory config = LlamaTokenVotingFactory.LlamaTokenVotingConfig(
       CORE,
-      address(erc721VotesToken),
-      LLAMA_TOKEN_TIMESTAMP_ADAPTER,
+      llamaTokenAdapterTimestampLogic,
+      adapterConfig,
       0,
-      false,
       tokenVotingActionCreatorRole,
       tokenVotingCasterRole,
       ERC721_CREATION_THRESHOLD,
       ERC721_VOTE_QUORUM_PCT,
       ERC721_VETO_QUORUM_PCT
     );
+
+    vm.startPrank(address(EXECUTOR));
+    // Deploy Token Voting Module
+    (LlamaTokenActionCreator llamaERC721TokenActionCreator, LlamaTokenCaster llamaERC721TokenCaster) =
+      tokenVotingFactory.deploy(config);
     // Assign roles to Token Voting Modules
     POLICY.setRoleHolder(
-      tokenVotingActionCreatorRole, llamaERC721TokenActionCreator, DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION
+      tokenVotingActionCreatorRole, address(llamaERC721TokenActionCreator), DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION
     );
-    POLICY.setRoleHolder(tokenVotingCasterRole, llamaERC721TokenCaster, DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION);
+    POLICY.setRoleHolder(
+      tokenVotingCasterRole, address(llamaERC721TokenCaster), DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION
+    );
     vm.stopPrank();
 
-    return
-      (LlamaERC721TokenActionCreator(llamaERC721TokenActionCreator), LlamaERC721TokenCaster(llamaERC721TokenCaster));
+    return (LlamaTokenActionCreator(llamaERC721TokenActionCreator), LlamaTokenCaster(llamaERC721TokenCaster));
   }
 
   function _setRolePermissionToLlamaTokenActionCreator() internal {

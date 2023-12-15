@@ -7,10 +7,8 @@ import {LlamaTokenVotingTestSetup} from "test/token-voting/LlamaTokenVotingTestS
 import {LlamaCoreSigUtils} from "test/utils/LlamaCoreSigUtils.sol";
 
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
-import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
 import {ActionState} from "src/lib/Enums.sol";
 import {Action, ActionInfo} from "src/lib/Structs.sol";
-import {LlamaERC20TokenActionCreator} from "src/token-voting/LlamaERC20TokenActionCreator.sol";
 import {LlamaTokenActionCreator} from "src/token-voting/LlamaTokenActionCreator.sol";
 
 contract LlamaERC20TokenActionCreatorTest is LlamaTokenVotingTestSetup, LlamaCoreSigUtils {
@@ -18,7 +16,7 @@ contract LlamaERC20TokenActionCreatorTest is LlamaTokenVotingTestSetup, LlamaCor
   event ActionCanceled(uint256 id, address indexed creator);
   event ActionThresholdSet(uint256 newThreshold);
 
-  LlamaERC20TokenActionCreator llamaERC20TokenActionCreator;
+  LlamaTokenActionCreator llamaERC20TokenActionCreator;
 
   function setUp() public virtual override {
     LlamaTokenVotingTestSetup.setUp();
@@ -49,12 +47,12 @@ contract LlamaERC20TokenActionCreatorTest is LlamaTokenVotingTestSetup, LlamaCor
 //   function test_RevertsIf_InvalidLlamaCore() public {
 //     // With invalid LlamaCore instance, LlamaTokenActionCreator.InvalidLlamaCoreAddress is unreachable
 //     vm.expectRevert();
-//     new LlamaERC20TokenActionCreator(erc20VotesToken, ILlamaCore(makeAddr("invalid-llama-core")), uint256(0));
+//     new LlamaTokenActionCreator(erc20VotesToken, ILlamaCore(makeAddr("invalid-llama-core")), uint256(0));
 //   }
 
 //   function test_RevertsIf_InvalidTokenAddress() public {
 //     vm.expectRevert(); // will EvmError: Revert vecause totalSupply fn does not exist
-//     new LlamaERC20TokenActionCreator(ERC20Votes(makeAddr("invalid-erc20VotesToken")), CORE, uint256(0));
+//     new LlamaTokenActionCreator(ERC20Votes(makeAddr("invalid-erc20VotesToken")), CORE, uint256(0));
 //   }
 
 //   function test_RevertsIf_CreationThresholdExceedsTotalSupply() public {
@@ -64,7 +62,7 @@ contract LlamaERC20TokenActionCreatorTest is LlamaTokenVotingTestSetup, LlamaCor
 //     vm.warp(block.timestamp + 1);
 
 //     vm.expectRevert(LlamaTokenActionCreator.InvalidCreationThreshold.selector);
-//     new LlamaERC20TokenActionCreator(erc20VotesToken, CORE, 17_000_000_000_000_000_000_000_000);
+//     new LlamaTokenActionCreator(erc20VotesToken, CORE, 17_000_000_000_000_000_000_000_000);
 //   }
 
 //   function test_ProperlySetsConstructorArguments() public {
@@ -74,8 +72,8 @@ contract LlamaERC20TokenActionCreatorTest is LlamaTokenVotingTestSetup, LlamaCor
 
 //     vm.warp(block.timestamp + 1);
 
-//     LlamaERC20TokenActionCreator llamaERC20TokenActionCreator = new
-// LlamaERC20TokenActionCreator(erc20VotesToken,
+//     LlamaTokenActionCreator llamaERC20TokenActionCreator = new
+// LlamaTokenActionCreator(erc20VotesToken,
 // CORE,
 // threshold);
 //     assertEq(address(llamaERC20TokenActionCreator.TOKEN()), address(erc20VotesToken));
