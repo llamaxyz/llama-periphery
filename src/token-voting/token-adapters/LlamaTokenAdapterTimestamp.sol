@@ -8,12 +8,16 @@ import {IERC6372} from "@openzeppelin/interfaces/IERC6372.sol";
 import {LlamaUtils} from "src/lib/LlamaUtils.sol";
 import {ILlamaTokenAdapter} from "src/token-voting/interfaces/ILlamaTokenAdapter.sol";
 
-/// @dev Llama token adapter initialization configuration.
-struct Config {
-  address token; // The address of the voting token.
-}
-
 contract LlamaTokenAdapterTimestamp is ILlamaTokenAdapter, Initializable {
+  // =========================
+  // ======== Structs ========
+  // =========================
+
+  /// @dev Llama token adapter initialization configuration.
+  struct Config {
+    address token; // The address of the voting token.
+  }
+
   // ========================
   // ======== Errors ========
   // ========================

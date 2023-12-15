@@ -13,7 +13,7 @@ contract DeployLlamaTokenVotingFactory is Script {
   // Logic contracts.
   LlamaTokenActionCreator llamaTokenActionCreatorLogic;
   LlamaTokenCaster llamaTokenCasterLogic;
-  LlamaTokenAdapterTimestamp llamaTokenAdapterTimestamp;
+  LlamaTokenAdapterTimestamp llamaTokenAdapterTimestampLogic;
 
   // Factory contracts.
   LlamaTokenVotingFactory tokenVotingFactory;
@@ -34,8 +34,10 @@ contract DeployLlamaTokenVotingFactory is Script {
     DeployUtils.print(string.concat("  LlamaTokenCasterLogic: ", vm.toString(address(llamaTokenCasterLogic))));
 
     vm.broadcast();
-    llamaTokenAdapterTimestamp = new LlamaTokenAdapterTimestamp();
-    DeployUtils.print(string.concat("  LlamaTokenAdapterTimestamp: ", vm.toString(address(llamaTokenAdapterTimestamp))));
+    llamaTokenAdapterTimestampLogic = new LlamaTokenAdapterTimestamp();
+    DeployUtils.print(
+      string.concat("  LlamaTokenAdapterTimestamp: ", vm.toString(address(llamaTokenAdapterTimestampLogic)))
+    );
 
     vm.broadcast();
     tokenVotingFactory = new LlamaTokenVotingFactory(llamaTokenActionCreatorLogic, llamaTokenCasterLogic);

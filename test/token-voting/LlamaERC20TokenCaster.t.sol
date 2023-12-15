@@ -13,7 +13,8 @@ import {Action, ActionInfo} from "src/lib/Structs.sol";
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
 import {ILlamaRelativeStrategyBase} from "src/interfaces/ILlamaRelativeStrategyBase.sol";
 import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
-import {LlamaERC20TokenCaster} from "src/token-voting/LlamaERC20TokenCaster.sol";
+import {LlamaTokenAdapterTimestamp} from "src/token-voting/token-adapters/LlamaTokenAdapterTimestamp.sol";
+import {ILlamaTokenAdapter} from "src/token-voting/interfaces/ILlamaTokenAdapter.sol";
 import {LlamaTokenCaster} from "src/token-voting/LlamaTokenCaster.sol";
 
 contract LlamaERC20TokenCasterTest is LlamaTokenVotingTestSetup, LlamaCoreSigUtils {
@@ -28,7 +29,7 @@ contract LlamaERC20TokenCasterTest is LlamaTokenVotingTestSetup, LlamaCoreSigUti
   event QuorumSet(uint16 voteQuorumPct, uint16 vetoQuorumPct);
 
   ActionInfo actionInfo;
-  LlamaERC20TokenCaster llamaERC20TokenCaster;
+  LlamaTokenCaster llamaERC20TokenCaster;
   ILlamaStrategy tokenVotingStrategy;
 
   function setUp() public virtual override {
@@ -60,7 +61,7 @@ contract LlamaERC20TokenCasterTest is LlamaTokenVotingTestSetup, LlamaCoreSigUti
     tokenVotingStrategy = _deployRelativeQuantityQuorumAndSetRolePermissionToCoreTeam(tokenVotingCasterRole);
     actionInfo = _createActionWithTokenVotingStrategy(tokenVotingStrategy);
 
-    // Setting LlamaERC20TokenCaster's EIP-712 Domain Hash
+    // Setting LlamaTokenCaster's EIP-712 Domain Hash
     setDomainHash(
       LlamaCoreSigUtils.EIP712Domain({
         name: CORE.name(),
@@ -88,13 +89,21 @@ contract LlamaERC20TokenCasterTest is LlamaTokenVotingTestSetup, LlamaCoreSigUti
     vm.prank(tokenHolder3);
     llamaERC20TokenCaster.castVeto(actionInfo, uint8(VoteType.For), "");
   }
+
+  function createTimestampTokenAdapter(address token) public returns (ILlamaTokenAdapter tokenAdapter) {
+    bytes memory adapterConfig = abi.encode(LlamaTokenAdapterTimestamp.Config(address(token)));
+
+    tokenAdapter =
+      ILlamaTokenAdapter(Clones.cloneDeterministic(address(llamaTokenAdapterTimestampLogic), keccak256(adapterConfig)));
+    tokenAdapter.initialize(adapterConfig);
+  }
 }
 
 // contract Constructor is LlamaERC20TokenCasterTest {
 //   function test_RevertsIf_InvalidLlamaCoreAddress() public {
 //     // With invalid LlamaCore instance, LlamaTokenActionCreator.InvalidLlamaCoreAddress is unreachable
 //     vm.expectRevert();
-//     new LlamaERC20TokenCaster(
+//     new LlamaTokenCaster(
 //       erc20VotesToken, ILlamaCore(makeAddr("invalid-llama-core")), tokenVotingCasterRole, uint256(1), uint256(1)
 //     );
 //   }
@@ -103,7 +112,7 @@ contract LlamaERC20TokenCasterTest is LlamaTokenVotingTestSetup, LlamaCoreSigUti
 //     vm.assume(notAToken != address(0));
 //     vm.assume(notAToken != address(erc20VotesToken));
 //     vm.expectRevert(); // will revert with EvmError: Revert because `totalSupply` is not a function
-//     new LlamaERC20TokenCaster(
+//     new LlamaTokenCaster(
 //       ERC20Votes(notAToken), ILlamaCore(address(CORE)), tokenVotingCasterRole, uint256(1), uint256(1)
 //     );
 //   }
@@ -111,26 +120,26 @@ contract LlamaERC20TokenCasterTest is LlamaTokenVotingTestSetup, LlamaCoreSigUti
 //   function test_RevertsIf_InvalidRole(uint8 role) public {
 //     role = uint8(bound(role, POLICY.numRoles(), 255));
 //     vm.expectRevert(abi.encodeWithSelector(LlamaTokenCaster.RoleNotInitialized.selector, uint8(255)));
-//     new LlamaERC20TokenCaster(erc20VotesToken, ILlamaCore(address(CORE)), uint8(255), uint256(1), uint256(1));
+//     new LlamaTokenCaster(erc20VotesToken, ILlamaCore(address(CORE)), uint8(255), uint256(1), uint256(1));
 //   }
 
 //   function test_RevertsIf_InvalidVoteQuorumPct() public {
 //     vm.expectRevert(abi.encodeWithSelector(LlamaTokenCaster.InvalidVoteQuorumPct.selector, uint256(0)));
-//     new LlamaERC20TokenCaster(erc20VotesToken, ILlamaCore(address(CORE)), tokenVotingCasterRole, uint256(0),
+//     new LlamaTokenCaster(erc20VotesToken, ILlamaCore(address(CORE)), tokenVotingCasterRole, uint256(0),
 // uint256(1));
 //     vm.expectRevert(abi.encodeWithSelector(LlamaTokenCaster.InvalidVoteQuorumPct.selector, uint256(10_001)));
-//     new LlamaERC20TokenCaster(erc20VotesToken, ILlamaCore(address(CORE)), tokenVotingCasterRole,
+//     new LlamaTokenCaster(erc20VotesToken, ILlamaCore(address(CORE)), tokenVotingCasterRole,
 // uint256(10_001),
 // uint256(1));
 //   }
 
 //   function test_RevertsIf_InvalidVetoQuorumPct() public {
 //     vm.expectRevert(abi.encodeWithSelector(LlamaTokenCaster.InvalidVetoQuorumPct.selector, uint256(0)));
-//     new LlamaERC20TokenCaster(erc20VotesToken, ILlamaCore(address(CORE)), tokenVotingCasterRole, uint256(1),
+//     new LlamaTokenCaster(erc20VotesToken, ILlamaCore(address(CORE)), tokenVotingCasterRole, uint256(1),
 // uint256(0));
 //     vm.expectRevert(abi.encodeWithSelector(LlamaTokenCaster.InvalidVetoQuorumPct.selector,
 // uint256(10_001)));
-//     new LlamaERC20TokenCaster(erc20VotesToken, ILlamaCore(address(CORE)), tokenVotingCasterRole, uint256(1),
+//     new LlamaTokenCaster(erc20VotesToken, ILlamaCore(address(CORE)), tokenVotingCasterRole, uint256(1),
 // uint256(10_001));
 //   }
 
@@ -138,7 +147,7 @@ contract LlamaERC20TokenCasterTest is LlamaTokenVotingTestSetup, LlamaCoreSigUti
 //     erc20VotesToken.mint(address(this), 1_000_000e18); // we use erc20VotesToken because IVotesToken is an interface
 //     // without the `mint` function
 
-//     llamaERC20TokenCaster = new LlamaERC20TokenCaster(
+//     llamaERC20TokenCaster = new LlamaTokenCaster(
 //       erc20VotesToken, ILlamaCore(address(CORE)), tokenVotingCasterRole, DEFAULT_APPROVAL_THRESHOLD,
 // DEFAULT_APPROVAL_THRESHOLD
 //     );
@@ -159,7 +168,7 @@ contract CastVote is LlamaERC20TokenCasterTest {
   }
 
   function test_RevertsIf_ApprovalNotEnabled() public {
-    LlamaERC20TokenCaster casterWithWrongRole = LlamaERC20TokenCaster(
+    LlamaTokenCaster casterWithWrongRole = LlamaTokenCaster(
       Clones.cloneDeterministic(
         address(llamaERC20TokenCasterLogic), keccak256(abi.encodePacked(address(erc20VotesToken), msg.sender))
       )
@@ -334,7 +343,7 @@ contract CastVeto is LlamaERC20TokenCasterTest {
   }
 
   function test_RevertsIf_DisapprovalNotEnabled() public {
-    LlamaERC20TokenCaster casterWithWrongRole = LlamaERC20TokenCaster(
+    LlamaTokenCaster casterWithWrongRole = LlamaTokenCaster(
       Clones.cloneDeterministic(
         address(llamaERC20TokenCasterLogic), keccak256(abi.encodePacked(address(erc20VotesToken), msg.sender))
       )
@@ -555,7 +564,7 @@ contract SubmitApprovals is LlamaERC20TokenCasterTest {
   }
 
   function test_RevertsIf_ApprovalNotEnabled() public {
-    LlamaERC20TokenCaster casterWithWrongRole = LlamaERC20TokenCaster(
+    LlamaTokenCaster casterWithWrongRole = LlamaTokenCaster(
       Clones.cloneDeterministic(
         address(llamaERC20TokenCasterLogic), keccak256(abi.encodePacked(address(erc20VotesToken), msg.sender))
       )
@@ -638,7 +647,7 @@ contract SubmitDisapprovals is LlamaERC20TokenCasterTest {
 
   function test_RevertsIf_DisapprovalNotEnabled() public {
     vm.warp(block.timestamp + (1 days * TWO_THIRDS_IN_BPS) / ONE_HUNDRED_IN_BPS);
-    LlamaERC20TokenCaster casterWithWrongRole = LlamaERC20TokenCaster(
+    LlamaTokenCaster casterWithWrongRole = LlamaTokenCaster(
       Clones.cloneDeterministic(
         address(llamaERC20TokenCasterLogic), keccak256(abi.encodePacked(address(erc20VotesToken), msg.sender))
       )
