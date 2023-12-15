@@ -70,9 +70,6 @@ contract LlamaTokenCaster is Initializable {
   /// @dev Thrown when a user tries to cast (dis)approval but the action cannot be submitted yet.
   error CannotSubmitYet();
 
-  /// @dev Thrown when a user tries to create an action but the clock mode is not supported.
-  error ClockModeNotSupported(string clockMode);
-
   /// @dev Thrown when a user tries to cast a vote or veto but the against surpasses for.
   error ForDoesNotSurpassAgainst(uint256 castsFor, uint256 castsAgainst);
 

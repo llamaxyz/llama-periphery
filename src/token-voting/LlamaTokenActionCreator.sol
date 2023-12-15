@@ -22,9 +22,6 @@ contract LlamaTokenActionCreator is Initializable {
   // ======== Errors ========
   // ========================
 
-  /// @dev Thrown when a user tries to create an action but the clock mode is not supported.
-  error ClockModeNotSupported(string clockMode);
-
   /// @dev Thrown when a user tries to create an action but does not have enough tokens.
   error InsufficientBalance(uint256 balance);
 
