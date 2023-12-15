@@ -4,6 +4,7 @@ pragma solidity ^0.8.23;
 import {Clones} from "@openzeppelin/proxy/Clones.sol";
 
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
+import {CasterConfig} from "src/lib/Structs.sol";
 import {ILlamaTokenAdapter} from "src/token-voting/interfaces/ILlamaTokenAdapter.sol";
 import {LlamaTokenActionCreator} from "src/token-voting/LlamaTokenActionCreator.sol";
 import {LlamaTokenCaster} from "src/token-voting/LlamaTokenCaster.sol";
@@ -25,8 +26,7 @@ contract LlamaTokenVotingFactory {
     uint8 actionCreatorRole; // The role required by the `LlamaTokenActionCreator` to create an action.
     uint8 casterRole; // The role required by the `LlamaTokenCaster` to cast approvals and disapprovals.
     uint256 creationThreshold; // The number of tokens required to create an action.
-    uint16 voteQuorumPct; // The minimum percentage of tokens required to approve an action.
-    uint16 vetoQuorumPct; // The minimum percentage of tokens required to disapprove an action.
+    CasterConfig casterConfig; // The quorum and period data for the `LlamaTokenCaster`.
   }
 
   // ========================
@@ -112,11 +112,7 @@ contract LlamaTokenVotingFactory {
     caster = LlamaTokenCaster(Clones.cloneDeterministic(address(LLAMA_TOKEN_CASTER_LOGIC), salt));
 
     caster.initialize(
-      tokenVotingConfig.llamaCore,
-      tokenAdapter,
-      tokenVotingConfig.casterRole,
-      tokenVotingConfig.voteQuorumPct,
-      tokenVotingConfig.vetoQuorumPct
+      tokenVotingConfig.llamaCore, tokenAdapter, tokenVotingConfig.casterRole, tokenVotingConfig.casterConfig
     );
 
     emit LlamaTokenVotingInstanceCreated(

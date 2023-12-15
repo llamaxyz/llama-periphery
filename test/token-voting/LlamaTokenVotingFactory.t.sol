@@ -7,7 +7,7 @@ import {Clones} from "@openzeppelin/proxy/Clones.sol";
 
 import {LlamaTokenVotingTestSetup} from "test/token-voting/LlamaTokenVotingTestSetup.sol";
 
-import {ActionInfo} from "src/lib/Structs.sol";
+import {ActionInfo, CasterConfig} from "src/lib/Structs.sol";
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
 import {ILlamaPolicy} from "src/interfaces/ILlamaPolicy.sol";
 import {ILlamaTokenAdapter} from "src/token-voting/interfaces/ILlamaTokenAdapter.sol";
@@ -89,8 +89,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
       tokenVotingActionCreatorRole,
       tokenVotingCasterRole,
       ERC20_CREATION_THRESHOLD,
-      ERC20_VOTE_QUORUM_PCT,
-      ERC20_VETO_QUORUM_PCT
+      defaultCasterConfig
     );
 
     // Set up action to call `deploy` with the ERC20 token.
@@ -165,8 +164,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
       tokenVotingActionCreatorRole,
       tokenVotingCasterRole,
       ERC721_CREATION_THRESHOLD,
-      ERC721_VOTE_QUORUM_PCT,
-      ERC721_VETO_QUORUM_PCT
+      defaultCasterConfig
     );
 
     // Set up action to call `deploy` with the ERC721 token.
@@ -288,8 +286,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
       tokenVotingActionCreatorRole,
       tokenVotingCasterRole,
       ERC20_CREATION_THRESHOLD,
-      ERC20_VOTE_QUORUM_PCT,
-      ERC20_VETO_QUORUM_PCT
+      defaultCasterConfig
     );
 
     vm.prank(randomCaller);
@@ -321,8 +318,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
       tokenVotingActionCreatorRole,
       tokenVotingCasterRole,
       ERC20_CREATION_THRESHOLD,
-      ERC20_VOTE_QUORUM_PCT,
-      ERC20_VETO_QUORUM_PCT
+      defaultCasterConfig
     );
 
     // Set up action to call `deploy` with the ERC20 token.
@@ -385,8 +381,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
       tokenVotingActionCreatorRole,
       tokenVotingCasterRole,
       ERC20_CREATION_THRESHOLD,
-      ERC20_VOTE_QUORUM_PCT,
-      ERC20_VETO_QUORUM_PCT
+      defaultCasterConfig
     );
 
     // Set up action to call `deploy` with the ERC20 token.
