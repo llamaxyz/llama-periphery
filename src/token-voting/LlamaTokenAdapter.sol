@@ -19,17 +19,18 @@ contract LlamaTokenAdapter is ILlamaTokenAdapter {
   constructor(IVotes _token, string memory _clockMode) {
     token = _token;
 
-    if (keccak256(abi.encodePacked(_clockMode)) != keccak256(abi.encodePacked(""))) {
-      CLOCK_MODE = _clockMode;
-    } else {
+    if (keccak256(abi.encodePacked(_clockMode)) == keccak256(abi.encodePacked(""))) {
       try IERC6372(address(token)).CLOCK_MODE() returns (string memory mode) {
         CLOCK_MODE = mode;
       } catch {
         CLOCK_MODE = "mode=timestamp";
       }
+    } else {
+      CLOCK_MODE = _clockMode;
     }
   }
 
+  /// @inheritdoc ILlamaTokenAdapter
   function clock() public view returns (uint48 timepoint) {
     try IERC6372(address(token)).clock() returns (uint48 tokenTimepoint) {
       timepoint = tokenTimepoint;
@@ -38,6 +39,7 @@ contract LlamaTokenAdapter is ILlamaTokenAdapter {
     }
   }
 
+  /// @inheritdoc ILlamaTokenAdapter
   function checkIfInconsistentClock() external view {
     bool hasClockChanged = _hasClockChanged();
     bool hasClockModeChanged = _hasClockModeChanged();
@@ -45,14 +47,17 @@ contract LlamaTokenAdapter is ILlamaTokenAdapter {
     if (hasClockChanged || hasClockModeChanged) revert ERC6372InconsistentClock();
   }
 
+  /// @inheritdoc ILlamaTokenAdapter
   function timestampToTimepoint(uint256 timestamp) external pure returns (uint48 timepoint) {
     return LlamaUtils.toUint48(timestamp);
   }
 
+  /// @inheritdoc ILlamaTokenAdapter
   function getPastVotes(address account, uint48 timepoint) external view returns (uint256) {
     return token.getPastVotes(account, timepoint);
   }
 
+  /// @inheritdoc ILlamaTokenAdapter
   function getPastTotalSupply(uint48 timepoint) external view returns (uint256) {
     return token.getPastTotalSupply(timepoint);
   }
