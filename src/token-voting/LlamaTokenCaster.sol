@@ -467,14 +467,13 @@ abstract contract LlamaTokenCaster is Initializable {
     (uint16 delayPeriodPct, uint16 castingPeriodPct,) =
       periodPctsCheckpoint.getAtProbablyRecentTimestamp(action.creationTime - 1);
     uint256 approvalPeriod = actionInfo.strategy.approvalPeriod();
-    if (block.timestamp < action.creationTime + (approvalPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS) {
-      revert VotingDelayNotOver();
-    }
+    uint256 delayPeriodTimestamp = action.creationTime + (approvalPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS;
+    if (block.timestamp < delayPeriodTimestamp) revert VotingDelayNotOver();
     if (block.timestamp > action.creationTime + (approvalPeriod * castingPeriodPct) / ONE_HUNDRED_IN_BPS) {
       revert CastingPeriodOver();
     }
 
-    uint96 weight = LlamaUtils.toUint96(_getPastVotes(caster, _timestampToTimepoint(action.creationTime) - 1));
+    uint96 weight = LlamaUtils.toUint96(_getPastVotes(caster, _timestampToTimepoint(delayPeriodTimestamp) - 1));
     _preCastAssertions(support);
 
     if (support == uint8(VoteType.Against)) casts[actionInfo.id].votesAgainst += weight;
@@ -498,14 +497,14 @@ abstract contract LlamaTokenCaster is Initializable {
     (uint16 delayPeriodPct,, uint16 submissionPeriodPct) =
       periodPctsCheckpoint.getAtProbablyRecentTimestamp(action.creationTime - 1);
     uint256 queuingPeriod = actionInfo.strategy.queuingPeriod();
-    if (
-      block.timestamp < action.minExecutionTime - queuingPeriod + (queuingPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS
-    ) revert VotingDelayNotOver();
+    uint256 delayPeriodTimestamp =
+      action.minExecutionTime - queuingPeriod + (queuingPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS;
+    if (block.timestamp < delayPeriodTimestamp) revert VotingDelayNotOver();
     if (block.timestamp > action.minExecutionTime - (queuingPeriod * submissionPeriodPct) / ONE_HUNDRED_IN_BPS) {
       revert CastingPeriodOver();
     }
 
-    uint96 weight = LlamaUtils.toUint96(_getPastVotes(caster, _timestampToTimepoint(action.creationTime) - 1));
+    uint96 weight = LlamaUtils.toUint96(_getPastVotes(caster, _timestampToTimepoint(delayPeriodTimestamp) - 1));
     _preCastAssertions(support);
 
     if (support == uint8(VoteType.Against)) casts[actionInfo.id].vetoesAgainst += weight;
