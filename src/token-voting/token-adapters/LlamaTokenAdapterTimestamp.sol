@@ -14,13 +14,26 @@ struct Config {
 }
 
 contract LlamaTokenAdapterTimestamp is ILlamaTokenAdapter, Initializable {
+  // ========================
+  // ======== Errors ========
+  // ========================
+
   /// @dev The clock was incorrectly modified.
   error ERC6372InconsistentClock();
+
+  // =================================================
+  // ======== Constants and Storage Variables ========
+  // =================================================
 
   /// @notice The token to be used for voting.
   address public token;
 
+  /// @notice Machine-readable description of the clock as specified in ERC-6372.
   string public CLOCK_MODE;
+
+  // ================================
+  // ======== Initialization ========
+  // ================================
 
   /// @dev This contract is deployed as a minimal proxy from the factory's `deploy` function. The
   /// `_disableInitializers` locks the implementation (logic) contract, preventing any future initialization of it.
