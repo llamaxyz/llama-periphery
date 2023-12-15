@@ -7,27 +7,18 @@ import {IERC6372} from "@openzeppelin/interfaces/IERC6372.sol";
 import {LlamaUtils} from "src/lib/LlamaUtils.sol";
 import {ILlamaTokenAdapter} from "src/token-voting/interfaces/ILlamaTokenAdapter.sol";
 
-contract LlamaTokenAdapter is ILlamaTokenAdapter {
+contract LlamaTokenAdapterTimestamp is ILlamaTokenAdapter {
   /// @dev The clock was incorrectly modified.
   error ERC6372InconsistentClock();
 
   /// @notice The token to be used for voting.
-  IVotes public token;
+  IVotes public immutable token;
 
   string CLOCK_MODE;
 
-  constructor(IVotes _token, string memory _clockMode) {
+  constructor(IVotes _token) {
     token = _token;
-
-    if (keccak256(abi.encodePacked(_clockMode)) == keccak256(abi.encodePacked(""))) {
-      try IERC6372(address(token)).CLOCK_MODE() returns (string memory mode) {
-        CLOCK_MODE = mode;
-      } catch {
-        CLOCK_MODE = "mode=timestamp";
-      }
-    } else {
-      CLOCK_MODE = _clockMode;
-    }
+    CLOCK_MODE = "mode=timestamp";
   }
 
   /// @inheritdoc ILlamaTokenAdapter

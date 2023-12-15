@@ -12,9 +12,6 @@ import {LlamaTokenCaster} from "src/token-voting/LlamaTokenCaster.sol";
 /// @notice This contract lets holders of a given governance `ERC20Votes` token collectively cast an approval or
 /// disapproval on created actions.
 contract LlamaERC20TokenCaster is LlamaTokenCaster {
-  /// @notice The ERC20 token to be used for voting.
-  ERC20Votes public token;
-
   /// @dev This contract is deployed as a minimal proxy from the factory's `deploy` function. The
   /// `_disableInitializers` locks the implementation (logic) contract, preventing any future initialization of it.
   constructor() {
@@ -24,13 +21,11 @@ contract LlamaERC20TokenCaster is LlamaTokenCaster {
   /// @notice Initializes a new `LlamaERC20TokenCaster` clone.
   /// @dev This function is called by the `deploy` function in the `LlamaTokenVotingFactory` contract.
   /// The `initializer` modifier ensures that this function can be invoked at most once.
-  /// @param _token The ERC20 token to be used for voting.
   /// @param _llamaCore The `LlamaCore` contract for this Llama instance.
   /// @param _role The role used by this contract to cast approvals and disapprovals.
   /// @param _voteQuorumPct The minimum % of votes required to submit an approval to `LlamaCore`.
   /// @param _vetoQuorumPct The minimum % of vetoes required to submit a disapproval to `LlamaCore`.
   function initialize(
-    ERC20Votes _token,
     ILlamaCore _llamaCore,
     ILlamaTokenAdapter _tokenAdapter,
     uint8 _role,
@@ -38,7 +33,6 @@ contract LlamaERC20TokenCaster is LlamaTokenCaster {
     uint16 _vetoQuorumPct
   ) external initializer {
     __initializeLlamaTokenCasterMinimalProxy(_llamaCore, _tokenAdapter, _role, _voteQuorumPct, _vetoQuorumPct);
-    token = _token;
     uint256 totalSupply = tokenAdapter.getPastTotalSupply(tokenAdapter.clock() - 1);
     if (totalSupply == 0) revert InvalidTokenAddress();
   }
