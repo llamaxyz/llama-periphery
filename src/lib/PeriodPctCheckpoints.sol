@@ -63,6 +63,8 @@ library PeriodPctCheckpoints {
     /**
      * @dev Pushes a `delayPeriodPct`, `castingPeriodPct` and `submissionPeriodPct` onto a History so that it is stored as the checkpoint for the current
      * `timestamp`.
+     *
+     * For simplicity, this method does not return anything, since the return values are not needed by Llama.
      */
     function push(History storage self, uint16 delayPeriodPct, uint16 castingPeriodPct, uint16 submissionPeriodPct) internal {
         _insert(self._checkpoints, LlamaUtils.toUint48(block.timestamp), LlamaUtils.toUint16(delayPeriodPct), LlamaUtils.toUint16(castingPeriodPct), LlamaUtils.toUint16(submissionPeriodPct));

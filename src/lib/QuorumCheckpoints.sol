@@ -63,14 +63,9 @@ library QuorumCheckpoints {
      * @dev Pushes a `voteQuorumPct` and `vetoQuorumPct` onto a History so that it is stored as the checkpoint for the current
      * `timestamp`.
      *
-     * Returns previous quorum and new quorum.
-     *
-     * @dev Note that the order of the `voteQuorumPct` and `vetoQuorumPct` parameters is reversed from the ordering used
-     * everywhere else in this file. The struct and other methods have the order as `(voteQuorumPct, vetoQuorumPct)` but this
-     * method has it as `(voteQuorumPct, vetoQuorumPct)`. As a result, use caution when editing this method to avoid
-     * accidentally introducing a bug or breaking change.
+     * For simplicity, this method does not return anything, since the return values are not needed by Llama.
      */
-    function push(History storage self, uint256 vetoQuorumPct, uint256 voteQuorumPct) internal {
+    function push(History storage self, uint256 voteQuorumPct, uint256 vetoQuorumPct) internal {
         _insert(self._checkpoints, LlamaUtils.toUint48(block.timestamp), LlamaUtils.toUint16(voteQuorumPct), LlamaUtils.toUint16(vetoQuorumPct));
     }
 
