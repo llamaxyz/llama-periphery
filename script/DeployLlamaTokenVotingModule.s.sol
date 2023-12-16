@@ -34,7 +34,7 @@ contract DeployLlamaTokenVotingModule is Script {
     // =================================================
 
     ILlamaCore core = ILlamaCore(address(0));
-    // Needs to be updated when the config and deployer are the same
+    // Needs to be updated when the deployer, Llama core and adapter config are the same.
     uint256 nonce = 0;
     // Token Proposer role in instance defined by core variable
     uint8 actionCreatorRole = 0;
