@@ -705,9 +705,18 @@ contract SubmitDisapprovals is LlamaERC20TokenCasterTest {
     uint256 castingPeriodEndTime = delayPeriodEndTime + ((APPROVAL_PERIOD * TWO_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS);
 
     vm.warp(delayPeriodEndTime + 1);
-    castVotesFor();
+
+    vm.prank(tokenHolder1);
+    llamaERC20TokenCaster.castVote(_actionInfo, uint8(VoteType.For), "");
+    vm.prank(tokenHolder2);
+    llamaERC20TokenCaster.castVote(_actionInfo, uint8(VoteType.For), "");
+    vm.prank(tokenHolder3);
+    llamaERC20TokenCaster.castVote(_actionInfo, uint8(VoteType.For), "");
+
     vm.warp(castingPeriodEndTime + 1);
     llamaERC20TokenCaster.submitApproval(_actionInfo);
+
+    action = CORE.getAction(_actionInfo.id);
 
     delayPeriodEndTime =
       (action.minExecutionTime - QUEUING_PERIOD) + ((QUEUING_PERIOD * ONE_QUARTER_IN_BPS) / ONE_HUNDRED_IN_BPS);
@@ -731,9 +740,18 @@ contract SubmitDisapprovals is LlamaERC20TokenCasterTest {
     uint256 castingPeriodEndTime = delayPeriodEndTime + ((APPROVAL_PERIOD * TWO_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS);
 
     vm.warp(delayPeriodEndTime + 1);
-    castVotesFor();
+
+    vm.prank(tokenHolder1);
+    llamaERC20TokenCaster.castVote(_actionInfo, uint8(VoteType.For), "");
+    vm.prank(tokenHolder2);
+    llamaERC20TokenCaster.castVote(_actionInfo, uint8(VoteType.For), "");
+    vm.prank(tokenHolder3);
+    llamaERC20TokenCaster.castVote(_actionInfo, uint8(VoteType.For), "");
+
     vm.warp(castingPeriodEndTime + 1);
     llamaERC20TokenCaster.submitApproval(_actionInfo);
+
+    action = CORE.getAction(_actionInfo.id);
 
     delayPeriodEndTime =
       (action.minExecutionTime - QUEUING_PERIOD) + ((QUEUING_PERIOD * ONE_QUARTER_IN_BPS) / ONE_HUNDRED_IN_BPS);
