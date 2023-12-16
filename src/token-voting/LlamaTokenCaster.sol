@@ -320,7 +320,7 @@ contract LlamaTokenCaster is Initializable {
     // check to make sure the casting period has ended
     uint256 approvalPeriod = actionInfo.strategy.approvalPeriod();
     (, uint16 castingPeriodPct,) = periodPctsCheckpoint.getAtProbablyRecentTimestamp(action.creationTime - 1);
-    if (block.timestamp < action.creationTime + (approvalPeriod * castingPeriodPct) / ONE_HUNDRED_IN_BPS) {
+    if (block.timestamp < action.creationTime + ((approvalPeriod * castingPeriodPct) / ONE_HUNDRED_IN_BPS)) {
       revert CannotSubmitYet();
     }
 
@@ -355,7 +355,7 @@ contract LlamaTokenCaster is Initializable {
     uint256 queuingPeriod = actionInfo.strategy.queuingPeriod();
     (,, uint16 submissionPeriodPct) = periodPctsCheckpoint.getAtProbablyRecentTimestamp(action.creationTime - 1);
     // check to make sure the current timestamp is within the submitDisapprovalBuffer 9period
-    if (block.timestamp < action.minExecutionTime - (queuingPeriod * submissionPeriodPct) / ONE_HUNDRED_IN_BPS) {
+    if (block.timestamp < action.minExecutionTime - ((queuingPeriod * submissionPeriodPct) / ONE_HUNDRED_IN_BPS)) {
       revert CannotSubmitYet();
     }
     if (block.timestamp >= action.minExecutionTime) revert SubmissionPeriodOver();
@@ -494,9 +494,9 @@ contract LlamaTokenCaster is Initializable {
     (uint16 delayPeriodPct, uint16 castingPeriodPct,) =
       periodPctsCheckpoint.getAtProbablyRecentTimestamp(action.creationTime - 1);
     uint256 approvalPeriod = actionInfo.strategy.approvalPeriod();
-    uint256 delayPeriodTimestamp = action.creationTime + (approvalPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS;
+    uint256 delayPeriodTimestamp = action.creationTime + ((approvalPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS);
     if (block.timestamp < delayPeriodTimestamp) revert VotingDelayNotOver();
-    if (block.timestamp > action.creationTime + (approvalPeriod * castingPeriodPct) / ONE_HUNDRED_IN_BPS) {
+    if (block.timestamp > action.creationTime + ((approvalPeriod * castingPeriodPct) / ONE_HUNDRED_IN_BPS)) {
       revert CastingPeriodOver();
     }
 
@@ -528,9 +528,9 @@ contract LlamaTokenCaster is Initializable {
       periodPctsCheckpoint.getAtProbablyRecentTimestamp(action.creationTime - 1);
     uint256 queuingPeriod = actionInfo.strategy.queuingPeriod();
     uint256 delayPeriodTimestamp =
-      action.minExecutionTime - queuingPeriod + (queuingPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS;
+      action.minExecutionTime - queuingPeriod + ((queuingPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS);
     if (block.timestamp < delayPeriodTimestamp) revert VotingDelayNotOver();
-    if (block.timestamp > action.minExecutionTime - (queuingPeriod * submissionPeriodPct) / ONE_HUNDRED_IN_BPS) {
+    if (block.timestamp > action.minExecutionTime - ((queuingPeriod * submissionPeriodPct) / ONE_HUNDRED_IN_BPS)) {
       revert CastingPeriodOver();
     }
 
