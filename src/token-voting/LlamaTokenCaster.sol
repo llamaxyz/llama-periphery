@@ -52,53 +52,50 @@ contract LlamaTokenCaster is Initializable {
   /// @dev Thrown when a user tries to cast a veto but the action is not queued.
   error ActionNotQueued();
 
+  /// @dev Thrown when a user tries to cast a veto but has already casted.
+  error AlreadyCastedVeto();
+
   /// @dev Thrown when a user tries to cast a vote but has already casted.
   error AlreadyCastedVote();
 
   /// @dev Thrown when a user tries to cast approval but the casts have already been submitted to `LlamaCore`.
   error AlreadySubmittedApproval();
 
-  /// @dev Thrown when a user tries to cast a veto but has already casted.
-  error AlreadyCastedVeto();
-
   /// @dev Thrown when a user tries to cast disapproval but the casts have already been submitted to `LlamaCore.
   error AlreadySubmittedDisapproval();
-
-  /// @dev Thrown when a user tries to cast a vote or veto but the casting period has ended.
-  error CastingPeriodOver();
 
   /// @dev Thrown when a user tries to cast (dis)approval but the action cannot be submitted yet.
   error CannotSubmitYet();
 
-  /// @dev Thrown when a user tries to create an action but the clock mode is not supported.
-  error ClockModeNotSupported(string clockMode);
+  /// @dev Thrown when a user tries to cast a vote or veto but the casting period has ended.
+  error CastingPeriodOver();
 
   /// @dev Thrown when a user tries to cast a vote or veto but the against surpasses for.
   error ForDoesNotSurpassAgainst(uint256 castsFor, uint256 castsAgainst);
 
-  /// @dev Thrown when a user tries to query checkpoints at non-existant indices.
-  error InvalidIndices();
-
   /// @dev Thrown when a user tries to submit an approval but there are not enough votes.
   error InsufficientVotes(uint256 votes, uint256 threshold);
 
-  /// @dev Thrown when an invalid `castingPeriodPct` and `submissionPeriodPct` are set.
-  error InvalidPeriodPcts(uint16 delayPeriodPct, uint16 castingPeriodPct, uint16 submissionPeriodPct);
-
-  /// @dev Thrown when an invalid `voteQuorumPct` is passed to the constructor.
-  error InvalidVoteQuorumPct(uint16 voteQuorumPct);
-
-  /// @dev Thrown when an invalid `vetoQuorumPct` is passed to the constructor.
-  error InvalidVetoQuorumPct(uint16 vetoQuorumPct);
+  /// @dev Thrown when a user tries to query checkpoints at non-existant indices.
+  error InvalidIndices();
 
   /// @dev Thrown when an invalid `llamaCore` address is passed to the constructor.
   error InvalidLlamaCoreAddress();
+
+  /// @dev Thrown when an invalid `castingPeriodPct` and `submissionPeriodPct` are set.
+  error InvalidPeriodPcts(uint16 delayPeriodPct, uint16 castingPeriodPct, uint16 submissionPeriodPct);
 
   /// @dev The recovered signer does not match the expected tokenholder.
   error InvalidSignature();
 
   /// @dev Thrown when an invalid `support` value is used when casting.
   error InvalidSupport(uint8 support);
+
+  /// @dev Thrown when an invalid `vetoQuorumPct` is passed to the constructor.
+  error InvalidVetoQuorumPct(uint16 vetoQuorumPct);
+
+  /// @dev Thrown when an invalid `voteQuorumPct` is passed to the constructor.
+  error InvalidVoteQuorumPct(uint16 voteQuorumPct);
 
   /// @dev Thrown when an address other than the `LlamaExecutor` tries to call a function.
   error OnlyLlamaExecutor();
@@ -127,10 +124,10 @@ contract LlamaTokenCaster is Initializable {
   );
 
   /// @dev Emitted when the casting and submission period ratio is set.
-  event PeriodsPctSet(uint16 delayPeriodPct, uint16 castingPeriodPct, uint16 submissionPeriodPct);
+  event PeriodPctSet(uint16 delayPeriodPct, uint16 castingPeriodPct, uint16 submissionPeriodPct);
 
   /// @dev Emitted when the voting quorum and/or vetoing quorum is set.
-  event QuorumSet(uint16 voteQuorumPct, uint16 vetoQuorumPct);
+  event QuorumPctSet(uint16 voteQuorumPct, uint16 vetoQuorumPct);
 
   /// @dev Emitted when a veto is cast.
   event VetoCast(uint256 id, address indexed tokenholder, uint8 indexed support, uint256 weight, string reason);
@@ -184,8 +181,8 @@ contract LlamaTokenCaster is Initializable {
   mapping(uint256 actionId => CastData) public casts;
 
   /// @notice Mapping of tokenholders to function selectors to current nonces for EIP-712 signatures.
-  /// @dev This is used to prevent replay attacks by incrementing the nonce for each operation (`createAction`,
-  /// `cancelAction`, `castVote` and `castVeto`) signed by the tokenholders.
+  /// @dev This is used to prevent replay attacks by incrementing the nonce for each operation (`castVote` and
+  /// `castVeto`) signed by the tokenholders.
   mapping(address tokenholders => mapping(bytes4 selector => uint256 currentNonce)) public nonces;
 
   // ================================
@@ -202,6 +199,8 @@ contract LlamaTokenCaster is Initializable {
   /// @dev This function is called by the `deploy` function in the `LlamaTokenVotingFactory` contract.
   /// The `initializer` modifier ensures that this function can be invoked at most once.
   /// @param _llamaCore The `LlamaCore` contract for this Llama instance.
+  /// @param _tokenAdapter The token adapter that manages the clock, timepoints, past votes and past supply for this
+  /// token voting module.
   /// @param _role The role used by this contract to cast approvals and disapprovals.
   /// @param casterConfig Contains the quorum and period pct values to initialize the contract with.
   function initialize(
@@ -217,7 +216,7 @@ contract LlamaTokenCaster is Initializable {
     tokenAdapter = _tokenAdapter;
     role = _role;
     _setQuorumPct(casterConfig.voteQuorumPct, casterConfig.vetoQuorumPct);
-    _setPeriodPcts(casterConfig.delayPeriodPct, casterConfig.castingPeriodPct, casterConfig.submissionPeriodPct);
+    _setPeriodPct(casterConfig.delayPeriodPct, casterConfig.castingPeriodPct, casterConfig.submissionPeriodPct);
   }
 
   // ===========================================
@@ -388,6 +387,15 @@ contract LlamaTokenCaster is Initializable {
     _setQuorumPct(_voteQuorumPct, _vetoQuorumPct);
   }
 
+  /// @notice Sets the delay period, casting period and submission period.
+  /// @param _delayPeriodPct The % of the total period that must pass before voting can begin.
+  /// @param _castingPeriodPct The % of the total period that voting can occur.
+  /// @param _submissionPeriodPct The % of the total period withing which the (dis)approval must be submitted.
+  function setPeriodPct(uint16 _delayPeriodPct, uint16 _castingPeriodPct, uint16 _submissionPeriodPct) external {
+    if (msg.sender != llamaCore.executor()) revert OnlyLlamaExecutor();
+    _setPeriodPct(_delayPeriodPct, _castingPeriodPct, _submissionPeriodPct);
+  }
+
   // -------- User Nonce Management --------
 
   /// @notice Increments the caller's nonce for the given `selector`. This is useful for revoking
@@ -409,11 +417,17 @@ contract LlamaTokenCaster is Initializable {
     return quorumCheckpoints.getAtProbablyRecentTimestamp(timestamp);
   }
 
+  /// @notice Returns all quorum checkpoints.
+  function getQuorumCheckpoints() external view returns (QuorumCheckpoints.History memory) {
+    return quorumCheckpoints;
+  }
+
   /// @notice Returns the quorum checkpoints array from a given set of indices.
   function getQuorumCheckpoints(uint256 start, uint256 end) external view returns (QuorumCheckpoints.History memory) {
     if (start > end) revert InvalidIndices();
     uint256 checkpointsLength = quorumCheckpoints._checkpoints.length;
     if (end > checkpointsLength) revert InvalidIndices();
+
     uint256 sliceLength = end - start;
     QuorumCheckpoints.Checkpoint[] memory checkpoints = new QuorumCheckpoints.Checkpoint[](sliceLength);
     for (uint256 i = start; i < end; i = LlamaUtils.uncheckedIncrement(i)) {
@@ -440,6 +454,11 @@ contract LlamaTokenCaster is Initializable {
     return periodPctsCheckpoint.getAtProbablyRecentTimestamp(timestamp);
   }
 
+  /// @notice Returns all period pct checkpoints.
+  function getPeriodPctCheckpoints() external view returns (PeriodPctCheckpoints.History memory) {
+    return periodPctsCheckpoint;
+  }
+
   /// @notice Returns the period pct checkpoints array from a given set of indices.
   function getPeriodPctCheckpoints(uint256 start, uint256 end)
     external
@@ -449,6 +468,7 @@ contract LlamaTokenCaster is Initializable {
     if (start > end) revert InvalidIndices();
     uint256 checkpointsLength = periodPctsCheckpoint._checkpoints.length;
     if (end > checkpointsLength) revert InvalidIndices();
+
     uint256 sliceLength = end - start;
     PeriodPctCheckpoints.Checkpoint[] memory checkpoints = new PeriodPctCheckpoints.Checkpoint[](sliceLength);
     for (uint256 i = start; i < end; i = LlamaUtils.uncheckedIncrement(i)) {
@@ -461,6 +481,7 @@ contract LlamaTokenCaster is Initializable {
   // ======== Internal Logic ========
   // ================================
 
+  /// @dev How token holders add their support of the approval of an action with a reason.
   function _castVote(address caster, ActionInfo calldata actionInfo, uint8 support, string calldata reason)
     internal
     returns (uint96)
@@ -493,6 +514,7 @@ contract LlamaTokenCaster is Initializable {
     return weight;
   }
 
+  /// @dev How token holders add their support of the disapproval of an action with a reason.
   function _castVeto(address caster, ActionInfo calldata actionInfo, uint8 support, string calldata reason)
     internal
     returns (uint96)
@@ -526,6 +548,7 @@ contract LlamaTokenCaster is Initializable {
     return weight;
   }
 
+  /// @dev The only `support` values allowed to be passed into this method are Against (0), For (1) or Abstain (2).
   function _preCastAssertions(uint8 support) internal view {
     if (support > uint8(VoteType.Abstain)) revert InvalidSupport(support);
 
@@ -538,20 +561,20 @@ contract LlamaTokenCaster is Initializable {
     if (_voteQuorumPct > ONE_HUNDRED_IN_BPS || _voteQuorumPct <= 0) revert InvalidVoteQuorumPct(_voteQuorumPct);
     if (_vetoQuorumPct > ONE_HUNDRED_IN_BPS || _vetoQuorumPct <= 0) revert InvalidVetoQuorumPct(_vetoQuorumPct);
     quorumCheckpoints.push(_voteQuorumPct, _vetoQuorumPct);
-    emit QuorumSet(_voteQuorumPct, _vetoQuorumPct);
+    emit QuorumPctSet(_voteQuorumPct, _vetoQuorumPct);
   }
 
   /// @dev Sets the delay, casting and submission period ratio.
-  function _setPeriodPcts(uint16 _delayPeriodPct, uint16 _castingPeriodPct, uint16 _submissionPeriodPct) internal {
+  function _setPeriodPct(uint16 _delayPeriodPct, uint16 _castingPeriodPct, uint16 _submissionPeriodPct) internal {
     if (_delayPeriodPct + _castingPeriodPct + _submissionPeriodPct != ONE_HUNDRED_IN_BPS) {
       revert InvalidPeriodPcts(_delayPeriodPct, _castingPeriodPct, _submissionPeriodPct);
     }
     periodPctsCheckpoint.push(_delayPeriodPct, _castingPeriodPct, _submissionPeriodPct);
-    emit PeriodsPctSet(_delayPeriodPct, _castingPeriodPct, _submissionPeriodPct);
+    emit PeriodPctSet(_delayPeriodPct, _castingPeriodPct, _submissionPeriodPct);
   }
+
   /// @dev Returns the current nonce for a given tokenholder and selector, and increments it. Used to prevent
   /// replay attacks.
-
   function _useNonce(address tokenholder, bytes4 selector) internal returns (uint256 nonce) {
     nonce = nonces[tokenholder][selector];
     nonces[tokenholder][selector] = LlamaUtils.uncheckedIncrement(nonce);

@@ -22,11 +22,11 @@ contract LlamaTokenActionCreator is Initializable {
   // ======== Errors ========
   // ========================
 
-  /// @dev Thrown when a user tries to create an action but the clock mode is not supported.
-  error ClockModeNotSupported(string clockMode);
-
   /// @dev Thrown when a user tries to create an action but does not have enough tokens.
   error InsufficientBalance(uint256 balance);
+
+  /// @dev Thrown when an invalid `creationThreshold` is passed to the constructor.
+  error InvalidCreationThreshold();
 
   /// @dev Thrown when an invalid `llamaCore` address is passed to the constructor.
   error InvalidLlamaCoreAddress();
@@ -36,9 +36,6 @@ contract LlamaTokenActionCreator is Initializable {
 
   /// @dev Thrown when a `token` with an invalid totaly supply is passed to the constructor.
   error InvalidTotalSupply();
-
-  /// @dev Thrown when an invalid `creationThreshold` is passed to the constructor.
-  error InvalidCreationThreshold();
 
   /// @dev Thrown when a user tries to cancel an action but they are not the action creator.
   error OnlyActionCreator();
@@ -53,11 +50,11 @@ contract LlamaTokenActionCreator is Initializable {
   // ======== Events ========
   // ========================
 
-  /// @dev Emitted when an action is created.
-  event ActionCreated(uint256 id, address indexed creator);
-
   /// @dev Emitted when an action is canceled.
   event ActionCanceled(uint256 id, address indexed creator);
+
+  /// @dev Emitted when an action is created.
+  event ActionCreated(uint256 id, address indexed creator);
 
   /// @dev Emitted when the default number of tokens required to create an action is changed.
   event ActionThresholdSet(uint256 newThreshold);
@@ -102,8 +99,8 @@ contract LlamaTokenActionCreator is Initializable {
   mapping(uint256 => address) public actionCreators;
 
   /// @notice Mapping of token holder to function selectors to current nonces for EIP-712 signatures.
-  /// @dev This is used to prevent replay attacks by incrementing the nonce for each operation (`createAction`,
-  /// `cancelAction`, `castApproval` and `castDisapproval`) signed by the token holder.
+  /// @dev This is used to prevent replay attacks by incrementing the nonce for each operation (`createAction` and
+  /// `cancelAction`) signed by the token holder.
   mapping(address tokenHolder => mapping(bytes4 selector => uint256 currentNonce)) public nonces;
 
   // ================================
@@ -120,6 +117,8 @@ contract LlamaTokenActionCreator is Initializable {
   /// @dev This function is called by the `deploy` function in the `LlamaTokenVotingFactory` contract.
   /// The `initializer` modifier ensures that this function can be invoked at most once.
   /// @param _llamaCore The `LlamaCore` contract for this Llama instance.
+  /// @param _tokenAdapter The token adapter that manages the clock, timepoints, past votes and past supply for this
+  /// token voting module.
   /// @param _role The role used by this contract to cast approvals and disapprovals.
   /// @param _creationThreshold The default number of tokens required to create an action. This must
   /// be in the same decimals as the token. For example, if the token has 18 decimals and you want a
@@ -270,9 +269,7 @@ contract LlamaTokenActionCreator is Initializable {
     uint256 totalSupply = tokenAdapter.getPastTotalSupply(tokenAdapter.clock() - 1);
     if (totalSupply == 0) revert InvalidTotalSupply();
     if (_creationThreshold > totalSupply) revert InvalidCreationThreshold();
-
     creationThreshold = _creationThreshold;
-
     emit ActionThresholdSet(_creationThreshold);
   }
 
