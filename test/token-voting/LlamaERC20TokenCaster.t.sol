@@ -175,7 +175,7 @@ contract CastVote is LlamaERC20TokenCasterTest {
       actionInfo.id, tokenHolder1, support, erc20VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1), ""
     );
     vm.prank(tokenHolder1);
-    uint96 weight = llamaERC20TokenCaster.castVote(actionInfo, support, "");
+    uint128 weight = llamaERC20TokenCaster.castVote(actionInfo, support, "");
     assertEq(weight, erc20VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1));
   }
 
@@ -202,7 +202,7 @@ contract CastVote is LlamaERC20TokenCasterTest {
     // However tokenholder1 is able to vote with the weight they had at delayPeriodEndTime
     vm.expectEmit();
     emit VoteCast(actionInfo.id, tokenHolder1, 1, ERC20_CREATION_THRESHOLD / 2, "");
-    uint96 weight = llamaERC20TokenCaster.castVote(actionInfo, 1, "");
+    uint128 weight = llamaERC20TokenCaster.castVote(actionInfo, 1, "");
     assertEq(weight, ERC20_CREATION_THRESHOLD / 2);
     vm.stopPrank();
   }
@@ -383,7 +383,7 @@ contract CastVeto is LlamaERC20TokenCasterTest {
       actionInfo.id, tokenHolder1, support, erc20VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1), ""
     );
     vm.prank(tokenHolder1);
-    uint96 weight = llamaERC20TokenCaster.castVeto(actionInfo, support, "");
+    uint128 weight = llamaERC20TokenCaster.castVeto(actionInfo, support, "");
     assertEq(weight, erc20VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1));
   }
 
@@ -410,7 +410,7 @@ contract CastVeto is LlamaERC20TokenCasterTest {
     // However tokenholder1 is able to vote with the weight they had at delayPeriodEndTime
     vm.expectEmit();
     emit VetoCast(actionInfo.id, tokenHolder1, 1, ERC20_CREATION_THRESHOLD / 2, "");
-    uint96 weight = llamaERC20TokenCaster.castVeto(actionInfo, 1, "");
+    uint128 weight = llamaERC20TokenCaster.castVeto(actionInfo, 1, "");
     assertEq(weight, ERC20_CREATION_THRESHOLD / 2);
     vm.stopPrank();
   }

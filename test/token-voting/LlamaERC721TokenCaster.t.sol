@@ -179,7 +179,7 @@ contract CastVote is LlamaERC721TokenCasterTest {
       actionInfo.id, tokenHolder1, support, erc721VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1), ""
     );
     vm.prank(tokenHolder1);
-    uint96 weight = llamaERC721TokenCaster.castVote(actionInfo, support, "");
+    uint128 weight = llamaERC721TokenCaster.castVote(actionInfo, support, "");
     assertEq(weight, erc721VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1));
   }
 
@@ -206,7 +206,7 @@ contract CastVote is LlamaERC721TokenCasterTest {
     // However tokenholder1 is able to vote with the weight they had at delayPeriodEndTime
     vm.expectEmit();
     emit VoteCast(actionInfo.id, tokenHolder1, 1, 1, "");
-    uint96 weight = llamaERC721TokenCaster.castVote(actionInfo, 1, "");
+    uint128 weight = llamaERC721TokenCaster.castVote(actionInfo, 1, "");
     assertEq(weight, 1);
     vm.stopPrank();
   }
@@ -388,7 +388,7 @@ contract CastVeto is LlamaERC721TokenCasterTest {
       actionInfo.id, tokenHolder1, support, erc721VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1), ""
     );
     vm.prank(tokenHolder1);
-    uint96 weight = llamaERC721TokenCaster.castVeto(actionInfo, support, "");
+    uint128 weight = llamaERC721TokenCaster.castVeto(actionInfo, support, "");
     assertEq(weight, erc721VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1));
   }
 
@@ -415,7 +415,7 @@ contract CastVeto is LlamaERC721TokenCasterTest {
     // However tokenholder1 is able to vote with the weight they had at delayPeriodEndTime
     vm.expectEmit();
     emit VetoCast(actionInfo.id, tokenHolder1, 1, 1, "");
-    uint96 weight = llamaERC721TokenCaster.castVeto(actionInfo, 1, "");
+    uint128 weight = llamaERC721TokenCaster.castVeto(actionInfo, 1, "");
     assertEq(weight, 1);
     vm.stopPrank();
   }

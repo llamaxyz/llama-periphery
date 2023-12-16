@@ -109,7 +109,7 @@ contract LlamaTokenActionCreator is Initializable {
 
   /// @dev This contract is deployed as a minimal proxy from the factory's `deploy` function. The
   /// `_disableInitializers` locks the implementation (logic) contract, preventing any future initialization of it.
-  constructor() {
+  constructor() payable {
     _disableInitializers();
   }
 
@@ -155,7 +155,7 @@ contract LlamaTokenActionCreator is Initializable {
     address target,
     uint256 value,
     bytes calldata data,
-    string memory description
+    string calldata description
   ) external returns (uint256 actionId) {
     return _createAction(msg.sender, strategy, target, value, data, description);
   }
@@ -179,7 +179,7 @@ contract LlamaTokenActionCreator is Initializable {
     address target,
     uint256 value,
     bytes calldata data,
-    string memory description,
+    string calldata description,
     uint8 v,
     bytes32 r,
     bytes32 s
@@ -244,7 +244,7 @@ contract LlamaTokenActionCreator is Initializable {
     address target,
     uint256 value,
     bytes calldata data,
-    string memory description
+    string calldata description
   ) internal returns (uint256 actionId) {
     // Reverts if clock or CLOCK_MODE() has changed
     tokenAdapter.checkIfInconsistentClock();
@@ -299,7 +299,7 @@ contract LlamaTokenActionCreator is Initializable {
     address target,
     uint256 value,
     bytes calldata data,
-    string memory description
+    string calldata description
   ) internal returns (bytes32) {
     // Calculating and storing nonce in memory and using that below, instead of calculating in place to prevent stack
     // too deep error.

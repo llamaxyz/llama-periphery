@@ -66,7 +66,7 @@ contract LlamaTokenVotingFactory {
   LlamaTokenCaster public immutable LLAMA_TOKEN_CASTER_LOGIC;
 
   /// @dev Set the logic contracts used to deploy Token Voting modules.
-  constructor(LlamaTokenActionCreator LlamaTokenActionCreatorLogic, LlamaTokenCaster LlamaTokenCasterLogic) {
+  constructor(LlamaTokenActionCreator LlamaTokenActionCreatorLogic, LlamaTokenCaster LlamaTokenCasterLogic) payable {
     LLAMA_TOKEN_ACTION_CREATOR_LOGIC = LlamaTokenActionCreatorLogic;
     LLAMA_TOKEN_CASTER_LOGIC = LlamaTokenCasterLogic;
   }
