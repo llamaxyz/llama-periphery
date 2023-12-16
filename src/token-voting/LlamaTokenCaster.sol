@@ -361,8 +361,8 @@ contract LlamaTokenCaster is Initializable {
     (uint16 delayPeriodPct, uint16 castingPeriodPct,) =
       periodPctsCheckpoint.getAtProbablyRecentTimestamp(action.creationTime - 1);
     uint256 queuingPeriod = actionInfo.strategy.queuingPeriod();
-    uint256 queueStartTime = action.minExecutionTime - queuingPeriod;
-    uint256 delayPeriodEndTime = queueStartTime + ((queuingPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS);
+    uint256 delayPeriodEndTime =
+      (action.minExecutionTime - queuingPeriod) + ((queuingPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS);
     uint256 castingPeriodEndTime = delayPeriodEndTime + ((queuingPeriod * castingPeriodPct) / ONE_HUNDRED_IN_BPS);
     // Doing (castingPeriodEndTime) vs (action.minExecutionTime - ((queuingPeriod * submissionPeriodPct) /
     // ONE_HUNDRED_IN_BPS)) to prevent any off-by-one errors due to precision loss.
@@ -537,8 +537,8 @@ contract LlamaTokenCaster is Initializable {
     (uint16 delayPeriodPct, uint16 castingPeriodPct,) =
       periodPctsCheckpoint.getAtProbablyRecentTimestamp(action.creationTime - 1);
     uint256 queuingPeriod = actionInfo.strategy.queuingPeriod();
-    uint256 queueStartTime = action.minExecutionTime - queuingPeriod;
-    uint256 delayPeriodEndTime = queueStartTime + ((queuingPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS);
+    uint256 delayPeriodEndTime =
+      (action.minExecutionTime - queuingPeriod) + ((queuingPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS);
     uint256 castingPeriodEndTime = delayPeriodEndTime + ((queuingPeriod * castingPeriodPct) / ONE_HUNDRED_IN_BPS);
     if (block.timestamp <= delayPeriodEndTime) revert VotingDelayNotOver();
     if (block.timestamp > castingPeriodEndTime) revert CastingPeriodOver();
