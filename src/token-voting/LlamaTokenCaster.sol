@@ -320,19 +320,19 @@ contract LlamaTokenCaster is Initializable {
     // Reverts if clock or CLOCK_MODE() has changed
     tokenAdapter.checkIfInconsistentClock();
 
-    // check to make sure the casting period has ended
-    uint256 approvalPeriod = actionInfo.strategy.approvalPeriod();
+    // Checks to ensure it's the submission period.
     (uint16 delayPeriodPct, uint16 castingPeriodPct,) =
       periodPctsCheckpoint.getAtProbablyRecentTimestamp(action.creationTime - 1);
+    uint256 approvalPeriod = actionInfo.strategy.approvalPeriod();
     uint256 delayPeriodEndTime = action.creationTime + ((approvalPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS);
     uint256 castingPeriodEndTime = delayPeriodEndTime + ((approvalPeriod * castingPeriodPct) / ONE_HUNDRED_IN_BPS);
     if (block.timestamp <= castingPeriodEndTime) revert CannotSubmitYet();
-    // Llama Approval Period is inclusive of approval end time.
     // Doing (action.creationTime + approvalPeriod) vs (castingPeriodEndTime + ((approvalPeriod * submissionPeriodPct) /
     // ONE_HUNDRED_IN_BPS)) to prevent any off-by-one errors due to precision loss.
+    // Llama approval period is inclusive of approval end time.
     if (block.timestamp > action.creationTime + approvalPeriod) revert SubmissionPeriodOver();
 
-    uint256 totalSupply = tokenAdapter.getPastTotalSupply(tokenAdapter.timestampToTimepoint(action.creationTime) - 1);
+    uint256 totalSupply = tokenAdapter.getPastTotalSupply(tokenAdapter.timestampToTimepoint(delayPeriodEndTime));
     uint96 votesFor = casts[actionInfo.id].votesFor;
     uint96 votesAgainst = casts[actionInfo.id].votesAgainst;
     uint96 votesAbstain = casts[actionInfo.id].votesAbstain;
@@ -354,19 +354,23 @@ contract LlamaTokenCaster is Initializable {
 
     actionInfo.strategy.checkIfDisapprovalEnabled(actionInfo, address(this), role); // Reverts if not allowed.
     if (casts[actionInfo.id].disapprovalSubmitted) revert AlreadySubmittedDisapproval();
-
-    uint256 queuingPeriod = actionInfo.strategy.queuingPeriod();
-    (,, uint16 submissionPeriodPct) = periodPctsCheckpoint.getAtProbablyRecentTimestamp(action.creationTime - 1);
-    // check to make sure the current timestamp is within the submitDisapprovalBuffer 9period
-    if (block.timestamp < action.minExecutionTime - ((queuingPeriod * submissionPeriodPct) / ONE_HUNDRED_IN_BPS)) {
-      revert CannotSubmitYet();
-    }
-    if (block.timestamp >= action.minExecutionTime) revert SubmissionPeriodOver();
-
     // Reverts if clock or CLOCK_MODE() has changed
     tokenAdapter.checkIfInconsistentClock();
 
-    uint256 totalSupply = tokenAdapter.getPastTotalSupply(tokenAdapter.timestampToTimepoint(action.creationTime) - 1);
+    // Checks to ensure it's the submission period.
+    (uint16 delayPeriodPct, uint16 castingPeriodPct,) =
+      periodPctsCheckpoint.getAtProbablyRecentTimestamp(action.creationTime - 1);
+    uint256 queuingPeriod = actionInfo.strategy.queuingPeriod();
+    uint256 queueStartTime = action.minExecutionTime - queuingPeriod;
+    uint256 delayPeriodEndTime = queueStartTime + ((queuingPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS);
+    uint256 castingPeriodEndTime = delayPeriodEndTime + ((queuingPeriod * castingPeriodPct) / ONE_HUNDRED_IN_BPS);
+    // Doing (castingPeriodEndTime) vs (action.minExecutionTime - ((queuingPeriod * submissionPeriodPct) /
+    // ONE_HUNDRED_IN_BPS)) to prevent any off-by-one errors due to precision loss.
+    if (block.timestamp <= castingPeriodEndTime) revert CannotSubmitYet();
+    // Llama disapproval period is exclusive of min execution time.
+    if (block.timestamp >= action.minExecutionTime) revert SubmissionPeriodOver();
+
+    uint256 totalSupply = tokenAdapter.getPastTotalSupply(tokenAdapter.timestampToTimepoint(delayPeriodEndTime));
     uint96 vetoesFor = casts[actionInfo.id].vetoesFor;
     uint96 vetoesAgainst = casts[actionInfo.id].vetoesAgainst;
     uint96 vetoesAbstain = casts[actionInfo.id].vetoesAbstain;
@@ -496,6 +500,7 @@ contract LlamaTokenCaster is Initializable {
     if (casts[actionInfo.id].castVote[caster]) revert AlreadyCastedVote();
     _preCastAssertions(support);
 
+    // Checks to ensure it's the casting period.
     (uint16 delayPeriodPct, uint16 castingPeriodPct,) =
       periodPctsCheckpoint.getAtProbablyRecentTimestamp(action.creationTime - 1);
     uint256 approvalPeriod = actionInfo.strategy.approvalPeriod();
@@ -528,18 +533,18 @@ contract LlamaTokenCaster is Initializable {
     if (casts[actionInfo.id].castVeto[caster]) revert AlreadyCastedVeto();
     _preCastAssertions(support);
 
-    (uint16 delayPeriodPct,, uint16 submissionPeriodPct) =
+    // Checks to ensure it's the casting period.
+    (uint16 delayPeriodPct, uint16 castingPeriodPct,) =
       periodPctsCheckpoint.getAtProbablyRecentTimestamp(action.creationTime - 1);
     uint256 queuingPeriod = actionInfo.strategy.queuingPeriod();
-    uint256 delayPeriodEndTime =
-      action.minExecutionTime - queuingPeriod + ((queuingPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS);
-    if (block.timestamp < delayPeriodEndTime) revert VotingDelayNotOver();
-    if (block.timestamp > action.minExecutionTime - ((queuingPeriod * submissionPeriodPct) / ONE_HUNDRED_IN_BPS)) {
-      revert CastingPeriodOver();
-    }
+    uint256 queueStartTime = action.minExecutionTime - queuingPeriod;
+    uint256 delayPeriodEndTime = queueStartTime + ((queuingPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS);
+    uint256 castingPeriodEndTime = delayPeriodEndTime + ((queuingPeriod * castingPeriodPct) / ONE_HUNDRED_IN_BPS);
+    if (block.timestamp <= delayPeriodEndTime) revert VotingDelayNotOver();
+    if (block.timestamp > castingPeriodEndTime) revert CastingPeriodOver();
 
     uint96 weight =
-      LlamaUtils.toUint96(tokenAdapter.getPastVotes(caster, tokenAdapter.timestampToTimepoint(delayPeriodEndTime) - 1));
+      LlamaUtils.toUint96(tokenAdapter.getPastVotes(caster, tokenAdapter.timestampToTimepoint(delayPeriodEndTime)));
 
     if (support == uint8(VoteType.Against)) casts[actionInfo.id].vetoesAgainst += weight;
     else if (support == uint8(VoteType.For)) casts[actionInfo.id].vetoesFor += weight;
