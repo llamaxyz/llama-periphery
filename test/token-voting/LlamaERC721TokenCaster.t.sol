@@ -728,8 +728,8 @@ contract SubmitDisapprovals is LlamaERC721TokenCasterTest {
       (action.minExecutionTime - QUEUING_PERIOD) + ((QUEUING_PERIOD * ONE_QUARTER_IN_BPS) / ONE_HUNDRED_IN_BPS);
     castingPeriodEndTime = delayPeriodEndTime + ((QUEUING_PERIOD * TWO_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS);
     vm.warp(castingPeriodEndTime + 1);
-    vm.expectRevert(abi.encodeWithSelector(LlamaTokenCaster.InsufficientVotes.selector, 0, 75_000e18));
-    llamaERC721TokenCaster.submitDisapproval(actionInfo);
+    vm.expectRevert(abi.encodeWithSelector(LlamaTokenCaster.InsufficientVotes.selector, 0, 1));
+    llamaERC721TokenCaster.submitDisapproval(_actionInfo);
   }
 
   function test_RevertsIf_CastingPeriodNotOver() public {
