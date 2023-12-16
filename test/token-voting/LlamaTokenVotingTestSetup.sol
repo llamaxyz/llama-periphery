@@ -229,4 +229,11 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
     Action memory action = CORE.getAction(actionInfo.id);
     vm.warp(action.creationTime + ((APPROVAL_PERIOD * ONE_QUARTER_IN_BPS) / ONE_HUNDRED_IN_BPS) + 1);
   }
+
+  function _skipVetoDelay(ActionInfo storage actionInfo) internal {
+    Action memory action = CORE.getAction(actionInfo.id);
+    vm.warp(
+      (action.minExecutionTime - QUEUING_PERIOD) + ((QUEUING_PERIOD * ONE_QUARTER_IN_BPS) / ONE_HUNDRED_IN_BPS) + 1
+    );
+  }
 }
