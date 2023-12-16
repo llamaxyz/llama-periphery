@@ -16,11 +16,11 @@ contract DeployLlamaTokenVotingModule is Script {
   // Make sure these addresses are correct
   // Logic contracts.
   LlamaTokenAdapterVotesTimestamp constant llamaTokenAdapterTimestampLogic =
-    LlamaTokenAdapterVotesTimestamp(0xBcAE358bF19F6aCaC53419B061624976D7BE4612);
+    LlamaTokenAdapterVotesTimestamp(0x88D63b8c5F8C3e95743F1d26Df8aDd0669614278);
 
   // Factory contracts.
   LlamaTokenVotingFactory constant tokenVotingFactory =
-    LlamaTokenVotingFactory(0xB4EAb22e0893A5B72E8b85eFff86fA00b202bCCE);
+    LlamaTokenVotingFactory(0x2997f4D6899DC91dE9Ae0FcD98b49CA88b8Fc85e);
 
   address constant governanceToken = 0xf44d44a54440F22e5DC5adb7efA3233645f04007;
 
