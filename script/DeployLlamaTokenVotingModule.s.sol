@@ -29,7 +29,10 @@ contract DeployLlamaTokenVotingModule is Script {
 
     bytes memory adapterConfig = abi.encode(LlamaTokenAdapterVotesTimestamp.Config(address(governanceToken)));
 
-    // Fill these out
+    // =================================================
+    // ======== Configure these variables below ========
+    // =================================================
+
     ILlamaCore core = ILlamaCore(address(0));
     // Needs to be updated when the config and deployer are the same
     uint256 nonce = 0;
@@ -43,6 +46,11 @@ contract DeployLlamaTokenVotingModule is Script {
     uint16 voteQuorumPct = 2500;
     // Quorum needed for veto to be eligible to pass % in bps (i.e. 20% is 20_00)
     uint16 vetoQuorumPct = 1500;
+
+    // =================================================
+    // ======== Configure these variables above ========
+    // =================================================
+
     uint16 delayPeriodPct = 2500;
     uint16 castingPeriodPct = 5000;
     uint16 submissionPeriodPct = 2500;
