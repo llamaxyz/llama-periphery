@@ -27,6 +27,7 @@ contract LlamaERC721TokenCasterTest is LlamaTokenVotingTestSetup, LlamaCoreSigUt
     uint256 id, address indexed caller, uint256 weightFor, uint256 weightAgainst, uint256 weightAbstain
   );
   event QuorumPctSet(uint16 voteQuorumPct, uint16 vetoQuorumPct);
+  event PeriodPctSet(uint16 delayPeriodPct, uint16 castingPeriodPct, uint16 submissionPeriodPct);
 
   ActionInfo actionInfo;
   LlamaTokenCaster llamaERC721TokenCaster;
@@ -783,5 +784,52 @@ contract SetQuorumPct is LlamaERC721TokenCasterTest {
     emit QuorumPctSet(_voteQuorum, _vetoQuorum);
     vm.prank(address(EXECUTOR));
     llamaERC721TokenCaster.setQuorumPct(_voteQuorum, _vetoQuorum);
+  }
+}
+
+contract SetPeriodPct is LlamaERC721TokenCasterTest {
+  function test_RevertsIf_NotLlamaExecutor(address notLlamaExecutor) public {
+    vm.assume(notLlamaExecutor != address(EXECUTOR));
+    vm.expectRevert(LlamaTokenCaster.OnlyLlamaExecutor.selector);
+    vm.prank(notLlamaExecutor);
+    llamaERC721TokenCaster.setPeriodPct(
+      uint16(ONE_QUARTER_IN_BPS), uint16(TWO_QUARTERS_IN_BPS), uint16(ONE_QUARTER_IN_BPS)
+    );
+  }
+
+  function test_RevertsIf_InvalidPeriodPct() public {
+    vm.startPrank(address(EXECUTOR));
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        LlamaTokenCaster.InvalidPeriodPcts.selector,
+        uint16(ONE_QUARTER_IN_BPS),
+        uint16(TWO_QUARTERS_IN_BPS),
+        uint16(ONE_QUARTER_IN_BPS) + 1
+      )
+    );
+    llamaERC721TokenCaster.setPeriodPct(
+      uint16(ONE_QUARTER_IN_BPS), uint16(TWO_QUARTERS_IN_BPS), uint16(ONE_QUARTER_IN_BPS) + 1
+    );
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        LlamaTokenCaster.InvalidPeriodPcts.selector,
+        uint16(ONE_QUARTER_IN_BPS),
+        uint16(TWO_QUARTERS_IN_BPS),
+        uint16(ONE_QUARTER_IN_BPS) - 1
+      )
+    );
+    llamaERC721TokenCaster.setPeriodPct(
+      uint16(ONE_QUARTER_IN_BPS), uint16(TWO_QUARTERS_IN_BPS), uint16(ONE_QUARTER_IN_BPS) - 1
+    );
+    vm.stopPrank();
+  }
+
+  function test_SetsPeriodPctCorrectly() public {
+    vm.expectEmit();
+    emit PeriodPctSet(uint16(ONE_QUARTER_IN_BPS), uint16(TWO_QUARTERS_IN_BPS), uint16(ONE_QUARTER_IN_BPS));
+    vm.prank(address(EXECUTOR));
+    llamaERC721TokenCaster.setPeriodPct(
+      uint16(ONE_QUARTER_IN_BPS), uint16(TWO_QUARTERS_IN_BPS), uint16(ONE_QUARTER_IN_BPS)
+    );
   }
 }
