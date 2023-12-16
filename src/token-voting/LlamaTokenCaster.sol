@@ -417,11 +417,17 @@ contract LlamaTokenCaster is Initializable {
     return quorumCheckpoints.getAtProbablyRecentTimestamp(timestamp);
   }
 
+  /// @notice Returns all quorum checkpoints.
+  function getQuorumCheckpoints() external view returns (QuorumCheckpoints.History memory) {
+    return quorumCheckpoints;
+  }
+
   /// @notice Returns the quorum checkpoints array from a given set of indices.
   function getQuorumCheckpoints(uint256 start, uint256 end) external view returns (QuorumCheckpoints.History memory) {
     if (start > end) revert InvalidIndices();
     uint256 checkpointsLength = quorumCheckpoints._checkpoints.length;
     if (end > checkpointsLength) revert InvalidIndices();
+
     uint256 sliceLength = end - start;
     QuorumCheckpoints.Checkpoint[] memory checkpoints = new QuorumCheckpoints.Checkpoint[](sliceLength);
     for (uint256 i = start; i < end; i = LlamaUtils.uncheckedIncrement(i)) {
@@ -448,6 +454,11 @@ contract LlamaTokenCaster is Initializable {
     return periodPctsCheckpoint.getAtProbablyRecentTimestamp(timestamp);
   }
 
+  /// @notice Returns all period pct checkpoints.
+  function getPeriodPctCheckpoints() external view returns (PeriodPctCheckpoints.History memory) {
+    return periodPctsCheckpoint;
+  }
+
   /// @notice Returns the period pct checkpoints array from a given set of indices.
   function getPeriodPctCheckpoints(uint256 start, uint256 end)
     external
@@ -457,6 +468,7 @@ contract LlamaTokenCaster is Initializable {
     if (start > end) revert InvalidIndices();
     uint256 checkpointsLength = periodPctsCheckpoint._checkpoints.length;
     if (end > checkpointsLength) revert InvalidIndices();
+
     uint256 sliceLength = end - start;
     PeriodPctCheckpoints.Checkpoint[] memory checkpoints = new PeriodPctCheckpoints.Checkpoint[](sliceLength);
     for (uint256 i = start; i < end; i = LlamaUtils.uncheckedIncrement(i)) {
