@@ -65,7 +65,7 @@ contract LlamaTokenVotingFactory {
   {
     bytes32 salt = keccak256(
       abi.encodePacked(
-        msg.sender, address(tokenVotingConfig.llamaCore), tokenVotingConfig.adapterConfig, tokenVotingConfig.nonce
+        msg.sender, address(tokenVotingConfig.llamaCore), tokenVotingConfig.token, tokenVotingConfig.nonce
       )
     );
 
@@ -79,6 +79,7 @@ contract LlamaTokenVotingFactory {
 
       // Check to see if token adapter was correctly initialized
       if (address(tokenAdapter.token()) == address(0)) revert InvalidTokenAdapterConfig();
+      if ((address(tokenAdapter.token()) != tokenVotingConfig.token)) revert InvalidTokenAdapterConfig();
       if (tokenAdapter.timestampToTimepoint(block.timestamp) == 0) revert InvalidTokenAdapterConfig();
       if (tokenAdapter.clock() == 0) revert InvalidTokenAdapterConfig();
 
@@ -91,6 +92,7 @@ contract LlamaTokenVotingFactory {
 
     actionCreator.initialize(
       tokenVotingConfig.llamaCore,
+      tokenVotingConfig.token,
       tokenAdapter,
       tokenVotingConfig.actionCreatorRole,
       tokenVotingConfig.creationThreshold
@@ -100,13 +102,17 @@ contract LlamaTokenVotingFactory {
     caster = LlamaTokenCaster(Clones.cloneDeterministic(address(LLAMA_TOKEN_CASTER_LOGIC), salt));
 
     caster.initialize(
-      tokenVotingConfig.llamaCore, tokenAdapter, tokenVotingConfig.casterRole, tokenVotingConfig.casterConfig
+      tokenVotingConfig.llamaCore,
+      tokenVotingConfig.token,
+      tokenAdapter,
+      tokenVotingConfig.casterRole,
+      tokenVotingConfig.casterConfig
     );
 
     emit LlamaTokenVotingInstanceCreated(
       msg.sender,
       tokenVotingConfig.llamaCore,
-      tokenAdapter.token(),
+      tokenVotingConfig.token,
       tokenVotingConfig.tokenAdapterLogic,
       tokenAdapter,
       tokenVotingConfig.nonce,

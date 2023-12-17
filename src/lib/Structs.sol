@@ -39,6 +39,7 @@ struct Action {
 /// @dev Configuration of a new Llama token voting module.
 struct LlamaTokenVotingConfig {
   ILlamaCore llamaCore; // The address of the Llama core.
+  address token; // The address of the voting token.
   ILlamaTokenAdapter tokenAdapterLogic; // The logic contract of the token adapter.
   bytes adapterConfig; // The configuration of the token adapter.
   uint256 nonce; // The nonce to be used in the salt of the deterministic deployment.

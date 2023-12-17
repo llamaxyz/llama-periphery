@@ -2,6 +2,8 @@
 pragma solidity ^0.8.23;
 
 import {Initializable} from "@openzeppelin/proxy/utils/Initializable.sol";
+import {IERC6372} from "@openzeppelin/interfaces/IERC6372.sol";
+import {IVotes} from "@openzeppelin/governance/utils/IVotes.sol";
 
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
 import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
@@ -21,6 +23,9 @@ contract LlamaTokenActionCreator is Initializable {
   // ========================
   // ======== Errors ========
   // ========================
+
+  /// @dev The clock was incorrectly modified.
+  error ERC6372InconsistentClock();
 
   /// @dev Thrown when a user tries to create an action but does not have enough tokens.
   error InsufficientBalance(uint256 balance);
@@ -85,6 +90,9 @@ contract LlamaTokenActionCreator is Initializable {
   /// @notice The core contract for this Llama instance.
   ILlamaCore public llamaCore;
 
+  /// @notice The address of the voting token used for this token voting module.
+  address public token;
+
   /// @notice The contract that manages the timepoints for this token voting module.
   ILlamaTokenAdapter public tokenAdapter;
 
@@ -113,26 +121,31 @@ contract LlamaTokenActionCreator is Initializable {
     _disableInitializers();
   }
 
-  /// @notice Initializes a new `LlamaERC20TokenActionCreator` clone.
+  /// @notice Initializes a new `LlamaTokenActionCreator` clone.
   /// @dev This function is called by the `deploy` function in the `LlamaTokenVotingFactory` contract.
   /// The `initializer` modifier ensures that this function can be invoked at most once.
-  /// @dev Token adapters are only necessary for non-ERC20Votes, non-IERC6372 voting tokens. Otherwise _tokenAdapter can
+  /// @dev Token adapters are only necessary for non-IVotes, non-IERC6372 voting tokens. Otherwise _tokenAdapter can
   /// be set to the zero address.
   /// @param _llamaCore The `LlamaCore` contract for this Llama instance.
+  /// @param _token The address of the voting token used for this token voting module.
   /// @param _tokenAdapter The token adapter that manages the clock, timepoints, past votes and past supply for this
   /// token voting module.
   /// @param _role The role used by this contract to cast approvals and disapprovals.
   /// @param _creationThreshold The default number of tokens required to create an action. This must
   /// be in the same decimals as the token. For example, if the token has 18 decimals and you want a
   /// creation threshold of 1000 tokens, pass in 1000e18.
-  function initialize(ILlamaCore _llamaCore, ILlamaTokenAdapter _tokenAdapter, uint8 _role, uint256 _creationThreshold)
-    external
-    initializer
-  {
+  function initialize(
+    ILlamaCore _llamaCore,
+    address _token,
+    ILlamaTokenAdapter _tokenAdapter,
+    uint8 _role,
+    uint256 _creationThreshold
+  ) external initializer {
     if (_llamaCore.actionsCount() < 0) revert InvalidLlamaCoreAddress();
     if (_role > _llamaCore.policy().numRoles()) revert RoleNotInitialized(_role);
 
     llamaCore = _llamaCore;
+    token = _token;
     tokenAdapter = _tokenAdapter;
     role = _role;
     _setActionThreshold(_creationThreshold);
@@ -239,19 +252,33 @@ contract LlamaTokenActionCreator is Initializable {
   // ======== Internal Logic ========
   // ================================
 
-  function _checkIfInconsistentClock() internal view {
-    tokenAdapter.checkIfInconsistentClock();
-  }
-
-  function _getPastVotes(address account, uint48 timepoint) internal view returns (uint256) {
-    return tokenAdapter.getPastVotes(account, timepoint);
-  }
-
+  /// @dev Returns the current timepoint according to the token's clock.
   function _clock() internal view returns (uint48 timepoint) {
+    if (address(tokenAdapter) == address(0)) return IERC6372(token).clock();
     return tokenAdapter.clock();
   }
 
+  /// @dev Reverts if the token's CLOCK_MODE changes from what's in the adapter or if the clock() function doesn't
+  function _checkIfInconsistentClock() internal view {
+    if (address(tokenAdapter) == address(0)) {
+      if (
+        keccak256(abi.encodePacked(IERC6372(token).CLOCK_MODE())) != keccak256(abi.encodePacked("mode=timestamp"))
+          || IERC6372(token).clock() != LlamaUtils.toUint48(block.timestamp)
+      ) revert ERC6372InconsistentClock();
+    } else {
+      tokenAdapter.checkIfInconsistentClock();
+    }
+  }
+
+  /// @dev Get the voting balance of a token holder at a specified past timepoint.
+  function _getPastVotes(address account, uint48 timepoint) internal view returns (uint256) {
+    if (address(tokenAdapter) == address(0)) return IVotes(token).getPastVotes(account, timepoint);
+    return tokenAdapter.getPastVotes(account, timepoint);
+  }
+
+  /// @dev Get the total supply of a token at a specified past timepoint.
   function _getPastTotalSupply(uint48 timepoint) internal view returns (uint256) {
+    if (address(tokenAdapter) == address(0)) return IVotes(token).getPastTotalSupply(timepoint);
     return tokenAdapter.getPastTotalSupply(timepoint);
   }
 

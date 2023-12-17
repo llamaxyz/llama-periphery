@@ -3,6 +3,8 @@ pragma solidity ^0.8.23;
 
 import {Initializable} from "@openzeppelin/proxy/utils/Initializable.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
+import {IERC6372} from "@openzeppelin/interfaces/IERC6372.sol";
+import {IVotes} from "@openzeppelin/governance/utils/IVotes.sol";
 
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
 import {ILlamaTokenAdapter} from "src/token-voting/interfaces/ILlamaTokenAdapter.sol";
@@ -69,6 +71,9 @@ contract LlamaTokenCaster is Initializable {
 
   /// @dev Thrown when a user tries to cast a vote or veto but the casting period has ended.
   error CastingPeriodOver();
+
+  /// @dev The clock was incorrectly modified.
+  error ERC6372InconsistentClock();
 
   /// @dev Thrown when a user tries to cast a vote or veto but the against surpasses for.
   error ForDoesNotSurpassAgainst(uint256 castsFor, uint256 castsAgainst);
@@ -164,6 +169,9 @@ contract LlamaTokenCaster is Initializable {
   /// @notice The core contract for this Llama instance.
   ILlamaCore public llamaCore;
 
+  /// @notice The address of the voting token used for this token voting module.
+  address public token;
+
   /// @dev The quorum checkpoints for this token voting module.
   QuorumCheckpoints.History internal quorumCheckpoints;
 
@@ -199,12 +207,14 @@ contract LlamaTokenCaster is Initializable {
   /// @dev This function is called by the `deploy` function in the `LlamaTokenVotingFactory` contract.
   /// The `initializer` modifier ensures that this function can be invoked at most once.
   /// @param _llamaCore The `LlamaCore` contract for this Llama instance.
+  /// @param _token The address of the voting token used for this token voting module.
   /// @param _tokenAdapter The token adapter that manages the clock, timepoints, past votes and past supply for this
   /// token voting module.
   /// @param _role The role used by this contract to cast approvals and disapprovals.
   /// @param casterConfig Contains the quorum and period pct values to initialize the contract with.
   function initialize(
     ILlamaCore _llamaCore,
+    address _token,
     ILlamaTokenAdapter _tokenAdapter,
     uint8 _role,
     CasterConfig memory casterConfig
@@ -213,6 +223,7 @@ contract LlamaTokenCaster is Initializable {
     if (_role > _llamaCore.policy().numRoles()) revert RoleNotInitialized(_role);
 
     llamaCore = _llamaCore;
+    token = _token;
     tokenAdapter = _tokenAdapter;
     role = _role;
     _setQuorumPct(casterConfig.voteQuorumPct, casterConfig.vetoQuorumPct);
@@ -318,7 +329,7 @@ contract LlamaTokenCaster is Initializable {
     actionInfo.strategy.checkIfApprovalEnabled(actionInfo, address(this), role); // Reverts if not allowed.
     if (casts[actionInfo.id].approvalSubmitted) revert AlreadySubmittedApproval();
     // Reverts if clock or CLOCK_MODE() has changed
-    tokenAdapter.checkIfInconsistentClock();
+    _checkIfInconsistentClock();
 
     // Checks to ensure it's the submission period.
     (uint16 delayPeriodPct, uint16 castingPeriodPct,) =
@@ -332,7 +343,7 @@ contract LlamaTokenCaster is Initializable {
     // Llama approval period is inclusive of approval end time.
     if (block.timestamp > action.creationTime + approvalPeriod) revert SubmissionPeriodOver();
 
-    uint256 totalSupply = tokenAdapter.getPastTotalSupply(tokenAdapter.timestampToTimepoint(delayPeriodEndTime));
+    uint256 totalSupply = _getPastTotalSupply(_timestampToTimepoint(delayPeriodEndTime));
     uint96 votesFor = casts[actionInfo.id].votesFor;
     uint96 votesAgainst = casts[actionInfo.id].votesAgainst;
     uint96 votesAbstain = casts[actionInfo.id].votesAbstain;
@@ -355,7 +366,7 @@ contract LlamaTokenCaster is Initializable {
     actionInfo.strategy.checkIfDisapprovalEnabled(actionInfo, address(this), role); // Reverts if not allowed.
     if (casts[actionInfo.id].disapprovalSubmitted) revert AlreadySubmittedDisapproval();
     // Reverts if clock or CLOCK_MODE() has changed
-    tokenAdapter.checkIfInconsistentClock();
+    _checkIfInconsistentClock();
 
     // Checks to ensure it's the submission period.
     (uint16 delayPeriodPct, uint16 castingPeriodPct,) =
@@ -370,7 +381,7 @@ contract LlamaTokenCaster is Initializable {
     // Llama disapproval period is exclusive of min execution time.
     if (block.timestamp >= action.minExecutionTime) revert SubmissionPeriodOver();
 
-    uint256 totalSupply = tokenAdapter.getPastTotalSupply(tokenAdapter.timestampToTimepoint(delayPeriodEndTime));
+    uint256 totalSupply = _getPastTotalSupply(_timestampToTimepoint(delayPeriodEndTime));
     uint96 vetoesFor = casts[actionInfo.id].vetoesFor;
     uint96 vetoesAgainst = casts[actionInfo.id].vetoesAgainst;
     uint96 vetoesAbstain = casts[actionInfo.id].vetoesAbstain;
@@ -488,6 +499,42 @@ contract LlamaTokenCaster is Initializable {
   // ======== Internal Logic ========
   // ================================
 
+  /// @dev Returns the current timepoint according to the token's clock.
+  function _clock() internal view returns (uint48 timepoint) {
+    if (address(tokenAdapter) == address(0)) return IERC6372(token).clock();
+    return tokenAdapter.clock();
+  }
+
+  /// @dev Reverts if the token's CLOCK_MODE changes from what's in the adapter or if the clock() function doesn't
+  function _checkIfInconsistentClock() internal view {
+    if (address(tokenAdapter) == address(0)) {
+      if (
+        keccak256(abi.encodePacked(IERC6372(token).CLOCK_MODE())) != keccak256(abi.encodePacked("mode=timestamp"))
+          || IERC6372(token).clock() != LlamaUtils.toUint48(block.timestamp)
+      ) revert ERC6372InconsistentClock();
+    } else {
+      tokenAdapter.checkIfInconsistentClock();
+    }
+  }
+
+  /// @dev Converts a timestamp to timepoint units.
+  function _timestampToTimepoint(uint256 timestamp) internal view returns (uint48 timepoint) {
+    if (address(tokenAdapter) == address(0)) return LlamaUtils.toUint48(timestamp);
+    return tokenAdapter.timestampToTimepoint(timestamp);
+  }
+
+  /// @dev Get the voting balance of a token holder at a specified past timepoint.
+  function _getPastVotes(address account, uint48 timepoint) internal view returns (uint256) {
+    if (address(tokenAdapter) == address(0)) return IVotes(token).getPastVotes(account, timepoint);
+    return tokenAdapter.getPastVotes(account, timepoint);
+  }
+
+  /// @dev Get the total supply of a token at a specified past timepoint.
+  function _getPastTotalSupply(uint48 timepoint) internal view returns (uint256) {
+    if (address(tokenAdapter) == address(0)) return IVotes(token).getPastTotalSupply(timepoint);
+    return tokenAdapter.getPastTotalSupply(timepoint);
+  }
+
   /// @dev How token holders add their support of the approval of an action with a reason.
   function _castVote(address caster, ActionInfo calldata actionInfo, uint8 support, string calldata reason)
     internal
@@ -509,8 +556,7 @@ contract LlamaTokenCaster is Initializable {
     if (block.timestamp <= delayPeriodEndTime) revert VotingDelayNotOver();
     if (block.timestamp > castingPeriodEndTime) revert CastingPeriodOver();
 
-    uint96 weight =
-      LlamaUtils.toUint96(tokenAdapter.getPastVotes(caster, tokenAdapter.timestampToTimepoint(delayPeriodEndTime)));
+    uint96 weight = LlamaUtils.toUint96(_getPastVotes(caster, _timestampToTimepoint(delayPeriodEndTime)));
 
     if (support == uint8(VoteType.Against)) casts[actionInfo.id].votesAgainst += weight;
     else if (support == uint8(VoteType.For)) casts[actionInfo.id].votesFor += weight;
@@ -543,8 +589,7 @@ contract LlamaTokenCaster is Initializable {
     if (block.timestamp <= delayPeriodEndTime) revert VotingDelayNotOver();
     if (block.timestamp > castingPeriodEndTime) revert CastingPeriodOver();
 
-    uint96 weight =
-      LlamaUtils.toUint96(tokenAdapter.getPastVotes(caster, tokenAdapter.timestampToTimepoint(delayPeriodEndTime)));
+    uint96 weight = LlamaUtils.toUint96(_getPastVotes(caster, _timestampToTimepoint(delayPeriodEndTime)));
 
     if (support == uint8(VoteType.Against)) casts[actionInfo.id].vetoesAgainst += weight;
     else if (support == uint8(VoteType.For)) casts[actionInfo.id].vetoesFor += weight;
@@ -560,7 +605,7 @@ contract LlamaTokenCaster is Initializable {
     if (support > uint8(VoteType.Abstain)) revert InvalidSupport(support);
 
     // Reverts if clock or CLOCK_MODE() has changed
-    tokenAdapter.checkIfInconsistentClock();
+    _checkIfInconsistentClock();
   }
 
   /// @dev Sets the voting quorum and vetoing quorum.
