@@ -116,6 +116,8 @@ contract LlamaTokenActionCreator is Initializable {
   /// @notice Initializes a new `LlamaERC20TokenActionCreator` clone.
   /// @dev This function is called by the `deploy` function in the `LlamaTokenVotingFactory` contract.
   /// The `initializer` modifier ensures that this function can be invoked at most once.
+  /// @dev Token adapters are only necessary for non-ERC20Votes, non-IERC6372 voting tokens. Otherwise _tokenAdapter can
+  /// be set to the zero address.
   /// @param _llamaCore The `LlamaCore` contract for this Llama instance.
   /// @param _tokenAdapter The token adapter that manages the clock, timepoints, past votes and past supply for this
   /// token voting module.
@@ -237,6 +239,22 @@ contract LlamaTokenActionCreator is Initializable {
   // ======== Internal Logic ========
   // ================================
 
+  function _checkIfInconsistentClock() internal view {
+    tokenAdapter.checkIfInconsistentClock();
+  }
+
+  function _getPastVotes(address account, uint48 timepoint) internal view returns (uint256) {
+    return tokenAdapter.getPastVotes(account, timepoint);
+  }
+
+  function _clock() internal view returns (uint48 timepoint) {
+    return tokenAdapter.clock();
+  }
+
+  function _getPastTotalSupply(uint48 timepoint) internal view returns (uint256) {
+    return tokenAdapter.getPastTotalSupply(timepoint);
+  }
+
   /// @dev Creates an action. The creator needs to have sufficient token balance.
   function _createAction(
     address tokenHolder,
@@ -247,9 +265,9 @@ contract LlamaTokenActionCreator is Initializable {
     string memory description
   ) internal returns (uint256 actionId) {
     // Reverts if clock or CLOCK_MODE() has changed
-    tokenAdapter.checkIfInconsistentClock();
+    _checkIfInconsistentClock();
 
-    uint256 balance = tokenAdapter.getPastVotes(tokenHolder, tokenAdapter.clock() - 1);
+    uint256 balance = _getPastVotes(tokenHolder, _clock() - 1);
     if (balance < creationThreshold) revert InsufficientBalance(balance);
 
     actionId = llamaCore.createAction(role, strategy, target, value, data, description);
@@ -266,7 +284,7 @@ contract LlamaTokenActionCreator is Initializable {
 
   /// @dev Sets the default number of tokens required to create an action.
   function _setActionThreshold(uint256 _creationThreshold) internal {
-    uint256 totalSupply = tokenAdapter.getPastTotalSupply(tokenAdapter.clock() - 1);
+    uint256 totalSupply = _getPastTotalSupply(_clock() - 1);
     if (totalSupply == 0) revert InvalidTotalSupply();
     if (_creationThreshold > totalSupply) revert InvalidCreationThreshold();
     creationThreshold = _creationThreshold;

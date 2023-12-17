@@ -26,6 +26,10 @@ library DeployUtils {
   }
 
   function readTokenAdapter(string memory jsonInput) internal pure returns (bytes memory) {
+    if (jsonInput.readAddress(".tokenAdapterLogic") == address(0)) {
+      bytes memory empty;
+      return abi.encode(empty);
+    }
     address tokenAddress = jsonInput.readAddress(".tokenAddress");
     return abi.encode(LlamaTokenAdapterVotesTimestamp.Config(tokenAddress));
   }

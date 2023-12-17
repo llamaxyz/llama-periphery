@@ -69,18 +69,22 @@ contract LlamaTokenVotingFactory {
       )
     );
 
-    // Deploy and initialize token adapter based on provided logic address and config
-    ILlamaTokenAdapter tokenAdapter =
-      ILlamaTokenAdapter(Clones.cloneDeterministic(address(tokenVotingConfig.tokenAdapterLogic), salt));
-    tokenAdapter.initialize(tokenVotingConfig.adapterConfig);
+    // If the voting token is the default token voting type, then the tokenAdapter is optional and can be set to the
+    // zero address
+    ILlamaTokenAdapter tokenAdapter;
+    if (address(tokenVotingConfig.tokenAdapterLogic) != address(0)) {
+      // Deploy and initialize token adapter based on provided logic address and config
+      tokenAdapter = ILlamaTokenAdapter(Clones.cloneDeterministic(address(tokenVotingConfig.tokenAdapterLogic), salt));
+      tokenAdapter.initialize(tokenVotingConfig.adapterConfig);
 
-    // Check to see if token adapter was correctly initialized
-    if (address(tokenAdapter.token()) == address(0)) revert InvalidTokenAdapterConfig();
-    if (tokenAdapter.timestampToTimepoint(block.timestamp) == 0) revert InvalidTokenAdapterConfig();
-    if (tokenAdapter.clock() == 0) revert InvalidTokenAdapterConfig();
+      // Check to see if token adapter was correctly initialized
+      if (address(tokenAdapter.token()) == address(0)) revert InvalidTokenAdapterConfig();
+      if (tokenAdapter.timestampToTimepoint(block.timestamp) == 0) revert InvalidTokenAdapterConfig();
+      if (tokenAdapter.clock() == 0) revert InvalidTokenAdapterConfig();
 
-    // Reverts if clock is inconsistent
-    tokenAdapter.checkIfInconsistentClock();
+      // Reverts if clock is inconsistent
+      tokenAdapter.checkIfInconsistentClock();
+    }
 
     // Deploy and initialize `LlamaTokenActionCreator` contract
     actionCreator = LlamaTokenActionCreator(Clones.cloneDeterministic(address(LLAMA_TOKEN_ACTION_CREATOR_LOGIC), salt));
