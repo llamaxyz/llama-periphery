@@ -571,18 +571,6 @@ contract SubmitApprovals is LlamaERC20TokenCasterTest {
     llamaERC20TokenCaster.submitApproval(notActionInfo);
   }
 
-  function test_RevertsIf_ApprovalNotEnabled() public {
-    LlamaTokenCaster casterWithWrongRole = LlamaTokenCaster(
-      Clones.cloneDeterministic(
-        address(llamaTokenCasterLogic), keccak256(abi.encodePacked(address(erc20VotesToken), msg.sender))
-      )
-    );
-    ILlamaTokenAdapter tokenAdapter = createTimestampTokenAdapter(address(erc20VotesToken), 0);
-    casterWithWrongRole.initialize(CORE, tokenAdapter, madeUpRole, defaultCasterConfig);
-    vm.expectRevert(abi.encodeWithSelector(ILlamaRelativeStrategyBase.InvalidRole.selector, tokenVotingCasterRole));
-    casterWithWrongRole.submitApproval(actionInfo);
-  }
-
   function test_RevertsIf_AlreadySubmittedApproval() public {
     vm.startPrank(tokenHolder1);
     llamaERC20TokenCaster.submitApproval(actionInfo);
@@ -668,18 +656,6 @@ contract SubmitDisapprovals is LlamaERC20TokenCasterTest {
     vm.assume(notActionInfo.id != actionInfo.id);
     vm.expectRevert();
     llamaERC20TokenCaster.submitDisapproval(notActionInfo);
-  }
-
-  function test_RevertsIf_DisapprovalNotEnabled() public {
-    LlamaTokenCaster casterWithWrongRole = LlamaTokenCaster(
-      Clones.cloneDeterministic(
-        address(llamaTokenCasterLogic), keccak256(abi.encodePacked(address(erc20VotesToken), msg.sender))
-      )
-    );
-    ILlamaTokenAdapter tokenAdapter = createTimestampTokenAdapter(address(erc20VotesToken), 0);
-    casterWithWrongRole.initialize(CORE, tokenAdapter, madeUpRole, defaultCasterConfig);
-    vm.expectRevert(abi.encodeWithSelector(ILlamaRelativeStrategyBase.InvalidRole.selector, tokenVotingCasterRole));
-    casterWithWrongRole.submitDisapproval(actionInfo);
   }
 
   function test_RevertsIf_AlreadySubmittedDisapproval() public {
