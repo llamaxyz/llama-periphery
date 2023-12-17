@@ -10,13 +10,12 @@ import {LlamaPeripheryTestSetup} from "test/LlamaPeripheryTestSetup.sol";
 
 import {DeployLlamaTokenVotingFactory} from "script/DeployLlamaTokenVotingFactory.s.sol";
 
-import {ActionInfo, CasterConfig} from "src/lib/Structs.sol";
+import {ActionInfo, CasterConfig, LlamaTokenVotingConfig} from "src/lib/Structs.sol";
 import {ILlamaPolicy} from "src/interfaces/ILlamaPolicy.sol";
 import {ILlamaRelativeStrategyBase} from "src/interfaces/ILlamaRelativeStrategyBase.sol";
 import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
 import {RoleDescription} from "src/lib/UDVTs.sol";
 import {LlamaTokenAdapterVotesTimestamp} from "src/token-voting/token-adapters/LlamaTokenAdapterVotesTimestamp.sol";
-import {LlamaTokenVotingFactory} from "src/token-voting/LlamaTokenVotingFactory.sol";
 import {LlamaTokenActionCreator} from "src/token-voting/LlamaTokenActionCreator.sol";
 import {LlamaTokenCaster} from "src/token-voting/LlamaTokenCaster.sol";
 
@@ -104,7 +103,7 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
 
   function _deployERC20TokenVotingModuleAndSetRole() internal returns (LlamaTokenActionCreator, LlamaTokenCaster) {
     bytes memory adapterConfig = abi.encode(LlamaTokenAdapterVotesTimestamp.Config(address(erc20VotesToken)));
-    LlamaTokenVotingFactory.LlamaTokenVotingConfig memory config = LlamaTokenVotingFactory.LlamaTokenVotingConfig(
+    LlamaTokenVotingConfig memory config = LlamaTokenVotingConfig(
       CORE,
       llamaTokenAdapterTimestampLogic,
       adapterConfig,
@@ -133,7 +132,7 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
 
   function _deployERC721TokenVotingModuleAndSetRole() internal returns (LlamaTokenActionCreator, LlamaTokenCaster) {
     bytes memory adapterConfig = abi.encode(LlamaTokenAdapterVotesTimestamp.Config(address(erc721VotesToken)));
-    LlamaTokenVotingFactory.LlamaTokenVotingConfig memory config = LlamaTokenVotingFactory.LlamaTokenVotingConfig(
+    LlamaTokenVotingConfig memory config = LlamaTokenVotingConfig(
       CORE,
       llamaTokenAdapterTimestampLogic,
       adapterConfig,
