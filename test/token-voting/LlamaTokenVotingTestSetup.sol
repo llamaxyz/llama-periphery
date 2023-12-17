@@ -10,7 +10,7 @@ import {LlamaPeripheryTestSetup} from "test/LlamaPeripheryTestSetup.sol";
 
 import {DeployLlamaTokenVotingFactory} from "script/DeployLlamaTokenVotingFactory.s.sol";
 
-import {ActionInfo, CasterConfig, LlamaTokenVotingConfig} from "src/lib/Structs.sol";
+import {Action, ActionInfo, CasterConfig, LlamaTokenVotingConfig} from "src/lib/Structs.sol";
 import {ILlamaPolicy} from "src/interfaces/ILlamaPolicy.sol";
 import {ILlamaRelativeStrategyBase} from "src/interfaces/ILlamaRelativeStrategyBase.sol";
 import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
@@ -35,6 +35,11 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
   uint256 public constant ERC721_CREATION_THRESHOLD = 1;
   uint16 public constant ERC721_VOTE_QUORUM_PCT = 1000;
   uint16 public constant ERC721_VETO_QUORUM_PCT = 1000;
+
+  // Time Periods
+  uint64 public constant APPROVAL_PERIOD = 1 days;
+  uint64 public constant QUEUING_PERIOD = 1 days;
+  uint64 public constant EXPIRATION_PERIOD = 1 days;
 
   // Votes Tokens
   MockERC20Votes public erc20VotesToken;
@@ -177,9 +182,9 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
     uint8[] memory forceRoles = new uint8[](0);
 
     ILlamaRelativeStrategyBase.Config memory strategyConfig = ILlamaRelativeStrategyBase.Config({
-      approvalPeriod: 1 days,
-      queuingPeriod: 1 days,
-      expirationPeriod: 1 days,
+      approvalPeriod: APPROVAL_PERIOD,
+      queuingPeriod: QUEUING_PERIOD,
+      expirationPeriod: EXPIRATION_PERIOD,
       isFixedLengthApprovalPeriod: false,
       minApprovalPct: ONE_HUNDRED_IN_BPS,
       minDisapprovalPct: ONE_HUNDRED_IN_BPS,
@@ -219,7 +224,15 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
     _actionInfo = ActionInfo(actionId, coreTeam1, CORE_TEAM_ROLE, _tokenVotingStrategy, address(mockProtocol), 0, data);
   }
 
-  function _skipVotingDelay() internal {
-    vm.warp(block.timestamp + (1 days * ONE_QUARTER_IN_BPS) / ONE_HUNDRED_IN_BPS);
+  function _skipVotingDelay(ActionInfo storage actionInfo) internal {
+    Action memory action = CORE.getAction(actionInfo.id);
+    vm.warp(action.creationTime + ((APPROVAL_PERIOD * ONE_QUARTER_IN_BPS) / ONE_HUNDRED_IN_BPS) + 1);
+  }
+
+  function _skipVetoDelay(ActionInfo storage actionInfo) internal {
+    Action memory action = CORE.getAction(actionInfo.id);
+    vm.warp(
+      (action.minExecutionTime - QUEUING_PERIOD) + ((QUEUING_PERIOD * ONE_QUARTER_IN_BPS) / ONE_HUNDRED_IN_BPS) + 1
+    );
   }
 }
