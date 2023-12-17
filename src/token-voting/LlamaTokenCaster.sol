@@ -510,9 +510,13 @@ contract LlamaTokenCaster is Initializable {
     uint96 weight =
       LlamaUtils.toUint96(tokenAdapter.getPastVotes(caster, tokenAdapter.timestampToTimepoint(delayPeriodEndTime)));
 
-    if (support == uint8(VoteType.Against)) casts[actionInfo.id].votesAgainst += weight;
-    else if (support == uint8(VoteType.For)) casts[actionInfo.id].votesFor += weight;
-    else if (support == uint8(VoteType.Abstain)) casts[actionInfo.id].votesAbstain += weight;
+    if (support == uint8(VoteType.Against)) {
+      casts[actionInfo.id].votesAgainst = _newCastCount(casts[actionInfo.id].votesAgainst, weight);
+    } else if (support == uint8(VoteType.For)) {
+      casts[actionInfo.id].votesFor = _newCastCount(casts[actionInfo.id].votesFor, weight);
+    } else if (support == uint8(VoteType.Abstain)) {
+      casts[actionInfo.id].votesAbstain = _newCastCount(casts[actionInfo.id].votesAbstain, weight);
+    }
     casts[actionInfo.id].castVote[caster] = true;
 
     emit VoteCast(actionInfo.id, caster, support, weight, reason);
@@ -544,9 +548,13 @@ contract LlamaTokenCaster is Initializable {
     uint96 weight =
       LlamaUtils.toUint96(tokenAdapter.getPastVotes(caster, tokenAdapter.timestampToTimepoint(delayPeriodEndTime)));
 
-    if (support == uint8(VoteType.Against)) casts[actionInfo.id].vetoesAgainst += weight;
-    else if (support == uint8(VoteType.For)) casts[actionInfo.id].vetoesFor += weight;
-    else if (support == uint8(VoteType.Abstain)) casts[actionInfo.id].vetoesAbstain += weight;
+    if (support == uint8(VoteType.Against)) {
+      casts[actionInfo.id].vetoesAgainst = _newCastCount(casts[actionInfo.id].vetoesAgainst, weight);
+    } else if (support == uint8(VoteType.For)) {
+      casts[actionInfo.id].vetoesFor = _newCastCount(casts[actionInfo.id].vetoesFor, weight);
+    } else if (support == uint8(VoteType.Abstain)) {
+      casts[actionInfo.id].vetoesAbstain = _newCastCount(casts[actionInfo.id].vetoesAbstain, weight);
+    }
     casts[actionInfo.id].castVeto[caster] = true;
 
     emit VetoCast(actionInfo.id, caster, support, weight, reason);
@@ -559,6 +567,12 @@ contract LlamaTokenCaster is Initializable {
 
     // Reverts if clock or CLOCK_MODE() has changed
     tokenAdapter.checkIfInconsistentClock();
+  }
+
+  /// @dev Returns the new total count of votes or vetoes in Against (0), For (1) or Abstain (2).
+  function _newCastCount(uint96 currentCount, uint96 weight) internal pure returns (uint96) {
+    if (uint256(currentCount) + weight >= type(uint96).max) return type(uint96).max;
+    return currentCount + weight;
   }
 
   /// @dev Sets the voting quorum and vetoing quorum.
