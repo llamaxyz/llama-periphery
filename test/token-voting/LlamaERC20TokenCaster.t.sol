@@ -168,6 +168,33 @@ contract CastVote is LlamaERC20TokenCasterTest {
     llamaERC20TokenCaster.castVote(actionInfo, uint8(VoteType.For), "");
   }
 
+  function test_CanCastWhenCountisMax() public {
+    // Warping to delayPeriodEndTime.
+    vm.warp(actionCreationTime + ((APPROVAL_PERIOD * ONE_QUARTER_IN_BPS) / ONE_HUNDRED_IN_BPS));
+    // Minting type(uint96).max tokens and delegating
+    erc20VotesToken.mint(address(0xdeadbeef), type(uint96).max);
+    vm.prank(address(0xdeadbeef));
+    erc20VotesToken.delegate(address(0xdeadbeef));
+
+    // Warping to delayPeriodEndTime + 1 so that voting can start.
+    mineBlock();
+    // Casting vote with weight type(uint96).max. Count should now be type(uint96).max.
+    vm.prank(address(0xdeadbeef));
+    llamaERC20TokenCaster.castVote(actionInfo, uint8(VoteType.For), "");
+
+    (uint96 votesFor,,,,,,,) = llamaERC20TokenCaster.casts(actionInfo.id);
+    assertEq(votesFor, type(uint96).max);
+
+    // Can still cast even if count is max.
+    vm.expectEmit();
+    emit VoteCast(actionInfo.id, tokenHolder1, uint8(VoteType.For), ERC20_CREATION_THRESHOLD / 2, "");
+    vm.prank(tokenHolder1);
+    llamaERC20TokenCaster.castVote(actionInfo, uint8(VoteType.For), "");
+
+    (votesFor,,,,,,,) = llamaERC20TokenCaster.casts(actionInfo.id);
+    assertEq(votesFor, type(uint96).max);
+  }
+
   function test_CastsVoteCorrectly(uint8 support) public {
     support = uint8(bound(support, uint8(VoteType.Against), uint8(VoteType.Against)));
     vm.expectEmit();
@@ -374,6 +401,34 @@ contract CastVeto is LlamaERC20TokenCasterTest {
     vm.expectEmit();
     emit VetoCast(actionInfo.id, address(this), uint8(VoteType.For), 0, "");
     llamaERC20TokenCaster.castVeto(actionInfo, uint8(VoteType.For), "");
+  }
+
+  function test_CanCastWhenCountisMax() public {
+    // Warping to delayPeriodEndTime.
+    Action memory action = CORE.getAction(actionInfo.id);
+    vm.warp((action.minExecutionTime - QUEUING_PERIOD) + ((QUEUING_PERIOD * ONE_QUARTER_IN_BPS) / ONE_HUNDRED_IN_BPS));
+    // Minting type(uint96).max tokens and delegating
+    erc20VotesToken.mint(address(0xdeadbeef), type(uint96).max);
+    vm.prank(address(0xdeadbeef));
+    erc20VotesToken.delegate(address(0xdeadbeef));
+
+    // Warping to delayPeriodEndTime + 1 so that voting can start.
+    mineBlock();
+    // Casting vote with weight type(uint96).max. Count should now be type(uint96).max.
+    vm.prank(address(0xdeadbeef));
+    llamaERC20TokenCaster.castVeto(actionInfo, uint8(VoteType.For), "");
+
+    (,,,, uint96 vetoesFor,,,) = llamaERC20TokenCaster.casts(actionInfo.id);
+    assertEq(vetoesFor, type(uint96).max);
+
+    // Can still cast even if count is max.
+    vm.expectEmit();
+    emit VetoCast(actionInfo.id, tokenHolder1, uint8(VoteType.For), ERC20_CREATION_THRESHOLD / 2, "");
+    vm.prank(tokenHolder1);
+    llamaERC20TokenCaster.castVeto(actionInfo, uint8(VoteType.For), "");
+
+    (,,,, vetoesFor,,,) = llamaERC20TokenCaster.casts(actionInfo.id);
+    assertEq(vetoesFor, type(uint96).max);
   }
 
   function test_CastsVetoCorrectly(uint8 support) public {
