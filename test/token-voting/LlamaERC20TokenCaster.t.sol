@@ -112,7 +112,7 @@ contract CastVote is LlamaERC20TokenCasterTest {
 
   function test_RevertsIf_NotPastVotingDelay() public {
     vm.warp(block.timestamp - 1);
-    vm.expectRevert(LlamaTokenCaster.VotingDelayNotOver.selector);
+    vm.expectRevert(LlamaTokenCaster.DelayPeriodNotOver.selector);
     llamaERC20TokenCaster.castVote(actionInfo, uint8(VoteType.For), "");
   }
 
@@ -340,7 +340,7 @@ contract CastVeto is LlamaERC20TokenCasterTest {
 
   function test_RevertsIf_NotPastVotingDelay() public {
     vm.warp(block.timestamp - 1);
-    vm.expectRevert(LlamaTokenCaster.VotingDelayNotOver.selector);
+    vm.expectRevert(LlamaTokenCaster.DelayPeriodNotOver.selector);
     llamaERC20TokenCaster.castVeto(actionInfo, uint8(VoteType.For), "");
   }
 

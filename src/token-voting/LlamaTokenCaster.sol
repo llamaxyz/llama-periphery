@@ -64,6 +64,9 @@ contract LlamaTokenCaster is Initializable {
   /// @dev Thrown when a user tries to cast a vote or veto but the casting period has ended.
   error CastingPeriodOver();
 
+  /// @dev Thrown when a user tries to cast a vote or veto but the voting delay has not ended.
+  error DelayPeriodNotOver();
+
   /// @dev Thrown when a user tries to submit a cast (dis)approval to `LlamaCore` more than once.
   error DuplicateSubmission();
 
@@ -102,9 +105,6 @@ contract LlamaTokenCaster is Initializable {
 
   /// @dev Thrown when a user tries to submit (dis)approval but the submission period has ended.
   error SubmissionPeriodOver();
-
-  /// @dev Thrown when a user tries to cast a vote or veto but the voting delay has not passed.
-  error VotingDelayNotOver();
 
   // ========================
   // ======== Events ========
@@ -501,7 +501,7 @@ contract LlamaTokenCaster is Initializable {
     uint256 approvalPeriod = actionInfo.strategy.approvalPeriod();
     uint256 delayPeriodEndTime = action.creationTime + ((approvalPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS);
     uint256 castingPeriodEndTime = delayPeriodEndTime + ((approvalPeriod * castingPeriodPct) / ONE_HUNDRED_IN_BPS);
-    if (block.timestamp <= delayPeriodEndTime) revert VotingDelayNotOver();
+    if (block.timestamp <= delayPeriodEndTime) revert DelayPeriodNotOver();
     if (block.timestamp > castingPeriodEndTime) revert CastingPeriodOver();
 
     uint96 weight =
@@ -539,7 +539,7 @@ contract LlamaTokenCaster is Initializable {
     uint256 delayPeriodEndTime =
       (action.minExecutionTime - queuingPeriod) + ((queuingPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS);
     uint256 castingPeriodEndTime = delayPeriodEndTime + ((queuingPeriod * castingPeriodPct) / ONE_HUNDRED_IN_BPS);
-    if (block.timestamp <= delayPeriodEndTime) revert VotingDelayNotOver();
+    if (block.timestamp <= delayPeriodEndTime) revert DelayPeriodNotOver();
     if (block.timestamp > castingPeriodEndTime) revert CastingPeriodOver();
 
     uint96 weight =
