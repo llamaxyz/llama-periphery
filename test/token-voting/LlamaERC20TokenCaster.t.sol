@@ -630,7 +630,7 @@ contract SubmitApprovals is LlamaERC20TokenCasterTest {
     vm.startPrank(tokenHolder1);
     llamaERC20TokenCaster.submitApproval(actionInfo);
 
-    vm.expectRevert(LlamaTokenCaster.AlreadySubmittedApproval.selector);
+    vm.expectRevert(LlamaTokenCaster.DuplicateSubmission.selector);
     llamaERC20TokenCaster.submitApproval(actionInfo);
   }
 
@@ -717,7 +717,7 @@ contract SubmitDisapprovals is LlamaERC20TokenCasterTest {
     vm.startPrank(tokenHolder1);
     llamaERC20TokenCaster.submitDisapproval(actionInfo);
 
-    vm.expectRevert(LlamaTokenCaster.AlreadySubmittedDisapproval.selector);
+    vm.expectRevert(LlamaTokenCaster.DuplicateSubmission.selector);
     llamaERC20TokenCaster.submitDisapproval(actionInfo);
   }
 

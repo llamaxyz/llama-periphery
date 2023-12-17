@@ -58,17 +58,14 @@ contract LlamaTokenCaster is Initializable {
   /// @dev Thrown when a user tries to cast a vote but has already casted.
   error AlreadyCastedVote();
 
-  /// @dev Thrown when a user tries to cast approval but the casts have already been submitted to `LlamaCore`.
-  error AlreadySubmittedApproval();
-
-  /// @dev Thrown when a user tries to cast disapproval but the casts have already been submitted to `LlamaCore.
-  error AlreadySubmittedDisapproval();
-
   /// @dev Thrown when a user tries to cast (dis)approval but the action cannot be submitted yet.
   error CannotSubmitYet();
 
   /// @dev Thrown when a user tries to cast a vote or veto but the casting period has ended.
   error CastingPeriodOver();
+
+  /// @dev Thrown when a user tries to submit a cast (dis)approval to `LlamaCore` more than once.
+  error DuplicateSubmission();
 
   /// @dev Thrown when a user tries to cast a vote or veto but the against surpasses for.
   error ForDoesNotSurpassAgainst(uint256 castsFor, uint256 castsAgainst);
@@ -315,7 +312,7 @@ contract LlamaTokenCaster is Initializable {
   function submitApproval(ActionInfo calldata actionInfo) external {
     Action memory action = llamaCore.getAction(actionInfo.id);
 
-    if (casts[actionInfo.id].approvalSubmitted) revert AlreadySubmittedApproval();
+    if (casts[actionInfo.id].approvalSubmitted) revert DuplicateSubmission();
     // Reverts if clock or CLOCK_MODE() has changed
     tokenAdapter.checkIfInconsistentClock();
 
@@ -351,7 +348,7 @@ contract LlamaTokenCaster is Initializable {
   function submitDisapproval(ActionInfo calldata actionInfo) external {
     Action memory action = llamaCore.getAction(actionInfo.id);
 
-    if (casts[actionInfo.id].disapprovalSubmitted) revert AlreadySubmittedDisapproval();
+    if (casts[actionInfo.id].disapprovalSubmitted) revert DuplicateSubmission();
     // Reverts if clock or CLOCK_MODE() has changed
     tokenAdapter.checkIfInconsistentClock();
 
