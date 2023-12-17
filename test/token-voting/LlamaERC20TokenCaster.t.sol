@@ -145,7 +145,7 @@ contract CastVote is LlamaERC20TokenCasterTest {
     vm.startPrank(tokenHolder1);
     llamaERC20TokenCaster.castVote(actionInfo, uint8(VoteType.For), "");
 
-    vm.expectRevert(LlamaTokenCaster.AlreadyCastedVote.selector);
+    vm.expectRevert(LlamaTokenCaster.DuplicateCast.selector);
     llamaERC20TokenCaster.castVote(actionInfo, uint8(VoteType.For), "");
   }
 
@@ -378,7 +378,7 @@ contract CastVeto is LlamaERC20TokenCasterTest {
     vm.startPrank(tokenHolder1);
     llamaERC20TokenCaster.castVeto(actionInfo, uint8(VoteType.For), "");
 
-    vm.expectRevert(LlamaTokenCaster.AlreadyCastedVeto.selector);
+    vm.expectRevert(LlamaTokenCaster.DuplicateCast.selector);
     llamaERC20TokenCaster.castVeto(actionInfo, uint8(VoteType.For), "");
   }
 

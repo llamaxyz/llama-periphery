@@ -52,12 +52,6 @@ contract LlamaTokenCaster is Initializable {
   /// @dev Thrown when a user tries to cast a veto but the action is not queued.
   error ActionNotQueued();
 
-  /// @dev Thrown when a user tries to cast a veto but has already casted.
-  error AlreadyCastedVeto();
-
-  /// @dev Thrown when a user tries to cast a vote but has already casted.
-  error AlreadyCastedVote();
-
   /// @dev Thrown when a user tries to submit (dis)approval but the casting period has not ended.
   error CastingPeriodNotOver();
 
@@ -66,6 +60,9 @@ contract LlamaTokenCaster is Initializable {
 
   /// @dev Thrown when a user tries to cast a vote or veto but the delay period has not ended.
   error DelayPeriodNotOver();
+
+  /// @dev Token holders can only cast once.
+  error DuplicateCast();
 
   /// @dev Thrown when a user tries to submit a cast (dis)approval to `LlamaCore` more than once.
   error DuplicateSubmission();
@@ -76,7 +73,9 @@ contract LlamaTokenCaster is Initializable {
   /// @dev Thrown when a user tries to submit an approval but there are not enough votes.
   error InsufficientVotes(uint256 votes, uint256 threshold);
 
-  /// @dev Thrown when a user tries to query checkpoints at non-existant indices.
+  /// @dev The indices would result in `Panic: Index Out of Bounds`.
+  /// @dev Thrown when the `end` index is greater than array length or when the `start` index is greater than the `end`
+  /// index.
   error InvalidIndices();
 
   /// @dev Thrown when an invalid `llamaCore` address is passed to the constructor.
@@ -492,7 +491,7 @@ contract LlamaTokenCaster is Initializable {
 
     actionInfo.strategy.checkIfApprovalEnabled(actionInfo, address(this), role); // Reverts if not allowed.
     if (llamaCore.getActionState(actionInfo) != uint8(ActionState.Active)) revert ActionNotActive();
-    if (casts[actionInfo.id].castVote[caster]) revert AlreadyCastedVote();
+    if (casts[actionInfo.id].castVote[caster]) revert DuplicateCast();
     _preCastAssertions(support);
 
     // Checks to ensure it's the casting period.
@@ -529,7 +528,7 @@ contract LlamaTokenCaster is Initializable {
 
     actionInfo.strategy.checkIfDisapprovalEnabled(actionInfo, address(this), role); // Reverts if not allowed.
     if (llamaCore.getActionState(actionInfo) != uint8(ActionState.Queued)) revert ActionNotQueued();
-    if (casts[actionInfo.id].castVeto[caster]) revert AlreadyCastedVeto();
+    if (casts[actionInfo.id].castVeto[caster]) revert DuplicateCast();
     _preCastAssertions(support);
 
     // Checks to ensure it's the casting period.
