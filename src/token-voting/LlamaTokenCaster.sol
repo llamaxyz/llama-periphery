@@ -58,13 +58,13 @@ contract LlamaTokenCaster is Initializable {
   /// @dev Thrown when a user tries to cast a vote but has already casted.
   error AlreadyCastedVote();
 
-  /// @dev Thrown when a user tries to cast (dis)approval but the action cannot be submitted yet.
-  error CannotSubmitYet();
+  /// @dev Thrown when a user tries to submit (dis)approval but the casting period has not ended.
+  error CastingPeriodNotOver();
 
   /// @dev Thrown when a user tries to cast a vote or veto but the casting period has ended.
   error CastingPeriodOver();
 
-  /// @dev Thrown when a user tries to cast a vote or veto but the voting delay has not ended.
+  /// @dev Thrown when a user tries to cast a vote or veto but the delay period has not ended.
   error DelayPeriodNotOver();
 
   /// @dev Thrown when a user tries to submit a cast (dis)approval to `LlamaCore` more than once.
@@ -308,7 +308,7 @@ contract LlamaTokenCaster is Initializable {
 
   /// @notice Submits a cast approval to the `LlamaCore` contract.
   /// @param actionInfo Data required to create an action.
-  /// @dev this function can be called by anyone
+  /// @dev This function can be called by anyone.
   function submitApproval(ActionInfo calldata actionInfo) external {
     Action memory action = llamaCore.getAction(actionInfo.id);
 
@@ -322,7 +322,7 @@ contract LlamaTokenCaster is Initializable {
     uint256 approvalPeriod = actionInfo.strategy.approvalPeriod();
     uint256 delayPeriodEndTime = action.creationTime + ((approvalPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS);
     uint256 castingPeriodEndTime = delayPeriodEndTime + ((approvalPeriod * castingPeriodPct) / ONE_HUNDRED_IN_BPS);
-    if (block.timestamp <= castingPeriodEndTime) revert CannotSubmitYet();
+    if (block.timestamp <= castingPeriodEndTime) revert CastingPeriodNotOver();
     // Doing (action.creationTime + approvalPeriod) vs (castingPeriodEndTime + ((approvalPeriod * submissionPeriodPct) /
     // ONE_HUNDRED_IN_BPS)) to prevent any off-by-one errors due to precision loss.
     // Llama approval period is inclusive of approval end time.
@@ -344,7 +344,7 @@ contract LlamaTokenCaster is Initializable {
 
   /// @notice Submits a cast disapproval to the `LlamaCore` contract.
   /// @param actionInfo Data required to create an action.
-  /// @dev this function can be called by anyone
+  /// @dev This function can be called by anyone.
   function submitDisapproval(ActionInfo calldata actionInfo) external {
     Action memory action = llamaCore.getAction(actionInfo.id);
 
@@ -361,7 +361,7 @@ contract LlamaTokenCaster is Initializable {
     uint256 castingPeriodEndTime = delayPeriodEndTime + ((queuingPeriod * castingPeriodPct) / ONE_HUNDRED_IN_BPS);
     // Doing (castingPeriodEndTime) vs (action.minExecutionTime - ((queuingPeriod * submissionPeriodPct) /
     // ONE_HUNDRED_IN_BPS)) to prevent any off-by-one errors due to precision loss.
-    if (block.timestamp <= castingPeriodEndTime) revert CannotSubmitYet();
+    if (block.timestamp <= castingPeriodEndTime) revert CastingPeriodNotOver();
     // Llama disapproval period is exclusive of min execution time.
     if (block.timestamp >= action.minExecutionTime) revert SubmissionPeriodOver();
 

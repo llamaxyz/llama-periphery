@@ -602,7 +602,7 @@ contract SubmitApprovals is LlamaERC721TokenCasterTest {
 
   function test_RevertsIf_CastingPeriodNotOver() public {
     vm.warp(block.timestamp - 1);
-    vm.expectRevert(LlamaTokenCaster.CannotSubmitYet.selector);
+    vm.expectRevert(LlamaTokenCaster.CastingPeriodNotOver.selector);
     llamaERC721TokenCaster.submitApproval(actionInfo);
   }
 
@@ -709,7 +709,7 @@ contract SubmitDisapprovals is LlamaERC721TokenCasterTest {
 
   function test_RevertsIf_CastingPeriodNotOver() public {
     vm.warp(block.timestamp - 1);
-    vm.expectRevert(LlamaTokenCaster.CannotSubmitYet.selector);
+    vm.expectRevert(LlamaTokenCaster.CastingPeriodNotOver.selector);
     llamaERC721TokenCaster.submitDisapproval(actionInfo);
   }
 
