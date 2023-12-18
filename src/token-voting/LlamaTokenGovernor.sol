@@ -20,8 +20,6 @@ import {Action, ActionInfo} from "src/lib/Structs.sol";
 /// sufficient token balance and collectively cast an approval or disapproval on created actions.
 /// @dev This contract is deployed by `LlamaTokenVotingFactory`. Anyone can deploy this contract using the factory, but
 /// it must hold a Policy from the specified `LlamaCore` instance to actually be able to create and cast on an action.
-/// This contract does not verify that it holds the correct policy when voting and relies on `LlamaCore` to
-/// verify that during submission.
 contract LlamaTokenGovernor is Initializable {
   using PeriodPctCheckpoints for PeriodPctCheckpoints.History;
   using QuorumCheckpoints for QuorumCheckpoints.History;
@@ -113,6 +111,12 @@ contract LlamaTokenGovernor is Initializable {
 
   /// @dev Thrown when a user tries to submit (dis)approval but the submission period has ended.
   error SubmissionPeriodOver();
+
+  /// @dev Checks that the caller is the Llama Executor and reverts if not.
+  modifier onlyLlama() {
+    if (msg.sender != address(llamaCore.executor())) revert OnlyLlamaExecutor();
+    _;
+  }
 
   // ========================
   // ======== Events ========
@@ -331,16 +335,6 @@ contract LlamaTokenGovernor is Initializable {
     _cancelAction(signer, actionInfo);
   }
 
-  // -------- Instance Management --------
-
-  /// @notice Sets the default number of tokens required to create an action.
-  /// @param _creationThreshold The number of tokens required to create an action.
-  /// @dev This must be in the same decimals as the token.
-  function setActionThreshold(uint256 _creationThreshold) external {
-    if (msg.sender != address(llamaCore.executor())) revert OnlyLlamaExecutor();
-    _setActionThreshold(_creationThreshold);
-  }
-
   // -------- Action Casting Lifecycle Management --------
 
   /// @notice How tokenholders add their support of the approval of an action with a reason.
@@ -518,11 +512,17 @@ contract LlamaTokenGovernor is Initializable {
 
   // -------- Instance Management --------
 
+  /// @notice Sets the default number of tokens required to create an action.
+  /// @param _creationThreshold The number of tokens required to create an action.
+  /// @dev This must be in the same decimals as the token.
+  function setActionThreshold(uint256 _creationThreshold) external onlyLlama {
+    _setActionThreshold(_creationThreshold);
+  }
+
   /// @notice Sets the voting quorum and vetoing quorum.
   /// @param _voteQuorumPct The minimum % of votes required to submit an approval to `LlamaCore`.
   /// @param _vetoQuorumPct The minimum % of vetoes required to submit a disapproval to `LlamaCore`.
-  function setQuorumPct(uint16 _voteQuorumPct, uint16 _vetoQuorumPct) external {
-    if (msg.sender != llamaCore.executor()) revert OnlyLlamaExecutor();
+  function setQuorumPct(uint16 _voteQuorumPct, uint16 _vetoQuorumPct) external onlyLlama {
     _setQuorumPct(_voteQuorumPct, _vetoQuorumPct);
   }
 
@@ -530,8 +530,10 @@ contract LlamaTokenGovernor is Initializable {
   /// @param _delayPeriodPct The % of the total period that must pass before voting can begin.
   /// @param _castingPeriodPct The % of the total period that voting can occur.
   /// @param _submissionPeriodPct The % of the total period withing which the (dis)approval must be submitted.
-  function setPeriodPct(uint16 _delayPeriodPct, uint16 _castingPeriodPct, uint16 _submissionPeriodPct) external {
-    if (msg.sender != llamaCore.executor()) revert OnlyLlamaExecutor();
+  function setPeriodPct(uint16 _delayPeriodPct, uint16 _castingPeriodPct, uint16 _submissionPeriodPct)
+    external
+    onlyLlama
+  {
     _setPeriodPct(_delayPeriodPct, _castingPeriodPct, _submissionPeriodPct);
   }
 
@@ -651,58 +653,6 @@ contract LlamaTokenGovernor is Initializable {
     emit ActionCanceled(actionInfo.id, creator);
   }
 
-  /// @dev Sets the default number of tokens required to create an action.
-  function _setActionThreshold(uint256 _creationThreshold) internal {
-    uint256 totalSupply = tokenAdapter.getPastTotalSupply(tokenAdapter.clock() - 1);
-    if (totalSupply == 0) revert InvalidTotalSupply();
-    if (_creationThreshold > totalSupply) revert InvalidCreationThreshold();
-    creationThreshold = _creationThreshold;
-    emit ActionThresholdSet(_creationThreshold);
-  }
-
-  /// @dev Returns the hash of the ABI-encoded EIP-712 message for the `CreateAction` domain, which can be used to
-  /// recover the signer.
-  function _getCreateActionTypedDataHash(
-    address tokenHolder,
-    ILlamaStrategy strategy,
-    address target,
-    uint256 value,
-    bytes calldata data,
-    string calldata description
-  ) internal returns (bytes32) {
-    // Calculating and storing nonce in memory and using that below, instead of calculating in place to prevent stack
-    // too deep error.
-    uint256 nonce = _useNonce(tokenHolder, msg.sig);
-
-    bytes32 createActionHash = keccak256(
-      abi.encode(
-        CREATE_ACTION_TYPEHASH,
-        tokenHolder,
-        address(strategy),
-        target,
-        value,
-        keccak256(data),
-        keccak256(bytes(description)),
-        nonce
-      )
-    );
-
-    return keccak256(abi.encodePacked("\x19\x01", _getDomainHash(), createActionHash));
-  }
-
-  /// @dev Returns the hash of the ABI-encoded EIP-712 message for the `CancelAction` domain, which can be used to
-  /// recover the signer.
-  function _getCancelActionTypedDataHash(address tokenHolder, ActionInfo calldata actionInfo)
-    internal
-    returns (bytes32)
-  {
-    bytes32 cancelActionHash = keccak256(
-      abi.encode(CANCEL_ACTION_TYPEHASH, tokenHolder, _getActionInfoHash(actionInfo), _useNonce(tokenHolder, msg.sig))
-    );
-
-    return keccak256(abi.encodePacked("\x19\x01", _getDomainHash(), cancelActionHash));
-  }
-
   // -------- Action Casting Internal Functions --------
 
   /// @dev How token holders add their support of the approval of an action with a reason.
@@ -815,6 +765,17 @@ contract LlamaTokenGovernor is Initializable {
     return currentCount + weight;
   }
 
+  // -------- Instance Management Internal Functions --------
+
+  /// @dev Sets the default number of tokens required to create an action.
+  function _setActionThreshold(uint256 _creationThreshold) internal {
+    uint256 totalSupply = tokenAdapter.getPastTotalSupply(tokenAdapter.clock() - 1);
+    if (totalSupply == 0) revert InvalidTotalSupply();
+    if (_creationThreshold > totalSupply) revert InvalidCreationThreshold();
+    creationThreshold = _creationThreshold;
+    emit ActionThresholdSet(_creationThreshold);
+  }
+
   /// @dev Sets the voting quorum and vetoing quorum.
   function _setQuorumPct(uint16 _voteQuorumPct, uint16 _vetoQuorumPct) internal {
     if (_voteQuorumPct > ONE_HUNDRED_IN_BPS || _voteQuorumPct <= 0) revert InvalidVoteQuorumPct(_voteQuorumPct);
@@ -832,6 +793,8 @@ contract LlamaTokenGovernor is Initializable {
     emit PeriodPctSet(_delayPeriodPct, _castingPeriodPct, _submissionPeriodPct);
   }
 
+  // -------- User Nonce Management Internal Functions --------
+
   /// @dev Returns the current nonce for a given tokenHolder and selector, and increments it. Used to prevent
   /// replay attacks.
   function _useNonce(address tokenHolder, bytes4 selector) internal returns (uint256 nonce) {
@@ -848,6 +811,49 @@ contract LlamaTokenGovernor is Initializable {
         EIP712_DOMAIN_TYPEHASH, keccak256(bytes(llamaCore.name())), keccak256(bytes("1")), block.chainid, address(this)
       )
     );
+  }
+
+  /// @dev Returns the hash of the ABI-encoded EIP-712 message for the `CreateAction` domain, which can be used to
+  /// recover the signer.
+  function _getCreateActionTypedDataHash(
+    address tokenHolder,
+    ILlamaStrategy strategy,
+    address target,
+    uint256 value,
+    bytes calldata data,
+    string calldata description
+  ) internal returns (bytes32) {
+    // Calculating and storing nonce in memory and using that below, instead of calculating in place to prevent stack
+    // too deep error.
+    uint256 nonce = _useNonce(tokenHolder, msg.sig);
+
+    bytes32 createActionHash = keccak256(
+      abi.encode(
+        CREATE_ACTION_TYPEHASH,
+        tokenHolder,
+        address(strategy),
+        target,
+        value,
+        keccak256(data),
+        keccak256(bytes(description)),
+        nonce
+      )
+    );
+
+    return keccak256(abi.encodePacked("\x19\x01", _getDomainHash(), createActionHash));
+  }
+
+  /// @dev Returns the hash of the ABI-encoded EIP-712 message for the `CancelAction` domain, which can be used to
+  /// recover the signer.
+  function _getCancelActionTypedDataHash(address tokenHolder, ActionInfo calldata actionInfo)
+    internal
+    returns (bytes32)
+  {
+    bytes32 cancelActionHash = keccak256(
+      abi.encode(CANCEL_ACTION_TYPEHASH, tokenHolder, _getActionInfoHash(actionInfo), _useNonce(tokenHolder, msg.sig))
+    );
+
+    return keccak256(abi.encodePacked("\x19\x01", _getDomainHash(), cancelActionHash));
   }
 
   /// @dev Returns the hash of the ABI-encoded EIP-712 message for the `CastApproval` domain, which can be used to
