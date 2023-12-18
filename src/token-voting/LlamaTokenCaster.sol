@@ -191,7 +191,7 @@ contract LlamaTokenCaster is Initializable {
 
   /// @dev This contract is deployed as a minimal proxy from the factory's `deploy` function. The
   /// `_disableInitializers` locks the implementation (logic) contract, preventing any future initialization of it.
-  constructor() payable {
+  constructor() {
     _disableInitializers();
   }
 
