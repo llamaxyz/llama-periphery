@@ -141,7 +141,7 @@ contract CastVote is LlamaERC721TokenCasterTest {
 
   function test_RevertsIf_ActionNotActive() public {
     vm.warp(actionCreationTime + APPROVAL_PERIOD + 1);
-    vm.expectRevert(LlamaTokenCaster.ActionNotActive.selector);
+    vm.expectRevert(abi.encodeWithSelector(LlamaTokenCaster.InvalidActionState.selector, ActionState.Failed));
     llamaERC721TokenCaster.castVote(actionInfo, uint8(VoteType.For), "");
   }
 
@@ -348,7 +348,7 @@ contract CastVeto is LlamaERC721TokenCasterTest {
     ActionInfo memory _actionInfo =
       ActionInfo(actionId, coreTeam1, CORE_TEAM_ROLE, tokenVotingStrategy, address(mockProtocol), 0, data);
     // Currently at actionCreationTime which is Active state.
-    vm.expectRevert(LlamaTokenCaster.ActionNotQueued.selector);
+    vm.expectRevert(abi.encodeWithSelector(LlamaTokenCaster.InvalidActionState.selector, ActionState.Active));
     llamaERC721TokenCaster.castVeto(_actionInfo, uint8(VoteType.For), "");
   }
 

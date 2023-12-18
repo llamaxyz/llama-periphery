@@ -46,12 +46,6 @@ contract LlamaTokenCaster is Initializable {
   // ======== Errors ========
   // ========================
 
-  /// @dev Thrown when a user tries to cast a vote but the action is not active.
-  error ActionNotActive();
-
-  /// @dev Thrown when a user tries to cast a veto but the action is not queued.
-  error ActionNotQueued();
-
   /// @dev Thrown when a user tries to submit (dis)approval but the casting period has not ended.
   error CastingPeriodNotOver();
 
@@ -72,6 +66,10 @@ contract LlamaTokenCaster is Initializable {
 
   /// @dev Thrown when a user tries to submit an approval but there are not enough votes.
   error InsufficientVotes(uint256 votes, uint256 threshold);
+
+  /// @dev The action is not in the expected state.
+  /// @param current The current state of the action.
+  error InvalidActionState(ActionState current);
 
   /// @dev The indices would result in `Panic: Index Out of Bounds`.
   /// @dev Thrown when the `end` index is greater than array length or when the `start` index is greater than the `end`
@@ -490,9 +488,8 @@ contract LlamaTokenCaster is Initializable {
     Action memory action = llamaCore.getAction(actionInfo.id);
 
     actionInfo.strategy.checkIfApprovalEnabled(actionInfo, address(this), role); // Reverts if not allowed.
-    if (llamaCore.getActionState(actionInfo) != uint8(ActionState.Active)) revert ActionNotActive();
     if (casts[actionInfo.id].castVote[caster]) revert DuplicateCast();
-    _preCastAssertions(support);
+    _preCastAssertions(actionInfo, support, ActionState.Active);
 
     // Checks to ensure it's the casting period.
     (uint16 delayPeriodPct, uint16 castingPeriodPct,) =
@@ -527,9 +524,8 @@ contract LlamaTokenCaster is Initializable {
     Action memory action = llamaCore.getAction(actionInfo.id);
 
     actionInfo.strategy.checkIfDisapprovalEnabled(actionInfo, address(this), role); // Reverts if not allowed.
-    if (llamaCore.getActionState(actionInfo) != uint8(ActionState.Queued)) revert ActionNotQueued();
     if (casts[actionInfo.id].castVeto[caster]) revert DuplicateCast();
-    _preCastAssertions(support);
+    _preCastAssertions(actionInfo, support, ActionState.Queued);
 
     // Checks to ensure it's the casting period.
     (uint16 delayPeriodPct, uint16 castingPeriodPct,) =
@@ -558,8 +554,11 @@ contract LlamaTokenCaster is Initializable {
   }
 
   /// @dev The only `support` values allowed to be passed into this method are Against (0), For (1) or Abstain (2).
-  function _preCastAssertions(uint8 support) internal view {
+  function _preCastAssertions(ActionInfo calldata actionInfo, uint8 support, ActionState expectedState) internal view {
     if (support > uint8(VoteType.Abstain)) revert InvalidSupport(support);
+
+    ActionState currentState = ActionState(llamaCore.getActionState(actionInfo));
+    if (currentState != expectedState) revert InvalidActionState(currentState);
 
     // Reverts if clock or CLOCK_MODE() has changed
     tokenAdapter.checkIfInconsistentClock();
