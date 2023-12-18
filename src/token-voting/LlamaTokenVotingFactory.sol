@@ -67,13 +67,11 @@ contract LlamaTokenVotingFactory {
     if (address(tokenAdapter.token()) == address(0)) revert InvalidTokenAdapterConfig();
     if (tokenAdapter.timestampToTimepoint(block.timestamp) == 0) revert InvalidTokenAdapterConfig();
     if (tokenAdapter.clock() == 0) revert InvalidTokenAdapterConfig();
-
     // Reverts if clock is inconsistent
     tokenAdapter.checkIfInconsistentClock();
 
     // Deploy and initialize `LlamaTokenGovernor` contract
     governor = LlamaTokenGovernor(Clones.cloneDeterministic(address(LLAMA_TOKEN_GOVERNOR_LOGIC), salt));
-
     governor.initialize(
       tokenVotingConfig.llamaCore,
       tokenAdapter,

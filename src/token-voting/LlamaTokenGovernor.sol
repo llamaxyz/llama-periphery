@@ -8,11 +8,10 @@ import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
 import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
 import {ILlamaTokenAdapter} from "src/token-voting/interfaces/ILlamaTokenAdapter.sol";
 import {ActionState, VoteType} from "src/lib/Enums.sol";
-import {CasterConfig} from "src/lib/Structs.sol";
+import {Action, ActionInfo, CasterConfig} from "src/lib/Structs.sol";
 import {LlamaUtils} from "src/lib/LlamaUtils.sol";
 import {PeriodPctCheckpoints} from "src/lib/PeriodPctCheckpoints.sol";
 import {QuorumCheckpoints} from "src/lib/QuorumCheckpoints.sol";
-import {Action, ActionInfo} from "src/lib/Structs.sol";
 
 /// @title LlamaTokenGovernor
 /// @author Llama (devsdosomething@llama.xyz)
@@ -39,9 +38,9 @@ contract LlamaTokenGovernor is Initializable {
     mapping(address tokenholder => bool) castVeto; // True if tokenholder casted a veto, false otherwise.
   }
 
-  // ========================
-  // ======== Errors ========
-  // ========================
+  // ======================================
+  // ======== Errors and Modifiers ========
+  // ======================================
 
   /// @dev Thrown when a user tries to submit (dis)approval but the casting period has not ended.
   error CastingPeriodNotOver();
@@ -161,6 +160,11 @@ contract LlamaTokenGovernor is Initializable {
   bytes32 internal constant EIP712_DOMAIN_TYPEHASH =
     keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
 
+  /// @dev EIP-712 createAction typehash.
+  bytes32 internal constant CREATE_ACTION_TYPEHASH = keccak256(
+    "CreateAction(address tokenHolder,address strategy,address target,uint256 value,bytes data,string description,uint256 nonce)"
+  );
+
   /// @dev EIP-712 cancelAction typehash.
   bytes32 internal constant CANCEL_ACTION_TYPEHASH = keccak256(
     "CancelAction(address tokenHolder,ActionInfo actionInfo,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
@@ -176,11 +180,6 @@ contract LlamaTokenGovernor is Initializable {
     "CastVeto(address tokenHolder,ActionInfo actionInfo,uint8 support,string reason,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
   );
 
-  /// @dev EIP-712 createAction typehash.
-  bytes32 internal constant CREATE_ACTION_TYPEHASH = keccak256(
-    "CreateAction(address tokenHolder,address strategy,address target,uint256 value,bytes data,string description,uint256 nonce)"
-  );
-
   /// @dev EIP-712 actionInfo typehash.
   bytes32 internal constant ACTION_INFO_TYPEHASH = keccak256(
     "ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
@@ -192,21 +191,21 @@ contract LlamaTokenGovernor is Initializable {
   /// @notice The core contract for this Llama instance.
   ILlamaCore public llamaCore;
 
+  /// @notice The contract that manages the timepoints for this token voting module.
+  ILlamaTokenAdapter public tokenAdapter;
+
+  /// @notice The role used by this contract to create actions and cast approvals and disapprovals.
+  /// @dev This role is expected to have the ability to create actions and force approve and disapprove actions.
+  uint8 public role;
+
+  /// @notice The default number of tokens required to create an action.
+  uint256 public creationThreshold;
+
   /// @dev The quorum checkpoints for this token voting module.
   QuorumCheckpoints.History internal quorumCheckpoints;
 
   /// @dev The period pct checkpoints for this token voting module.
   PeriodPctCheckpoints.History internal periodPctsCheckpoint;
-
-  /// @notice The contract that manages the timepoints for this token voting module.
-  ILlamaTokenAdapter public tokenAdapter;
-
-  /// @notice The default number of tokens required to create an action.
-  uint256 public creationThreshold;
-
-  /// @notice The role used by this contract to create actions and cast approvals and disapprovals.
-  /// @dev This role is expected to have the ability to create actions and force approve and disapprove actions.
-  uint8 public role;
 
   /// @notice The address of the tokenholder that created the action.
   mapping(uint256 => address) public actionCreators;

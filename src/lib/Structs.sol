@@ -36,26 +36,6 @@ struct Action {
   uint96 totalDisapprovals; // The total quantity of policyholder disapprovals.
 }
 
-/// @dev Configuration of a new Llama token voting module.
-struct LlamaTokenVotingConfig {
-  ILlamaCore llamaCore; // The address of the Llama core.
-  ILlamaTokenAdapter tokenAdapterLogic; // The logic contract of the token adapter.
-  bytes adapterConfig; // The configuration of the token adapter.
-  uint256 nonce; // The nonce to be used in the salt of the deterministic deployment.
-  uint8 governorRole; // The role required by the `LlamaTokenGovernor` to create actions and cast on them.
-  uint256 creationThreshold; // The number of tokens required to create an action.
-  CasterConfig casterConfig; // The quorum and period data for the `LlamaTokenGovernor`.
-}
-
-/// @dev Quorum and period data for token voting caster contracts.
-struct CasterConfig {
-  uint16 voteQuorumPct;
-  uint16 vetoQuorumPct;
-  uint16 delayPeriodPct;
-  uint16 castingPeriodPct;
-  uint16 submissionPeriodPct;
-}
-
 /// @dev Data that represents a permission.
 struct PermissionData {
   address target; // Contract being called by an action.
@@ -96,4 +76,24 @@ struct LlamaPolicyConfig {
   RolePermissionData[] rolePermissions; // The `role`, `permissionData`, and  the `hasPermission` boolean.
   string color; // The primary color of the SVG representation of the instance's policy (e.g. #00FF00).
   string logo; // The SVG string representing the logo for the deployed Llama instance's NFT.
+}
+
+/// @dev Configuration of a new Llama token voting module.
+struct LlamaTokenVotingConfig {
+  ILlamaCore llamaCore; // The address of the Llama core.
+  ILlamaTokenAdapter tokenAdapterLogic; // The logic contract of the token adapter.
+  bytes adapterConfig; // The configuration of the token adapter.
+  uint256 nonce; // The nonce to be used in the salt of the deterministic deployment.
+  uint8 governorRole; // The role required by the `LlamaTokenGovernor` to create actions and cast on them.
+  uint256 creationThreshold; // The number of tokens required to create an action.
+  CasterConfig casterConfig; // The quorum and period data for the `LlamaTokenGovernor`.
+}
+
+/// @dev Quorum and period data for token voting caster contracts.
+struct CasterConfig {
+  uint16 voteQuorumPct;
+  uint16 vetoQuorumPct;
+  uint16 delayPeriodPct;
+  uint16 castingPeriodPct;
+  uint16 submissionPeriodPct;
 }
