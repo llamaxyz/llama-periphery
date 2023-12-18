@@ -29,7 +29,11 @@ contract LlamaDeployTokenGovernorWithRoleScript is LlamaBaseScript {
   /// before invoking this method.
   /// @param tokenVotingConfig The configuration of the new Llama token voting module.
   /// @param description The description of the role to be minted.
-  function run(LlamaTokenVotingConfig calldata tokenVotingConfig, RoleDescription description) public onlyDelegateCall returns (LlamaTokenGovernor governor) {
+  function run(LlamaTokenVotingConfig calldata tokenVotingConfig, RoleDescription description)
+    public
+    onlyDelegateCall
+    returns (LlamaTokenGovernor governor)
+  {
     ILlamaCore llamaCore = ILlamaCore(ILlamaExecutor(address(this)).LLAMA_CORE());
     ILlamaPolicy policy = llamaCore.policy();
     policy.initializeRole(description);
