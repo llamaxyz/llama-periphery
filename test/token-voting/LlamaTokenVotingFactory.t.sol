@@ -8,9 +8,11 @@ import {Clones} from "@openzeppelin/proxy/Clones.sol";
 import {LlamaTokenVotingTestSetup} from "test/token-voting/LlamaTokenVotingTestSetup.sol";
 
 import {ActionInfo, LlamaTokenVotingConfig} from "src/lib/Structs.sol";
+import {RoleDescription} from "src/lib/UDVTs.sol";
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
 import {ILlamaPolicy} from "src/interfaces/ILlamaPolicy.sol";
 import {ILlamaTokenAdapter} from "src/token-voting/interfaces/ILlamaTokenAdapter.sol";
+import {LlamaDeployTokenGovernorWithRoleScript} from "src/token-voting/llama-scripts/LlamaDeployTokenGovernorWithRoleScript.sol";
 import {LlamaTokenAdapterVotesTimestamp} from "src/token-voting/token-adapters/LlamaTokenAdapterVotesTimestamp.sol";
 import {LlamaTokenGovernor} from "src/token-voting/LlamaTokenGovernor.sol";
 import {LlamaTokenVotingFactory} from "src/token-voting/LlamaTokenVotingFactory.sol";
@@ -28,8 +30,10 @@ contract LlamaTokenVotingFactoryTest is LlamaTokenVotingTestSetup {
     uint256 chainId
   );
   event ActionThresholdSet(uint256 newThreshold);
-  event QuorumPctSet(uint16 voteQuorumPct, uint16 vetoQuorumPct);
   event PeriodPctSet(uint16 delayPeriodPct, uint16 castingPeriodPct, uint16 submissionPeriodPct);
+  event QuorumPctSet(uint16 voteQuorumPct, uint16 vetoQuorumPct);
+  event RoleAssigned(address indexed policyholder, uint8 indexed role, uint64 expiration, uint96 quantity);
+  event RoleInitialized(uint8 indexed role, RoleDescription description);
 
   function setUp() public override {
     LlamaTokenVotingTestSetup.setUp();
@@ -374,4 +378,77 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     );
     CORE.executeAction(actionInfo);
   }
+}
+
+contract LlamaDeployTokenGovernorWithRole is LlamaTokenVotingFactoryTest {
+    function test_run () public {
+        bytes memory adapterConfig = abi.encode(LlamaTokenAdapterVotesTimestamp.Config(address(erc20VotesToken)));
+        bytes32 salt = keccak256(abi.encodePacked(address(EXECUTOR), address(CORE), adapterConfig, uint256(0)));
+        tokenVotingGovernorRole = POLICY.numRoles() + 1;
+        LlamaTokenVotingConfig memory tokenVotingConfig = LlamaTokenVotingConfig(
+            CORE,
+            llamaTokenAdapterTimestampLogic,
+            abi.encode(LlamaTokenAdapterVotesTimestamp.Config(address(erc20VotesToken))),
+            0,
+            tokenVotingGovernorRole,
+            ERC20_CREATION_THRESHOLD,
+            defaultCasterConfig
+        );
+        RoleDescription description = RoleDescription.wrap("Token Voting Governor Role");
+        LlamaDeployTokenGovernorWithRoleScript llamaDeployTokenGovernorWithRoleScript = new LlamaDeployTokenGovernorWithRoleScript(tokenVotingFactory);
+        bytes memory data = abi.encodeWithSelector(llamaDeployTokenGovernorWithRoleScript.run.selector, tokenVotingConfig, description);
+
+    LlamaTokenGovernor llamaERC20TokenGovernor = LlamaTokenGovernor(
+      Clones.predictDeterministicAddress(
+        address(llamaTokenGovernorLogic),
+        salt,
+        address(tokenVotingFactory) // deployer
+      )
+    );
+    ILlamaTokenAdapter llamaERC20TokenAdapter = ILlamaTokenAdapter(
+      Clones.predictDeterministicAddress(
+        address(llamaTokenAdapterTimestampLogic),
+        salt,
+        address(tokenVotingFactory) // deployer
+      )
+    );
+
+        vm.startPrank(address(EXECUTOR));
+        // part #1: authorize script
+        CORE.setScriptAuthorization(address(llamaDeployTokenGovernorWithRoleScript), true);
+
+        // part #2: permission the script
+        POLICY.setRolePermission(CORE_TEAM_ROLE, ILlamaPolicy.PermissionData(address(llamaDeployTokenGovernorWithRoleScript), llamaDeployTokenGovernorWithRoleScript.run.selector, address(STRATEGY)), true);
+        vm.stopPrank();
+
+        // part #3: create, approve, and execute action
+        vm.prank(coreTeam4);
+        uint256 actionId = CORE.createAction(CORE_TEAM_ROLE, STRATEGY, address(llamaDeployTokenGovernorWithRoleScript), 0, data, "");
+        ActionInfo memory actionInfo = ActionInfo(actionId, coreTeam4, CORE_TEAM_ROLE, STRATEGY, address(llamaDeployTokenGovernorWithRoleScript), 0, data);
+
+        vm.prank(coreTeam1);
+        CORE.castApproval(CORE_TEAM_ROLE, actionInfo, "");
+        vm.prank(coreTeam2);
+        CORE.castApproval(CORE_TEAM_ROLE, actionInfo, "");
+        vm.prank(coreTeam3);
+        CORE.castApproval(CORE_TEAM_ROLE, actionInfo, "");
+
+        vm.expectEmit();
+        emit RoleInitialized(tokenVotingGovernorRole, description);
+        vm.expectEmit();
+        emit LlamaTokenVotingInstanceCreated(
+            address(EXECUTOR),
+            CORE,
+            address(erc20VotesToken),
+            llamaTokenAdapterTimestampLogic,
+            llamaERC20TokenAdapter,
+            0,
+            tokenVotingGovernorRole,
+            llamaERC20TokenGovernor,
+            block.chainid
+        );
+        vm.expectEmit();
+        emit RoleAssigned(address(llamaERC20TokenGovernor), tokenVotingGovernorRole, type(uint64).max, 1);
+        CORE.executeAction(actionInfo);
+    }
 }

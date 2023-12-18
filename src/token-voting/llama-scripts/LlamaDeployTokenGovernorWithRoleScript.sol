@@ -16,7 +16,7 @@ import {LlamaTokenVotingFactory} from "src/token-voting/LlamaTokenVotingFactory.
 /// mint a policy and assign the role to the new token voting governor in a single action.
 /// @dev This contract is a script that can only be used via delegatecall, which means it must be authorized by
 /// LlamaCore before utilizing. The `run` function will fail if not delegate called.
-contract LlamaDeployTokenGovernorWithRole is LlamaBaseScript {
+contract LlamaDeployTokenGovernorWithRoleScript is LlamaBaseScript {
   LlamaTokenVotingFactory public immutable FACTORY;
 
   constructor(LlamaTokenVotingFactory factory) LlamaBaseScript() {
@@ -29,11 +29,11 @@ contract LlamaDeployTokenGovernorWithRole is LlamaBaseScript {
   /// before invoking this method.
   /// @param tokenVotingConfig The configuration of the new Llama token voting module.
   /// @param description The description of the role to be minted.
-  function run(LlamaTokenVotingConfig calldata tokenVotingConfig, RoleDescription description) public onlyDelegateCall {
-    LlamaTokenGovernor governor = FACTORY.deploy(tokenVotingConfig);
-    ILlamaCore llamaCore = ILlamaExecutor(address(this)).LLAMA_CORE();
+  function run(LlamaTokenVotingConfig calldata tokenVotingConfig, RoleDescription description) public onlyDelegateCall returns (LlamaTokenGovernor governor) {
+    ILlamaCore llamaCore = ILlamaCore(ILlamaExecutor(address(this)).LLAMA_CORE());
     ILlamaPolicy policy = llamaCore.policy();
     policy.initializeRole(description);
+    governor = FACTORY.deploy(tokenVotingConfig);
     policy.setRoleHolder(policy.numRoles(), address(governor), 1, type(uint64).max);
   }
 }
