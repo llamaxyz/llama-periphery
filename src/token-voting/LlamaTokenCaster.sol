@@ -602,7 +602,7 @@ contract LlamaTokenCaster is Initializable {
 
   /// @dev Returns the new total count of votes or vetoes in Against (0), For (1) or Abstain (2).
   function _newCastCount(uint128 currentCount, uint128 weight) internal pure returns (uint128) {
-    if (uint128(currentCount) + weight >= type(uint128).max) return type(uint128).max;
+    if (uint256(currentCount) + weight >= type(uint128).max) return type(uint128).max;
     return currentCount + weight;
   }
 
