@@ -890,3 +890,55 @@ contract SetPeriodPct is LlamaERC20TokenCasterTest {
     );
   }
 }
+
+contract CastData is LlamaERC20TokenCasterTest {
+  function setUp() public virtual override {
+    LlamaERC20TokenCasterTest.setUp();
+
+    _skipVotingDelay(actionInfo);
+    castVotesFor();
+
+    uint256 delayPeriodEndTime = actionCreationTime + ((APPROVAL_PERIOD * ONE_QUARTER_IN_BPS) / ONE_HUNDRED_IN_BPS);
+    uint256 castingPeriodEndTime = delayPeriodEndTime + ((APPROVAL_PERIOD * TWO_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS);
+    vm.warp(castingPeriodEndTime + 1);
+
+    llamaERC20TokenCaster.submitApproval(actionInfo);
+
+    _skipVetoDelay(actionInfo);
+    castVetosFor();
+
+    Action memory action = CORE.getAction(actionInfo.id);
+    delayPeriodEndTime =
+      (action.minExecutionTime - QUEUING_PERIOD) + ((QUEUING_PERIOD * ONE_QUARTER_IN_BPS) / ONE_HUNDRED_IN_BPS);
+    castingPeriodEndTime = delayPeriodEndTime + ((QUEUING_PERIOD * TWO_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS);
+    vm.warp(castingPeriodEndTime + 1);
+
+    llamaERC20TokenCaster.submitDisapproval(actionInfo);
+  }
+
+  function test_CanGetCastData() public {
+    (
+      uint96 votesFor,
+      uint96 votesAbstain,
+      uint96 votesAgainst,
+      uint96 vetoesFor,
+      uint96 vetoesAbstain,
+      uint96 vetoesAgainst
+    ) = llamaERC20TokenCaster.casts(actionInfo.id);
+    assertEq(votesFor, (ERC20_CREATION_THRESHOLD / 2) * 3);
+    assertEq(votesAbstain, 0);
+    assertEq(votesAgainst, 0);
+    assertEq(vetoesFor, (ERC20_CREATION_THRESHOLD / 2) * 3);
+    assertEq(vetoesAbstain, 0);
+    assertEq(vetoesAgainst, 0);
+
+    assertTrue(llamaERC20TokenCaster.hasTokenHolderCast(actionInfo.id, tokenHolder1, true));
+    assertTrue(llamaERC20TokenCaster.hasTokenHolderCast(actionInfo.id, tokenHolder2, true));
+    assertTrue(llamaERC20TokenCaster.hasTokenHolderCast(actionInfo.id, tokenHolder3, true));
+    assertFalse(llamaERC20TokenCaster.hasTokenHolderCast(actionInfo.id, notTokenHolder, true));
+    assertTrue(llamaERC20TokenCaster.hasTokenHolderCast(actionInfo.id, tokenHolder1, false));
+    assertTrue(llamaERC20TokenCaster.hasTokenHolderCast(actionInfo.id, tokenHolder2, false));
+    assertTrue(llamaERC20TokenCaster.hasTokenHolderCast(actionInfo.id, tokenHolder3, false));
+    assertFalse(llamaERC20TokenCaster.hasTokenHolderCast(actionInfo.id, notTokenHolder, false));
+  }
+}

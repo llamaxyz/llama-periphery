@@ -397,6 +397,16 @@ contract LlamaTokenCaster is Initializable {
   }
 
   // -------- Getters --------
+
+  /// @notice Returns if a token holder has cast (vote or veto) yet for a given action.
+  /// @param actionId ID of the action.
+  /// @param tokenholder The tokenholder to check.
+  /// @param isVote `true` if checking for a vote, `false` if checking for a veto.
+  function hasTokenHolderCast(uint256 actionId, address tokenholder, bool isVote) external view returns (bool) {
+    if (isVote) return casts[actionId].castVote[tokenholder];
+    else return casts[actionId].castVeto[tokenholder];
+  }
+
   /// @notice Returns the current voting quorum and vetoing quorum.
   function getQuorum() external view returns (uint16 voteQuorumPct, uint16 vetoQuorumPct) {
     return quorumCheckpoints.latest();
