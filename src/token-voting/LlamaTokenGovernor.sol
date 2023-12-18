@@ -662,8 +662,10 @@ contract LlamaTokenGovernor is Initializable {
     Action memory action = llamaCore.getAction(actionInfo.id);
     uint256 checkpointTime = action.creationTime - 1;
 
+    CastData storage castData = casts[actionInfo.id];
+
     actionInfo.strategy.checkIfApprovalEnabled(actionInfo, address(this), role); // Reverts if not allowed.
-    if (casts[actionInfo.id].castVote[caster]) revert DuplicateCast();
+    if (castData.castVote[caster]) revert DuplicateCast();
     _preCastAssertions(actionInfo, support, ActionState.Active, checkpointTime);
 
     uint256 delayPeriodEndTime;
@@ -685,8 +687,6 @@ contract LlamaTokenGovernor is Initializable {
     uint128 weight =
       LlamaUtils.toUint128(tokenAdapter.getPastVotes(caster, tokenAdapter.timestampToTimepoint(delayPeriodEndTime)));
 
-    CastData storage castData = casts[actionInfo.id];
-
     if (support == uint8(VoteType.Against)) castData.votesAgainst = _newCastCount(castData.votesAgainst, weight);
     else if (support == uint8(VoteType.For)) castData.votesFor = _newCastCount(castData.votesFor, weight);
     else if (support == uint8(VoteType.Abstain)) castData.votesAbstain = _newCastCount(castData.votesAbstain, weight);
@@ -704,8 +704,10 @@ contract LlamaTokenGovernor is Initializable {
     Action memory action = llamaCore.getAction(actionInfo.id);
     uint256 checkpointTime = action.creationTime - 1;
 
+    CastData storage castData = casts[actionInfo.id];
+
     actionInfo.strategy.checkIfDisapprovalEnabled(actionInfo, address(this), role); // Reverts if not allowed.
-    if (casts[actionInfo.id].castVeto[caster]) revert DuplicateCast();
+    if (castData.castVeto[caster]) revert DuplicateCast();
     _preCastAssertions(actionInfo, support, ActionState.Queued, checkpointTime);
 
     uint256 delayPeriodEndTime;
@@ -727,8 +729,6 @@ contract LlamaTokenGovernor is Initializable {
 
     uint128 weight =
       LlamaUtils.toUint128(tokenAdapter.getPastVotes(caster, tokenAdapter.timestampToTimepoint(delayPeriodEndTime)));
-
-    CastData storage castData = casts[actionInfo.id];
 
     if (support == uint8(VoteType.Against)) castData.vetoesAgainst = _newCastCount(castData.vetoesAgainst, weight);
     else if (support == uint8(VoteType.For)) castData.vetoesFor = _newCastCount(castData.vetoesFor, weight);
