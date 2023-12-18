@@ -18,8 +18,14 @@ run-script script_name flags='' sig='' args='':
     -vvvv {{flags}}
   mv _test test
 
+run-deploy-voting-module-script flags: (run-script 'DeployLlamaTokenVotingModule' flags '--sig "run(address,string)"' '$SCRIPT_DEPLOYER_ADDRESS "tokenVotingModuleConfig.json"')
+
 dry-run-deploy: (run-script 'DeployLlamaTokenVotingFactory')
 
 deploy: (run-script 'DeployLlamaTokenVotingFactory' '--broadcast --verify --build-info --build-info-path build_info')
+
+dry-run-deploy-voting-module: (run-deploy-voting-module-script '')
+
+deploy-voting-module: (run-deploy-voting-module-script '--broadcast --verify')
 
 verify: (run-script 'DeployLlamaTokenVotingFactory' '--verify --resume')

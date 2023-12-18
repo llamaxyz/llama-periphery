@@ -4,7 +4,7 @@ pragma solidity ^0.8.23;
 import {Clones} from "@openzeppelin/proxy/Clones.sol";
 
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
-import {CasterConfig} from "src/lib/Structs.sol";
+import {CasterConfig, LlamaTokenVotingConfig} from "src/lib/Structs.sol";
 import {ILlamaTokenAdapter} from "src/token-voting/interfaces/ILlamaTokenAdapter.sol";
 import {LlamaTokenActionCreator} from "src/token-voting/LlamaTokenActionCreator.sol";
 import {LlamaTokenCaster} from "src/token-voting/LlamaTokenCaster.sol";
@@ -13,22 +13,6 @@ import {LlamaTokenCaster} from "src/token-voting/LlamaTokenCaster.sol";
 /// @author Llama (devsdosomething@llama.xyz)
 /// @notice This contract enables Llama instances to deploy a token voting module.
 contract LlamaTokenVotingFactory {
-  // =========================
-  // ======== Structs ========
-  // =========================
-
-  /// @dev Configuration of a new Llama token voting module.
-  struct LlamaTokenVotingConfig {
-    ILlamaCore llamaCore; // The address of the Llama core.
-    ILlamaTokenAdapter tokenAdapterLogic; // The logic contract of the token adapter.
-    bytes adapterConfig; // The configuration of the token adapter.
-    uint256 nonce; // The nonce to be used in the salt of the deterministic deployment.
-    uint8 actionCreatorRole; // The role required by the `LlamaTokenActionCreator` to create an action.
-    uint8 casterRole; // The role required by the `LlamaTokenCaster` to cast approvals and disapprovals.
-    uint256 creationThreshold; // The number of tokens required to create an action.
-    CasterConfig casterConfig; // The quorum and period data for the `LlamaTokenCaster`.
-  }
-
   // ========================
   // ======== Errors ========
   // ========================

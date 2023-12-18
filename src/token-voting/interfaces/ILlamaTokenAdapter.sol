@@ -23,7 +23,6 @@ interface ILlamaTokenAdapter {
   function clock() external view returns (uint48 timepoint);
 
   /// @notice Reverts if the token's CLOCK_MODE changes from what's in the adapter or if the clock() function doesn't
-  /// return the correct timepoint based on CLOCK_MODE.
   function checkIfInconsistentClock() external view;
 
   /// @notice Converts a timestamp to timepoint units.
@@ -34,9 +33,11 @@ interface ILlamaTokenAdapter {
   /// @notice Get the voting balance of a token holder at a specified past timepoint.
   /// @param account The token holder's address.
   /// @param timepoint The timepoint at which to get the voting balance.
+  /// @return The number of votes the account had at timepoint.
   function getPastVotes(address account, uint48 timepoint) external view returns (uint256);
 
   /// @notice Get the total supply of a token at a specified past timepoint.
   /// @param timepoint The timepoint at which to get the total supply.
+  /// @return The total supply of the token at timepoint.
   function getPastTotalSupply(uint48 timepoint) external view returns (uint256);
 }
