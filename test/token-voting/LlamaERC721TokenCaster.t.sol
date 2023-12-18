@@ -580,7 +580,9 @@ contract SubmitApprovals is LlamaERC721TokenCasterTest {
     vm.startPrank(tokenHolder1);
     llamaERC721TokenCaster.submitApproval(actionInfo);
 
-    vm.expectRevert(LlamaTokenCaster.DuplicateSubmission.selector);
+    // This should revert since the underlying Action has transitioned to Queued state. Otherwise it would have reverted
+    // due to `LlamaCore.DuplicateCast() error`.
+    vm.expectRevert(abi.encodeWithSelector(ILlamaCore.InvalidActionState.selector, ActionState.Queued));
     llamaERC721TokenCaster.submitApproval(actionInfo);
   }
 
@@ -667,7 +669,9 @@ contract SubmitDisapprovals is LlamaERC721TokenCasterTest {
     vm.startPrank(tokenHolder1);
     llamaERC721TokenCaster.submitDisapproval(actionInfo);
 
-    vm.expectRevert(LlamaTokenCaster.DuplicateSubmission.selector);
+    // This should revert since the underlying Action has transitioned to Failed state. Otherwise it would have reverted
+    // due to `LlamaCore.DuplicateCast() error`.
+    vm.expectRevert(abi.encodeWithSelector(ILlamaCore.InvalidActionState.selector, ActionState.Failed));
     llamaERC721TokenCaster.submitDisapproval(actionInfo);
   }
 

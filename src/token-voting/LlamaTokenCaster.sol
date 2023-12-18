@@ -33,11 +33,9 @@ contract LlamaTokenCaster is Initializable {
     uint96 votesFor; // Number of votes casted for this action.
     uint96 votesAbstain; // Number of abstentions casted for this action.
     uint96 votesAgainst; // Number of votes casted against this action.
-    bool approvalSubmitted; // True if the approval was submitted to `LlamaCore, false otherwise.
     uint96 vetoesFor; // Number of vetoes casted for this action.
     uint96 vetoesAbstain; // Number of abstentions casted for this action.
     uint96 vetoesAgainst; // Number of disapprovals casted against this action.
-    bool disapprovalSubmitted; // True if the disapproval has been submitted to `LlamaCore`, false otherwise.
     mapping(address tokenholder => bool) castVote; // True if tokenholder casted a vote, false otherwise.
     mapping(address tokenholder => bool) castVeto; // True if tokenholder casted a veto, false otherwise.
   }
@@ -57,9 +55,6 @@ contract LlamaTokenCaster is Initializable {
 
   /// @dev Token holders can only cast once.
   error DuplicateCast();
-
-  /// @dev Thrown when a user tries to submit a cast (dis)approval to `LlamaCore` more than once.
-  error DuplicateSubmission();
 
   /// @dev Thrown when a user tries to cast a vote or veto but the against surpasses for.
   error ForDoesNotSurpassAgainst(uint256 castsFor, uint256 castsAgainst);
@@ -309,7 +304,6 @@ contract LlamaTokenCaster is Initializable {
   function submitApproval(ActionInfo calldata actionInfo) external {
     Action memory action = llamaCore.getAction(actionInfo.id);
 
-    if (casts[actionInfo.id].approvalSubmitted) revert DuplicateSubmission();
     // Reverts if clock or CLOCK_MODE() has changed
     tokenAdapter.checkIfInconsistentClock();
 
@@ -334,7 +328,6 @@ contract LlamaTokenCaster is Initializable {
     if (votesFor < threshold) revert InsufficientVotes(votesFor, threshold);
     if (votesFor <= votesAgainst) revert ForDoesNotSurpassAgainst(votesFor, votesAgainst);
 
-    casts[actionInfo.id].approvalSubmitted = true;
     llamaCore.castApproval(role, actionInfo, "");
     emit ApprovalSubmitted(actionInfo.id, msg.sender, votesFor, votesAgainst, votesAbstain);
   }
@@ -345,7 +338,6 @@ contract LlamaTokenCaster is Initializable {
   function submitDisapproval(ActionInfo calldata actionInfo) external {
     Action memory action = llamaCore.getAction(actionInfo.id);
 
-    if (casts[actionInfo.id].disapprovalSubmitted) revert DuplicateSubmission();
     // Reverts if clock or CLOCK_MODE() has changed
     tokenAdapter.checkIfInconsistentClock();
 
@@ -371,7 +363,6 @@ contract LlamaTokenCaster is Initializable {
     if (vetoesFor < threshold) revert InsufficientVotes(vetoesFor, threshold);
     if (vetoesFor <= vetoesAgainst) revert ForDoesNotSurpassAgainst(vetoesFor, vetoesAgainst);
 
-    casts[actionInfo.id].disapprovalSubmitted = true;
     llamaCore.castDisapproval(role, actionInfo, "");
     emit DisapprovalSubmitted(actionInfo.id, msg.sender, vetoesFor, vetoesAgainst, vetoesAbstain);
   }

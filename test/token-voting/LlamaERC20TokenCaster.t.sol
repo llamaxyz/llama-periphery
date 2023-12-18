@@ -182,7 +182,7 @@ contract CastVote is LlamaERC20TokenCasterTest {
     vm.prank(address(0xdeadbeef));
     llamaERC20TokenCaster.castVote(actionInfo, uint8(VoteType.For), "");
 
-    (uint96 votesFor,,,,,,,) = llamaERC20TokenCaster.casts(actionInfo.id);
+    (uint96 votesFor,,,,,) = llamaERC20TokenCaster.casts(actionInfo.id);
     assertEq(votesFor, type(uint96).max);
 
     // Can still cast even if count is max.
@@ -191,7 +191,7 @@ contract CastVote is LlamaERC20TokenCasterTest {
     vm.prank(tokenHolder1);
     llamaERC20TokenCaster.castVote(actionInfo, uint8(VoteType.For), "");
 
-    (votesFor,,,,,,,) = llamaERC20TokenCaster.casts(actionInfo.id);
+    (votesFor,,,,,) = llamaERC20TokenCaster.casts(actionInfo.id);
     assertEq(votesFor, type(uint96).max);
   }
 
@@ -418,7 +418,7 @@ contract CastVeto is LlamaERC20TokenCasterTest {
     vm.prank(address(0xdeadbeef));
     llamaERC20TokenCaster.castVeto(actionInfo, uint8(VoteType.For), "");
 
-    (,,,, uint96 vetoesFor,,,) = llamaERC20TokenCaster.casts(actionInfo.id);
+    (,,, uint96 vetoesFor,,) = llamaERC20TokenCaster.casts(actionInfo.id);
     assertEq(vetoesFor, type(uint96).max);
 
     // Can still cast even if count is max.
@@ -427,7 +427,7 @@ contract CastVeto is LlamaERC20TokenCasterTest {
     vm.prank(tokenHolder1);
     llamaERC20TokenCaster.castVeto(actionInfo, uint8(VoteType.For), "");
 
-    (,,,, vetoesFor,,,) = llamaERC20TokenCaster.casts(actionInfo.id);
+    (,,, vetoesFor,,) = llamaERC20TokenCaster.casts(actionInfo.id);
     assertEq(vetoesFor, type(uint96).max);
   }
 
@@ -630,7 +630,9 @@ contract SubmitApprovals is LlamaERC20TokenCasterTest {
     vm.startPrank(tokenHolder1);
     llamaERC20TokenCaster.submitApproval(actionInfo);
 
-    vm.expectRevert(LlamaTokenCaster.DuplicateSubmission.selector);
+    // This should revert since the underlying Action has transitioned to Queued state. Otherwise it would have reverted
+    // due to `LlamaCore.DuplicateCast() error`.
+    vm.expectRevert(abi.encodeWithSelector(ILlamaCore.InvalidActionState.selector, ActionState.Queued));
     llamaERC20TokenCaster.submitApproval(actionInfo);
   }
 
@@ -717,7 +719,9 @@ contract SubmitDisapprovals is LlamaERC20TokenCasterTest {
     vm.startPrank(tokenHolder1);
     llamaERC20TokenCaster.submitDisapproval(actionInfo);
 
-    vm.expectRevert(LlamaTokenCaster.DuplicateSubmission.selector);
+    // This should revert since the underlying Action has transitioned to Failed state. Otherwise it would have reverted
+    // due to `LlamaCore.DuplicateCast() error`.
+    vm.expectRevert(abi.encodeWithSelector(ILlamaCore.InvalidActionState.selector, ActionState.Failed));
     llamaERC20TokenCaster.submitDisapproval(actionInfo);
   }
 
