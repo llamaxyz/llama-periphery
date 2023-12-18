@@ -2,8 +2,10 @@
 pragma solidity ^0.8.23;
 
 import {ILlamaAccount} from "src/interfaces/ILlamaAccount.sol";
+import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
 import {ILlamaActionGuard} from "src/interfaces/ILlamaActionGuard.sol";
 import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
+import {ILlamaTokenAdapter} from "src/token-voting/interfaces/ILlamaTokenAdapter.sol";
 import {RoleDescription} from "src/lib/UDVTs.sol";
 
 /// @dev Data required to create an action.
@@ -32,6 +34,18 @@ struct Action {
   uint64 minExecutionTime; // Only set when an action is queued. The timestamp when action execution can begin.
   uint96 totalApprovals; // The total quantity of policyholder approvals.
   uint96 totalDisapprovals; // The total quantity of policyholder disapprovals.
+}
+
+/// @dev Configuration of a new Llama token voting module.
+struct LlamaTokenVotingConfig {
+  ILlamaCore llamaCore; // The address of the Llama core.
+  ILlamaTokenAdapter tokenAdapterLogic; // The logic contract of the token adapter.
+  bytes adapterConfig; // The configuration of the token adapter.
+  uint256 nonce; // The nonce to be used in the salt of the deterministic deployment.
+  uint8 actionCreatorRole; // The role required by the `LlamaTokenActionCreator` to create an action.
+  uint8 casterRole; // The role required by the `LlamaTokenCaster` to cast approvals and disapprovals.
+  uint256 creationThreshold; // The number of tokens required to create an action.
+  CasterConfig casterConfig; // The quorum and period data for the `LlamaTokenCaster`.
 }
 
 /// @dev Quorum and period data for token voting caster contracts.

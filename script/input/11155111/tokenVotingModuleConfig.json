@@ -1,0 +1,18 @@
+{
+  "comment": "This is an example token voting module deployment on Sepolia.",
+  "factory": "0x2997f4D6899DC91dE9Ae0FcD98b49CA88b8Fc85e",
+  "llamaCore": "0xc68046794327490F953EA15522367FFBA0b64f86",
+  "tokenAdapterLogic": "0x88D63b8c5F8C3e95743F1d26Df8aDd0669614278",
+  "tokenAddress": "0xf44d44a54440F22e5DC5adb7efA3233645f04007",
+  "nonce": 0,
+  "actionCreatorRole": 0,
+  "casterRole": 0,
+  "creationThreshold": 10000e18,
+  "casterConfig": {
+    "voteQuorumPct": 2000,
+    "vetoQuorumPct": 1000,
+    "delayPeriodPct": 2500,
+    "castingPeriodPct": 5000,
+    "submissionPeriodPct": 2500
+  }
+}

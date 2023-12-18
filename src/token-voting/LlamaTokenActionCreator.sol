@@ -113,7 +113,7 @@ contract LlamaTokenActionCreator is Initializable {
     _disableInitializers();
   }
 
-  /// @notice Initializes a new `LlamaERC20TokenActionCreator` clone.
+  /// @notice Initializes a new `LlamaTokenActionCreator` clone.
   /// @dev This function is called by the `deploy` function in the `LlamaTokenVotingFactory` contract.
   /// The `initializer` modifier ensures that this function can be invoked at most once.
   /// @param _llamaCore The `LlamaCore` contract for this Llama instance.
