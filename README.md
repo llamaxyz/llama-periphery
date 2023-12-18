@@ -56,6 +56,17 @@ The comments in that file explain what each variable is for and when they're nee
 - `just deploy` - deploy and verify payload on mainnet
 - Run `just -l` or see the [`justfile`](https://github.com/llamaxyz/llama/blob/main/justfile) for other commands such as dry runs.
 
+## Testnet deployment
+
+| Name                                             | Sepolia                                                                                                                       |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+|_Factory_|
+| LlamaTokenVotingFactory                          | [0x6A97643633eafEEC00b7Ec4CE84269203645aaBC](https://sepolia.etherscan.io/address/0x6A97643633eafEEC00b7Ec4CE84269203645aaBC) |
+|_Governor_|
+| LlamaTokenGovernor (logic contract)              | [0x0A01C701013E6d6F1c1759457324303Bf25CC7E3](https://sepolia.etherscan.io/address/0x0A01C701013E6d6F1c1759457324303Bf25CC7E3) |
+|_Token Adapters_|
+| LlamaTokenAdapterVotesTimestamp (logic contract) | [0x8CCe1b824EfF3A7966348528B6951A84eC0541A5](https://sepolia.etherscan.io/address/0x8CCe1b824EfF3A7966348528B6951A84eC0541A5) |     
+
 ## Smart contract reference
 
 Run the following command to generate smart contract reference documentation from our NatSpec comments and serve those static files locally:

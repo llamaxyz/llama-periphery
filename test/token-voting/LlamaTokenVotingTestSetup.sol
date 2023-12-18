@@ -16,8 +16,7 @@ import {ILlamaRelativeStrategyBase} from "src/interfaces/ILlamaRelativeStrategyB
 import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
 import {RoleDescription} from "src/lib/UDVTs.sol";
 import {LlamaTokenAdapterVotesTimestamp} from "src/token-voting/token-adapters/LlamaTokenAdapterVotesTimestamp.sol";
-import {LlamaTokenActionCreator} from "src/token-voting/LlamaTokenActionCreator.sol";
-import {LlamaTokenCaster} from "src/token-voting/LlamaTokenCaster.sol";
+import {LlamaTokenGovernor} from "src/token-voting/LlamaTokenGovernor.sol";
 
 contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenVotingFactory {
   // Percentages
@@ -48,8 +47,7 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
   CasterConfig public defaultCasterConfig;
 
   // Token Voting Roles
-  uint8 tokenVotingActionCreatorRole;
-  uint8 tokenVotingCasterRole;
+  uint8 tokenVotingGovernorRole;
   uint8 madeUpRole;
 
   // Token holders.
@@ -93,10 +91,8 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
 
     // Initialize required roles.
     vm.startPrank(address(EXECUTOR));
-    POLICY.initializeRole(RoleDescription.wrap("Token Voting Action Creator Role"));
-    tokenVotingActionCreatorRole = POLICY.numRoles();
-    POLICY.initializeRole(RoleDescription.wrap("Token Voting Caster Role"));
-    tokenVotingCasterRole = POLICY.numRoles();
+    POLICY.initializeRole(RoleDescription.wrap("Token Voting Governor Role"));
+    tokenVotingGovernorRole = POLICY.numRoles();
     POLICY.initializeRole(RoleDescription.wrap("Made Up Role"));
     madeUpRole = POLICY.numRoles();
     vm.stopPrank();
@@ -106,76 +102,66 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
   // ======== Helpers ========
   // =========================
 
-  function _deployERC20TokenVotingModuleAndSetRole() internal returns (LlamaTokenActionCreator, LlamaTokenCaster) {
+  function _deployERC20TokenVotingModuleAndSetRole() internal returns (LlamaTokenGovernor) {
     bytes memory adapterConfig = abi.encode(LlamaTokenAdapterVotesTimestamp.Config(address(erc20VotesToken)));
     LlamaTokenVotingConfig memory config = LlamaTokenVotingConfig(
       CORE,
       llamaTokenAdapterTimestampLogic,
       adapterConfig,
       0,
-      tokenVotingActionCreatorRole,
-      tokenVotingCasterRole,
+      tokenVotingGovernorRole,
       ERC20_CREATION_THRESHOLD,
       defaultCasterConfig
     );
 
     vm.startPrank(address(EXECUTOR));
     // Deploy Token Voting Module
-    (LlamaTokenActionCreator llamaERC20TokenActionCreator, LlamaTokenCaster llamaERC20TokenCaster) =
-      tokenVotingFactory.deploy(config);
+    (LlamaTokenGovernor llamaERC20TokenGovernor) = tokenVotingFactory.deploy(config);
     // Assign roles to Token Voting Modules
     POLICY.setRoleHolder(
-      tokenVotingActionCreatorRole, address(llamaERC20TokenActionCreator), DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION
-    );
-    POLICY.setRoleHolder(
-      tokenVotingCasterRole, address(llamaERC20TokenCaster), DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION
+      tokenVotingGovernorRole, address(llamaERC20TokenGovernor), DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION
     );
     vm.stopPrank();
 
-    return (LlamaTokenActionCreator(llamaERC20TokenActionCreator), LlamaTokenCaster(llamaERC20TokenCaster));
+    return LlamaTokenGovernor(llamaERC20TokenGovernor);
   }
 
-  function _deployERC721TokenVotingModuleAndSetRole() internal returns (LlamaTokenActionCreator, LlamaTokenCaster) {
+  function _deployERC721TokenVotingModuleAndSetRole() internal returns (LlamaTokenGovernor) {
     bytes memory adapterConfig = abi.encode(LlamaTokenAdapterVotesTimestamp.Config(address(erc721VotesToken)));
     LlamaTokenVotingConfig memory config = LlamaTokenVotingConfig(
       CORE,
       llamaTokenAdapterTimestampLogic,
       adapterConfig,
       0,
-      tokenVotingActionCreatorRole,
-      tokenVotingCasterRole,
+      tokenVotingGovernorRole,
       ERC721_CREATION_THRESHOLD,
       defaultCasterConfig
     );
 
     vm.startPrank(address(EXECUTOR));
     // Deploy Token Voting Module
-    (LlamaTokenActionCreator llamaERC721TokenActionCreator, LlamaTokenCaster llamaERC721TokenCaster) =
-      tokenVotingFactory.deploy(config);
+    (LlamaTokenGovernor llamaERC721TokenGovernor) = tokenVotingFactory.deploy(config);
     // Assign roles to Token Voting Modules
     POLICY.setRoleHolder(
-      tokenVotingActionCreatorRole, address(llamaERC721TokenActionCreator), DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION
-    );
-    POLICY.setRoleHolder(
-      tokenVotingCasterRole, address(llamaERC721TokenCaster), DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION
+      tokenVotingGovernorRole, address(llamaERC721TokenGovernor), DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION
     );
     vm.stopPrank();
 
-    return (LlamaTokenActionCreator(llamaERC721TokenActionCreator), LlamaTokenCaster(llamaERC721TokenCaster));
+    return LlamaTokenGovernor(llamaERC721TokenGovernor);
   }
 
-  function _setRolePermissionToLlamaTokenActionCreator() internal {
-    // Assign permission for `MockProtocol.pause` to the LlamaTokenActionCreator.
+  function _setRolePermissionToLlamaTokenGovernor() internal {
+    // Assign permission for `MockProtocol.pause` to the LlamaTokenGovernor.
     vm.prank(address(EXECUTOR));
     POLICY.setRolePermission(
-      tokenVotingActionCreatorRole,
+      tokenVotingGovernorRole,
       ILlamaPolicy.PermissionData(address(mockProtocol), PAUSE_SELECTOR, address(STRATEGY)),
       true
     );
     vm.stopPrank();
   }
 
-  function _deployRelativeQuantityQuorumAndSetRolePermissionToCoreTeam(uint8 _tokenVotingCasterRole)
+  function _deployRelativeQuantityQuorumAndSetRolePermissionToCoreTeam(uint8 _tokenVotingGovernorRole)
     internal
     returns (ILlamaStrategy newStrategy)
   {
@@ -188,8 +174,8 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
       isFixedLengthApprovalPeriod: false,
       minApprovalPct: ONE_HUNDRED_IN_BPS,
       minDisapprovalPct: ONE_HUNDRED_IN_BPS,
-      approvalRole: _tokenVotingCasterRole,
-      disapprovalRole: _tokenVotingCasterRole,
+      approvalRole: _tokenVotingGovernorRole,
+      disapprovalRole: _tokenVotingGovernorRole,
       forceApprovalRoles: forceRoles,
       forceDisapprovalRoles: forceRoles
     });

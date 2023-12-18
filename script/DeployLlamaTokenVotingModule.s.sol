@@ -8,8 +8,7 @@ import {DeployUtils} from "script/DeployUtils.sol";
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
 import {CasterConfig, LlamaTokenVotingConfig} from "src/lib/Structs.sol";
 import {ILlamaTokenAdapter} from "src/token-voting/interfaces/ILlamaTokenAdapter.sol";
-import {LlamaTokenActionCreator} from "src/token-voting/LlamaTokenActionCreator.sol";
-import {LlamaTokenCaster} from "src/token-voting/LlamaTokenCaster.sol";
+import {LlamaTokenGovernor} from "src/token-voting/LlamaTokenGovernor.sol";
 import {LlamaTokenVotingFactory} from "src/token-voting/LlamaTokenVotingFactory.sol";
 import {DeployUtils} from "script/DeployUtils.sol";
 
@@ -36,17 +35,15 @@ contract DeployLlamaTokenVotingModule is Script {
       ILlamaTokenAdapter(jsonInput.readAddress(".tokenAdapterLogic")),
       DeployUtils.readTokenAdapter(jsonInput),
       abi.decode(jsonInput.parseRaw(".nonce"), (uint256)),
-      abi.decode(jsonInput.parseRaw(".actionCreatorRole"), (uint8)),
-      abi.decode(jsonInput.parseRaw(".casterRole"), (uint8)),
+      abi.decode(jsonInput.parseRaw(".governorRole"), (uint8)),
       abi.decode(jsonInput.parseRaw(".creationThreshold"), (uint256)),
       casterConfig
     );
 
     vm.broadcast(deployer);
-    (LlamaTokenActionCreator actionCreator, LlamaTokenCaster caster) = factory.deploy(config);
+    LlamaTokenGovernor governor = factory.deploy(config);
 
     DeployUtils.print("Successfully deployed a new Llama token voting module");
-    DeployUtils.print(string.concat("  LlamaTokenActionCreator:     ", vm.toString(address(actionCreator))));
-    DeployUtils.print(string.concat("  LlamaTokenCaster:   ", vm.toString(address(caster))));
+    DeployUtils.print(string.concat("  LlamaTokenGovernor:     ", vm.toString(address(governor))));
   }
 }
