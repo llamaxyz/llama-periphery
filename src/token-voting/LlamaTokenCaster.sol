@@ -30,12 +30,12 @@ contract LlamaTokenCaster is Initializable {
 
   /// @dev Cast counts and submission data.
   struct CastData {
-    uint96 votesFor; // Number of votes casted for this action.
-    uint96 votesAbstain; // Number of abstentions casted for this action.
-    uint96 votesAgainst; // Number of votes casted against this action.
-    uint96 vetoesFor; // Number of vetoes casted for this action.
-    uint96 vetoesAbstain; // Number of abstentions casted for this action.
-    uint96 vetoesAgainst; // Number of disapprovals casted against this action.
+    uint128 votesFor; // Number of votes casted for this action.
+    uint128 votesAbstain; // Number of abstentions casted for this action.
+    uint128 votesAgainst; // Number of votes casted against this action.
+    uint128 vetoesFor; // Number of vetoes casted for this action.
+    uint128 vetoesAbstain; // Number of abstentions casted for this action.
+    uint128 vetoesAgainst; // Number of disapprovals casted against this action.
     mapping(address tokenholder => bool) castVote; // True if tokenholder casted a vote, false otherwise.
     mapping(address tokenholder => bool) castVeto; // True if tokenholder casted a veto, false otherwise.
   }
@@ -226,7 +226,7 @@ contract LlamaTokenCaster is Initializable {
   ///   2 = Abstain
   /// @param reason The reason given for the approval by the tokenholder.
   /// @return The weight of the cast.
-  function castVote(ActionInfo calldata actionInfo, uint8 support, string calldata reason) external returns (uint96) {
+  function castVote(ActionInfo calldata actionInfo, uint8 support, string calldata reason) external returns (uint128) {
     return _castVote(msg.sender, actionInfo, support, reason);
   }
 
@@ -252,7 +252,7 @@ contract LlamaTokenCaster is Initializable {
     uint8 v,
     bytes32 r,
     bytes32 s
-  ) external returns (uint96) {
+  ) external returns (uint128) {
     bytes32 digest = _getCastVoteTypedDataHash(caster, actionInfo, support, reason);
     address signer = ecrecover(digest, v, r, s);
     if (signer == address(0) || signer != caster) revert InvalidSignature();
@@ -268,7 +268,7 @@ contract LlamaTokenCaster is Initializable {
   ///   2 = Abstain
   /// @param reason The reason given for the approval by the tokenholder.
   /// @return The weight of the cast.
-  function castVeto(ActionInfo calldata actionInfo, uint8 support, string calldata reason) external returns (uint96) {
+  function castVeto(ActionInfo calldata actionInfo, uint8 support, string calldata reason) external returns (uint128) {
     return _castVeto(msg.sender, actionInfo, support, reason);
   }
 
@@ -294,7 +294,7 @@ contract LlamaTokenCaster is Initializable {
     uint8 v,
     bytes32 r,
     bytes32 s
-  ) external returns (uint96) {
+  ) external returns (uint128) {
     bytes32 digest = _getCastVetoTypedDataHash(caster, actionInfo, support, reason);
     address signer = ecrecover(digest, v, r, s);
     if (signer == address(0) || signer != caster) revert InvalidSignature();
@@ -312,14 +312,17 @@ contract LlamaTokenCaster is Initializable {
     tokenAdapter.checkIfInconsistentClock();
 
     uint256 delayPeriodEndTime;
+    uint256 castingPeriodEndTime;
     // Scoping to prevent stack too deep errors.
     {
       // Checks to ensure it's the submission period.
       (uint16 delayPeriodPct, uint16 castingPeriodPct,) =
         periodPctsCheckpoint.getAtProbablyRecentTimestamp(checkpointTime);
       uint256 approvalPeriod = actionInfo.strategy.approvalPeriod();
-      delayPeriodEndTime = action.creationTime + ((approvalPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS);
-      uint256 castingPeriodEndTime = delayPeriodEndTime + ((approvalPeriod * castingPeriodPct) / ONE_HUNDRED_IN_BPS);
+      unchecked {
+        delayPeriodEndTime = action.creationTime + ((approvalPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS);
+        castingPeriodEndTime = delayPeriodEndTime + ((approvalPeriod * castingPeriodPct) / ONE_HUNDRED_IN_BPS);
+      }
       if (block.timestamp <= castingPeriodEndTime) revert CastingPeriodNotOver();
       // Doing (action.creationTime + approvalPeriod) vs (castingPeriodEndTime + ((approvalPeriod * submissionPeriodPct)
       // / ONE_HUNDRED_IN_BPS)) to prevent any off-by-one errors due to precision loss.
@@ -327,10 +330,12 @@ contract LlamaTokenCaster is Initializable {
       if (block.timestamp > action.creationTime + approvalPeriod) revert SubmissionPeriodOver();
     }
 
+    CastData storage castData = casts[actionInfo.id];
+
     uint256 totalSupply = tokenAdapter.getPastTotalSupply(tokenAdapter.timestampToTimepoint(delayPeriodEndTime));
-    uint96 votesFor = casts[actionInfo.id].votesFor;
-    uint96 votesAgainst = casts[actionInfo.id].votesAgainst;
-    uint96 votesAbstain = casts[actionInfo.id].votesAbstain;
+    uint128 votesFor = castData.votesFor;
+    uint128 votesAgainst = castData.votesAgainst;
+    uint128 votesAbstain = castData.votesAbstain;
     (uint16 voteQuorumPct,) = quorumCheckpoints.getAtProbablyRecentTimestamp(checkpointTime);
     uint256 threshold = FixedPointMathLib.mulDivUp(totalSupply, voteQuorumPct, ONE_HUNDRED_IN_BPS);
     if (votesFor < threshold) revert InsufficientVotes(votesFor, threshold);
@@ -351,15 +356,18 @@ contract LlamaTokenCaster is Initializable {
     tokenAdapter.checkIfInconsistentClock();
 
     uint256 delayPeriodEndTime;
+    uint256 castingPeriodEndTime;
     // Scoping to prevent stack too deep errors.
     {
       // Checks to ensure it's the submission period.
       (uint16 delayPeriodPct, uint16 castingPeriodPct,) =
         periodPctsCheckpoint.getAtProbablyRecentTimestamp(checkpointTime);
       uint256 queuingPeriod = actionInfo.strategy.queuingPeriod();
-      delayPeriodEndTime =
-        (action.minExecutionTime - queuingPeriod) + ((queuingPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS);
-      uint256 castingPeriodEndTime = delayPeriodEndTime + ((queuingPeriod * castingPeriodPct) / ONE_HUNDRED_IN_BPS);
+      unchecked {
+        delayPeriodEndTime =
+          (action.minExecutionTime - queuingPeriod) + ((queuingPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS);
+        castingPeriodEndTime = delayPeriodEndTime + ((queuingPeriod * castingPeriodPct) / ONE_HUNDRED_IN_BPS);
+      }
       // Doing (castingPeriodEndTime) vs (action.minExecutionTime - ((queuingPeriod * submissionPeriodPct) /
       // ONE_HUNDRED_IN_BPS)) to prevent any off-by-one errors due to precision loss.
       if (block.timestamp <= castingPeriodEndTime) revert CastingPeriodNotOver();
@@ -367,10 +375,12 @@ contract LlamaTokenCaster is Initializable {
       if (block.timestamp >= action.minExecutionTime) revert SubmissionPeriodOver();
     }
 
+    CastData storage castData = casts[actionInfo.id];
+
     uint256 totalSupply = tokenAdapter.getPastTotalSupply(tokenAdapter.timestampToTimepoint(delayPeriodEndTime));
-    uint96 vetoesFor = casts[actionInfo.id].vetoesFor;
-    uint96 vetoesAgainst = casts[actionInfo.id].vetoesAgainst;
-    uint96 vetoesAbstain = casts[actionInfo.id].vetoesAbstain;
+    uint128 vetoesFor = castData.vetoesFor;
+    uint128 vetoesAgainst = castData.vetoesAgainst;
+    uint128 vetoesAbstain = castData.vetoesAbstain;
     (, uint16 vetoQuorumPct) = quorumCheckpoints.getAtProbablyRecentTimestamp(checkpointTime);
     uint256 threshold = FixedPointMathLib.mulDivUp(totalSupply, vetoQuorumPct, ONE_HUNDRED_IN_BPS);
     if (vetoesFor < threshold) revert InsufficientVotes(vetoesFor, threshold);
@@ -421,12 +431,12 @@ contract LlamaTokenCaster is Initializable {
   }
 
   /// @notice Returns the current voting quorum and vetoing quorum.
-  function getQuorum() external view returns (uint16 voteQuorumPct, uint16 vetoQuorumPct) {
+  function getQuorum() external view returns (uint16, uint16) {
     return quorumCheckpoints.latest();
   }
 
   /// @notice Returns the voting quorum and vetoing quorum at a given timestamp.
-  function getPastQuorum(uint256 timestamp) external view returns (uint16 voteQuorumPct, uint16 vetoQuorumPct) {
+  function getPastQuorum(uint256 timestamp) external view returns (uint16, uint16) {
     return quorumCheckpoints.getAtProbablyRecentTimestamp(timestamp);
   }
 
@@ -450,20 +460,12 @@ contract LlamaTokenCaster is Initializable {
   }
 
   /// @notice Returns the current delay, casting and submission period ratio.
-  function getPeriodPcts()
-    external
-    view
-    returns (uint16 delayPeriodPct, uint16 castingPeriodPct, uint16 submissionPeriodPct)
-  {
+  function getPeriodPcts() external view returns (uint16, uint16, uint16) {
     return periodPctsCheckpoint.latest();
   }
 
   /// @notice Returns the delay, casting and submission period ratio at a given timestamp.
-  function getPastPeriodPcts(uint256 timestamp)
-    external
-    view
-    returns (uint16 delayPeriodPct, uint16 castingPeriodPct, uint16 submissionPeriodPct)
-  {
+  function getPastPeriodPcts(uint256 timestamp) external view returns (uint16, uint16, uint16) {
     return periodPctsCheckpoint.getAtProbablyRecentTimestamp(timestamp);
   }
 
@@ -497,7 +499,7 @@ contract LlamaTokenCaster is Initializable {
   /// @dev How token holders add their support of the approval of an action with a reason.
   function _castVote(address caster, ActionInfo calldata actionInfo, uint8 support, string calldata reason)
     internal
-    returns (uint96)
+    returns (uint128)
   {
     Action memory action = llamaCore.getAction(actionInfo.id);
     uint256 checkpointTime = action.creationTime - 1;
@@ -507,29 +509,30 @@ contract LlamaTokenCaster is Initializable {
     _preCastAssertions(actionInfo, support, ActionState.Active, checkpointTime);
 
     uint256 delayPeriodEndTime;
+    uint256 castingPeriodEndTime;
     // Scoping to prevent stack too deep errors.
     {
       // Checks to ensure it's the casting period.
       (uint16 delayPeriodPct, uint16 castingPeriodPct,) =
         periodPctsCheckpoint.getAtProbablyRecentTimestamp(checkpointTime);
       uint256 approvalPeriod = actionInfo.strategy.approvalPeriod();
-      delayPeriodEndTime = action.creationTime + ((approvalPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS);
-      uint256 castingPeriodEndTime = delayPeriodEndTime + ((approvalPeriod * castingPeriodPct) / ONE_HUNDRED_IN_BPS);
+      unchecked {
+        delayPeriodEndTime = action.creationTime + ((approvalPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS);
+        castingPeriodEndTime = delayPeriodEndTime + ((approvalPeriod * castingPeriodPct) / ONE_HUNDRED_IN_BPS);
+      }
       if (block.timestamp <= delayPeriodEndTime) revert DelayPeriodNotOver();
       if (block.timestamp > castingPeriodEndTime) revert CastingPeriodOver();
     }
 
-    uint96 weight =
-      LlamaUtils.toUint96(tokenAdapter.getPastVotes(caster, tokenAdapter.timestampToTimepoint(delayPeriodEndTime)));
+    uint128 weight =
+      LlamaUtils.toUint128(tokenAdapter.getPastVotes(caster, tokenAdapter.timestampToTimepoint(delayPeriodEndTime)));
 
-    if (support == uint8(VoteType.Against)) {
-      casts[actionInfo.id].votesAgainst = _newCastCount(casts[actionInfo.id].votesAgainst, weight);
-    } else if (support == uint8(VoteType.For)) {
-      casts[actionInfo.id].votesFor = _newCastCount(casts[actionInfo.id].votesFor, weight);
-    } else if (support == uint8(VoteType.Abstain)) {
-      casts[actionInfo.id].votesAbstain = _newCastCount(casts[actionInfo.id].votesAbstain, weight);
-    }
-    casts[actionInfo.id].castVote[caster] = true;
+    CastData storage castData = casts[actionInfo.id];
+
+    if (support == uint8(VoteType.Against)) castData.votesAgainst = _newCastCount(castData.votesAgainst, weight);
+    else if (support == uint8(VoteType.For)) castData.votesFor = _newCastCount(castData.votesFor, weight);
+    else if (support == uint8(VoteType.Abstain)) castData.votesAbstain = _newCastCount(castData.votesAbstain, weight);
+    castData.castVote[caster] = true;
 
     emit VoteCast(actionInfo.id, caster, support, weight, reason);
     return weight;
@@ -538,7 +541,7 @@ contract LlamaTokenCaster is Initializable {
   /// @dev How token holders add their support of the disapproval of an action with a reason.
   function _castVeto(address caster, ActionInfo calldata actionInfo, uint8 support, string calldata reason)
     internal
-    returns (uint96)
+    returns (uint128)
   {
     Action memory action = llamaCore.getAction(actionInfo.id);
     uint256 checkpointTime = action.creationTime - 1;
@@ -548,30 +551,31 @@ contract LlamaTokenCaster is Initializable {
     _preCastAssertions(actionInfo, support, ActionState.Queued, checkpointTime);
 
     uint256 delayPeriodEndTime;
+    uint256 castingPeriodEndTime;
     // Scoping to prevent stack too deep errors.
     {
       // Checks to ensure it's the casting period.
       (uint16 delayPeriodPct, uint16 castingPeriodPct,) =
         periodPctsCheckpoint.getAtProbablyRecentTimestamp(checkpointTime);
       uint256 queuingPeriod = actionInfo.strategy.queuingPeriod();
-      delayPeriodEndTime =
-        (action.minExecutionTime - queuingPeriod) + ((queuingPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS);
-      uint256 castingPeriodEndTime = delayPeriodEndTime + ((queuingPeriod * castingPeriodPct) / ONE_HUNDRED_IN_BPS);
+      unchecked {
+        delayPeriodEndTime =
+          (action.minExecutionTime - queuingPeriod) + ((queuingPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS);
+        castingPeriodEndTime = delayPeriodEndTime + ((queuingPeriod * castingPeriodPct) / ONE_HUNDRED_IN_BPS);
+      }
       if (block.timestamp <= delayPeriodEndTime) revert DelayPeriodNotOver();
       if (block.timestamp > castingPeriodEndTime) revert CastingPeriodOver();
     }
 
-    uint96 weight =
-      LlamaUtils.toUint96(tokenAdapter.getPastVotes(caster, tokenAdapter.timestampToTimepoint(delayPeriodEndTime)));
+    uint128 weight =
+      LlamaUtils.toUint128(tokenAdapter.getPastVotes(caster, tokenAdapter.timestampToTimepoint(delayPeriodEndTime)));
 
-    if (support == uint8(VoteType.Against)) {
-      casts[actionInfo.id].vetoesAgainst = _newCastCount(casts[actionInfo.id].vetoesAgainst, weight);
-    } else if (support == uint8(VoteType.For)) {
-      casts[actionInfo.id].vetoesFor = _newCastCount(casts[actionInfo.id].vetoesFor, weight);
-    } else if (support == uint8(VoteType.Abstain)) {
-      casts[actionInfo.id].vetoesAbstain = _newCastCount(casts[actionInfo.id].vetoesAbstain, weight);
-    }
-    casts[actionInfo.id].castVeto[caster] = true;
+    CastData storage castData = casts[actionInfo.id];
+
+    if (support == uint8(VoteType.Against)) castData.vetoesAgainst = _newCastCount(castData.vetoesAgainst, weight);
+    else if (support == uint8(VoteType.For)) castData.vetoesFor = _newCastCount(castData.vetoesFor, weight);
+    else if (support == uint8(VoteType.Abstain)) castData.vetoesAbstain = _newCastCount(castData.vetoesAbstain, weight);
+    castData.castVeto[caster] = true;
 
     emit VetoCast(actionInfo.id, caster, support, weight, reason);
     return weight;
@@ -597,8 +601,8 @@ contract LlamaTokenCaster is Initializable {
   }
 
   /// @dev Returns the new total count of votes or vetoes in Against (0), For (1) or Abstain (2).
-  function _newCastCount(uint96 currentCount, uint96 weight) internal pure returns (uint96) {
-    if (uint256(currentCount) + weight >= type(uint96).max) return type(uint96).max;
+  function _newCastCount(uint128 currentCount, uint128 weight) internal pure returns (uint128) {
+    if (uint256(currentCount) + weight >= type(uint128).max) return type(uint128).max;
     return currentCount + weight;
   }
 

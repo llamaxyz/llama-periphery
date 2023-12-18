@@ -192,19 +192,19 @@ contract CastVote is LlamaERC20TokenCasterTest {
   function test_CanCastWhenCountisMax() public {
     // Warping to delayPeriodEndTime.
     vm.warp(actionCreationTime + ((APPROVAL_PERIOD * ONE_QUARTER_IN_BPS) / ONE_HUNDRED_IN_BPS));
-    // Minting type(uint96).max tokens and delegating
-    erc20VotesToken.mint(address(0xdeadbeef), type(uint96).max);
+    // Minting type(uint128).max tokens and delegating
+    erc20VotesToken.mint(address(0xdeadbeef), type(uint128).max);
     vm.prank(address(0xdeadbeef));
     erc20VotesToken.delegate(address(0xdeadbeef));
 
     // Warping to delayPeriodEndTime + 1 so that voting can start.
     mineBlock();
-    // Casting vote with weight type(uint96).max. Count should now be type(uint96).max.
+    // Casting vote with weight type(uint128).max. Count should now be type(uint128).max.
     vm.prank(address(0xdeadbeef));
     llamaERC20TokenCaster.castVote(actionInfo, uint8(VoteType.For), "");
 
-    (uint96 votesFor,,,,,) = llamaERC20TokenCaster.casts(actionInfo.id);
-    assertEq(votesFor, type(uint96).max);
+    (uint128 votesFor,,,,,) = llamaERC20TokenCaster.casts(actionInfo.id);
+    assertEq(votesFor, type(uint128).max);
 
     // Can still cast even if count is max.
     vm.expectEmit();
@@ -213,7 +213,7 @@ contract CastVote is LlamaERC20TokenCasterTest {
     llamaERC20TokenCaster.castVote(actionInfo, uint8(VoteType.For), "");
 
     (votesFor,,,,,) = llamaERC20TokenCaster.casts(actionInfo.id);
-    assertEq(votesFor, type(uint96).max);
+    assertEq(votesFor, type(uint128).max);
   }
 
   function test_CastsVoteCorrectly(uint8 support) public {
@@ -223,7 +223,7 @@ contract CastVote is LlamaERC20TokenCasterTest {
       actionInfo.id, tokenHolder1, support, erc20VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1), ""
     );
     vm.prank(tokenHolder1);
-    uint96 weight = llamaERC20TokenCaster.castVote(actionInfo, support, "");
+    uint128 weight = llamaERC20TokenCaster.castVote(actionInfo, support, "");
     assertEq(weight, erc20VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1));
   }
 
@@ -250,7 +250,7 @@ contract CastVote is LlamaERC20TokenCasterTest {
     // However tokenholder1 is able to vote with the weight they had at delayPeriodEndTime
     vm.expectEmit();
     emit VoteCast(actionInfo.id, tokenHolder1, 1, ERC20_CREATION_THRESHOLD / 2, "");
-    uint96 weight = llamaERC20TokenCaster.castVote(actionInfo, 1, "");
+    uint128 weight = llamaERC20TokenCaster.castVote(actionInfo, 1, "");
     assertEq(weight, ERC20_CREATION_THRESHOLD / 2);
     vm.stopPrank();
   }
@@ -428,19 +428,19 @@ contract CastVeto is LlamaERC20TokenCasterTest {
     // Warping to delayPeriodEndTime.
     Action memory action = CORE.getAction(actionInfo.id);
     vm.warp((action.minExecutionTime - QUEUING_PERIOD) + ((QUEUING_PERIOD * ONE_QUARTER_IN_BPS) / ONE_HUNDRED_IN_BPS));
-    // Minting type(uint96).max tokens and delegating
-    erc20VotesToken.mint(address(0xdeadbeef), type(uint96).max);
+    // Minting type(uint128).max tokens and delegating
+    erc20VotesToken.mint(address(0xdeadbeef), type(uint128).max);
     vm.prank(address(0xdeadbeef));
     erc20VotesToken.delegate(address(0xdeadbeef));
 
     // Warping to delayPeriodEndTime + 1 so that voting can start.
     mineBlock();
-    // Casting vote with weight type(uint96).max. Count should now be type(uint96).max.
+    // Casting vote with weight type(uint128).max. Count should now be type(uint128).max.
     vm.prank(address(0xdeadbeef));
     llamaERC20TokenCaster.castVeto(actionInfo, uint8(VoteType.For), "");
 
-    (,,, uint96 vetoesFor,,) = llamaERC20TokenCaster.casts(actionInfo.id);
-    assertEq(vetoesFor, type(uint96).max);
+    (,,, uint128 vetoesFor,,) = llamaERC20TokenCaster.casts(actionInfo.id);
+    assertEq(vetoesFor, type(uint128).max);
 
     // Can still cast even if count is max.
     vm.expectEmit();
@@ -449,7 +449,7 @@ contract CastVeto is LlamaERC20TokenCasterTest {
     llamaERC20TokenCaster.castVeto(actionInfo, uint8(VoteType.For), "");
 
     (,,, vetoesFor,,) = llamaERC20TokenCaster.casts(actionInfo.id);
-    assertEq(vetoesFor, type(uint96).max);
+    assertEq(vetoesFor, type(uint128).max);
   }
 
   function test_CastsVetoCorrectly(uint8 support) public {
@@ -459,7 +459,7 @@ contract CastVeto is LlamaERC20TokenCasterTest {
       actionInfo.id, tokenHolder1, support, erc20VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1), ""
     );
     vm.prank(tokenHolder1);
-    uint96 weight = llamaERC20TokenCaster.castVeto(actionInfo, support, "");
+    uint128 weight = llamaERC20TokenCaster.castVeto(actionInfo, support, "");
     assertEq(weight, erc20VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1));
   }
 
@@ -486,7 +486,7 @@ contract CastVeto is LlamaERC20TokenCasterTest {
     // However tokenholder1 is able to vote with the weight they had at delayPeriodEndTime
     vm.expectEmit();
     emit VetoCast(actionInfo.id, tokenHolder1, 1, ERC20_CREATION_THRESHOLD / 2, "");
-    uint96 weight = llamaERC20TokenCaster.castVeto(actionInfo, 1, "");
+    uint128 weight = llamaERC20TokenCaster.castVeto(actionInfo, 1, "");
     assertEq(weight, ERC20_CREATION_THRESHOLD / 2);
     vm.stopPrank();
   }
@@ -939,12 +939,12 @@ contract CastData is LlamaERC20TokenCasterTest {
 
   function test_CanGetCastData() public {
     (
-      uint96 votesFor,
-      uint96 votesAbstain,
-      uint96 votesAgainst,
-      uint96 vetoesFor,
-      uint96 vetoesAbstain,
-      uint96 vetoesAgainst
+      uint128 votesFor,
+      uint128 votesAbstain,
+      uint128 votesAgainst,
+      uint128 vetoesFor,
+      uint128 vetoesAbstain,
+      uint128 vetoesAgainst
     ) = llamaERC20TokenCaster.casts(actionInfo.id);
     assertEq(votesFor, (ERC20_CREATION_THRESHOLD / 2) * 3);
     assertEq(votesAbstain, 0);

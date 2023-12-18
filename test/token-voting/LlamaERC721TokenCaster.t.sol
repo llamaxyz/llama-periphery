@@ -200,7 +200,7 @@ contract CastVote is LlamaERC721TokenCasterTest {
       actionInfo.id, tokenHolder1, support, erc721VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1), ""
     );
     vm.prank(tokenHolder1);
-    uint96 weight = llamaERC721TokenCaster.castVote(actionInfo, support, "");
+    uint128 weight = llamaERC721TokenCaster.castVote(actionInfo, support, "");
     assertEq(weight, erc721VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1));
   }
 
@@ -227,7 +227,7 @@ contract CastVote is LlamaERC721TokenCasterTest {
     // However tokenholder1 is able to vote with the weight they had at delayPeriodEndTime
     vm.expectEmit();
     emit VoteCast(actionInfo.id, tokenHolder1, 1, 1, "");
-    uint96 weight = llamaERC721TokenCaster.castVote(actionInfo, 1, "");
+    uint128 weight = llamaERC721TokenCaster.castVote(actionInfo, 1, "");
     assertEq(weight, 1);
     vm.stopPrank();
   }
@@ -409,7 +409,7 @@ contract CastVeto is LlamaERC721TokenCasterTest {
       actionInfo.id, tokenHolder1, support, erc721VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1), ""
     );
     vm.prank(tokenHolder1);
-    uint96 weight = llamaERC721TokenCaster.castVeto(actionInfo, support, "");
+    uint128 weight = llamaERC721TokenCaster.castVeto(actionInfo, support, "");
     assertEq(weight, erc721VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1));
   }
 
@@ -436,7 +436,7 @@ contract CastVeto is LlamaERC721TokenCasterTest {
     // However tokenholder1 is able to vote with the weight they had at delayPeriodEndTime
     vm.expectEmit();
     emit VetoCast(actionInfo.id, tokenHolder1, 1, 1, "");
-    uint96 weight = llamaERC721TokenCaster.castVeto(actionInfo, 1, "");
+    uint128 weight = llamaERC721TokenCaster.castVeto(actionInfo, 1, "");
     assertEq(weight, 1);
     vm.stopPrank();
   }
@@ -889,12 +889,12 @@ contract CastData is LlamaERC721TokenCasterTest {
 
   function test_CanGetCastData() public {
     (
-      uint96 votesFor,
-      uint96 votesAbstain,
-      uint96 votesAgainst,
-      uint96 vetoesFor,
-      uint96 vetoesAbstain,
-      uint96 vetoesAgainst
+      uint128 votesFor,
+      uint128 votesAbstain,
+      uint128 votesAgainst,
+      uint128 vetoesFor,
+      uint128 vetoesAbstain,
+      uint128 vetoesAgainst
     ) = llamaERC721TokenCaster.casts(actionInfo.id);
     assertEq(votesFor, 3);
     assertEq(votesAbstain, 0);
