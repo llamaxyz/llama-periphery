@@ -15,7 +15,7 @@ run-script script_name flags='' sig='' args='':
   - FOUNDRY_PROFILE=ci forge script script/{{script_name}}.s.sol {{sig}} {{args}} \
     --rpc-url $SCRIPT_RPC_URL \
     --private-key $SCRIPT_PRIVATE_KEY \
-    -vvvvv {{flags}}
+    -vvvv {{flags}}
   mv _test test
 
 run-deploy-voting-module-script flags: (run-script 'DeployLlamaTokenVotingModule' flags '--sig "run(address,string)"' '$SCRIPT_DEPLOYER_ADDRESS "tokenVotingModuleConfig.json"')
