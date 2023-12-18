@@ -77,6 +77,9 @@ contract LlamaTokenCaster is Initializable {
   /// @dev Thrown when an invalid `castingPeriodPct` and `submissionPeriodPct` are set.
   error InvalidPeriodPcts(uint16 delayPeriodPct, uint16 castingPeriodPct, uint16 submissionPeriodPct);
 
+  /// @dev This token caster contract does not have the defined role at action creation time.
+  error InvalidPolicyholder();
+
   /// @dev The recovered signer does not match the expected tokenholder.
   error InvalidSignature();
 
@@ -303,27 +306,32 @@ contract LlamaTokenCaster is Initializable {
   /// @dev This function can be called by anyone.
   function submitApproval(ActionInfo calldata actionInfo) external {
     Action memory action = llamaCore.getAction(actionInfo.id);
+    uint256 checkpointTime = action.creationTime - 1;
 
     // Reverts if clock or CLOCK_MODE() has changed
     tokenAdapter.checkIfInconsistentClock();
 
-    // Checks to ensure it's the submission period.
-    (uint16 delayPeriodPct, uint16 castingPeriodPct,) =
-      periodPctsCheckpoint.getAtProbablyRecentTimestamp(action.creationTime - 1);
-    uint256 approvalPeriod = actionInfo.strategy.approvalPeriod();
-    uint256 delayPeriodEndTime = action.creationTime + ((approvalPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS);
-    uint256 castingPeriodEndTime = delayPeriodEndTime + ((approvalPeriod * castingPeriodPct) / ONE_HUNDRED_IN_BPS);
-    if (block.timestamp <= castingPeriodEndTime) revert CastingPeriodNotOver();
-    // Doing (action.creationTime + approvalPeriod) vs (castingPeriodEndTime + ((approvalPeriod * submissionPeriodPct) /
-    // ONE_HUNDRED_IN_BPS)) to prevent any off-by-one errors due to precision loss.
-    // Llama approval period is inclusive of approval end time.
-    if (block.timestamp > action.creationTime + approvalPeriod) revert SubmissionPeriodOver();
+    uint256 delayPeriodEndTime;
+    // Scoping to prevent stack too deep errors.
+    {
+      // Checks to ensure it's the submission period.
+      (uint16 delayPeriodPct, uint16 castingPeriodPct,) =
+        periodPctsCheckpoint.getAtProbablyRecentTimestamp(checkpointTime);
+      uint256 approvalPeriod = actionInfo.strategy.approvalPeriod();
+      delayPeriodEndTime = action.creationTime + ((approvalPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS);
+      uint256 castingPeriodEndTime = delayPeriodEndTime + ((approvalPeriod * castingPeriodPct) / ONE_HUNDRED_IN_BPS);
+      if (block.timestamp <= castingPeriodEndTime) revert CastingPeriodNotOver();
+      // Doing (action.creationTime + approvalPeriod) vs (castingPeriodEndTime + ((approvalPeriod * submissionPeriodPct)
+      // / ONE_HUNDRED_IN_BPS)) to prevent any off-by-one errors due to precision loss.
+      // Llama approval period is inclusive of approval end time.
+      if (block.timestamp > action.creationTime + approvalPeriod) revert SubmissionPeriodOver();
+    }
 
     uint256 totalSupply = tokenAdapter.getPastTotalSupply(tokenAdapter.timestampToTimepoint(delayPeriodEndTime));
     uint96 votesFor = casts[actionInfo.id].votesFor;
     uint96 votesAgainst = casts[actionInfo.id].votesAgainst;
     uint96 votesAbstain = casts[actionInfo.id].votesAbstain;
-    (uint16 voteQuorumPct,) = quorumCheckpoints.getAtProbablyRecentTimestamp(action.creationTime - 1);
+    (uint16 voteQuorumPct,) = quorumCheckpoints.getAtProbablyRecentTimestamp(checkpointTime);
     uint256 threshold = FixedPointMathLib.mulDivUp(totalSupply, voteQuorumPct, ONE_HUNDRED_IN_BPS);
     if (votesFor < threshold) revert InsufficientVotes(votesFor, threshold);
     if (votesFor <= votesAgainst) revert ForDoesNotSurpassAgainst(votesFor, votesAgainst);
@@ -337,28 +345,33 @@ contract LlamaTokenCaster is Initializable {
   /// @dev This function can be called by anyone.
   function submitDisapproval(ActionInfo calldata actionInfo) external {
     Action memory action = llamaCore.getAction(actionInfo.id);
+    uint256 checkpointTime = action.creationTime - 1;
 
     // Reverts if clock or CLOCK_MODE() has changed
     tokenAdapter.checkIfInconsistentClock();
 
-    // Checks to ensure it's the submission period.
-    (uint16 delayPeriodPct, uint16 castingPeriodPct,) =
-      periodPctsCheckpoint.getAtProbablyRecentTimestamp(action.creationTime - 1);
-    uint256 queuingPeriod = actionInfo.strategy.queuingPeriod();
-    uint256 delayPeriodEndTime =
-      (action.minExecutionTime - queuingPeriod) + ((queuingPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS);
-    uint256 castingPeriodEndTime = delayPeriodEndTime + ((queuingPeriod * castingPeriodPct) / ONE_HUNDRED_IN_BPS);
-    // Doing (castingPeriodEndTime) vs (action.minExecutionTime - ((queuingPeriod * submissionPeriodPct) /
-    // ONE_HUNDRED_IN_BPS)) to prevent any off-by-one errors due to precision loss.
-    if (block.timestamp <= castingPeriodEndTime) revert CastingPeriodNotOver();
-    // Llama disapproval period is exclusive of min execution time.
-    if (block.timestamp >= action.minExecutionTime) revert SubmissionPeriodOver();
+    uint256 delayPeriodEndTime;
+    // Scoping to prevent stack too deep errors.
+    {
+      // Checks to ensure it's the submission period.
+      (uint16 delayPeriodPct, uint16 castingPeriodPct,) =
+        periodPctsCheckpoint.getAtProbablyRecentTimestamp(checkpointTime);
+      uint256 queuingPeriod = actionInfo.strategy.queuingPeriod();
+      delayPeriodEndTime =
+        (action.minExecutionTime - queuingPeriod) + ((queuingPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS);
+      uint256 castingPeriodEndTime = delayPeriodEndTime + ((queuingPeriod * castingPeriodPct) / ONE_HUNDRED_IN_BPS);
+      // Doing (castingPeriodEndTime) vs (action.minExecutionTime - ((queuingPeriod * submissionPeriodPct) /
+      // ONE_HUNDRED_IN_BPS)) to prevent any off-by-one errors due to precision loss.
+      if (block.timestamp <= castingPeriodEndTime) revert CastingPeriodNotOver();
+      // Llama disapproval period is exclusive of min execution time.
+      if (block.timestamp >= action.minExecutionTime) revert SubmissionPeriodOver();
+    }
 
     uint256 totalSupply = tokenAdapter.getPastTotalSupply(tokenAdapter.timestampToTimepoint(delayPeriodEndTime));
     uint96 vetoesFor = casts[actionInfo.id].vetoesFor;
     uint96 vetoesAgainst = casts[actionInfo.id].vetoesAgainst;
     uint96 vetoesAbstain = casts[actionInfo.id].vetoesAbstain;
-    (, uint16 vetoQuorumPct) = quorumCheckpoints.getAtProbablyRecentTimestamp(action.creationTime - 1);
+    (, uint16 vetoQuorumPct) = quorumCheckpoints.getAtProbablyRecentTimestamp(checkpointTime);
     uint256 threshold = FixedPointMathLib.mulDivUp(totalSupply, vetoQuorumPct, ONE_HUNDRED_IN_BPS);
     if (vetoesFor < threshold) revert InsufficientVotes(vetoesFor, threshold);
     if (vetoesFor <= vetoesAgainst) revert ForDoesNotSurpassAgainst(vetoesFor, vetoesAgainst);
@@ -487,19 +500,24 @@ contract LlamaTokenCaster is Initializable {
     returns (uint96)
   {
     Action memory action = llamaCore.getAction(actionInfo.id);
+    uint256 checkpointTime = action.creationTime - 1;
 
     actionInfo.strategy.checkIfApprovalEnabled(actionInfo, address(this), role); // Reverts if not allowed.
     if (casts[actionInfo.id].castVote[caster]) revert DuplicateCast();
-    _preCastAssertions(actionInfo, support, ActionState.Active);
+    _preCastAssertions(actionInfo, support, ActionState.Active, checkpointTime);
 
-    // Checks to ensure it's the casting period.
-    (uint16 delayPeriodPct, uint16 castingPeriodPct,) =
-      periodPctsCheckpoint.getAtProbablyRecentTimestamp(action.creationTime - 1);
-    uint256 approvalPeriod = actionInfo.strategy.approvalPeriod();
-    uint256 delayPeriodEndTime = action.creationTime + ((approvalPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS);
-    uint256 castingPeriodEndTime = delayPeriodEndTime + ((approvalPeriod * castingPeriodPct) / ONE_HUNDRED_IN_BPS);
-    if (block.timestamp <= delayPeriodEndTime) revert DelayPeriodNotOver();
-    if (block.timestamp > castingPeriodEndTime) revert CastingPeriodOver();
+    uint256 delayPeriodEndTime;
+    // Scoping to prevent stack too deep errors.
+    {
+      // Checks to ensure it's the casting period.
+      (uint16 delayPeriodPct, uint16 castingPeriodPct,) =
+        periodPctsCheckpoint.getAtProbablyRecentTimestamp(checkpointTime);
+      uint256 approvalPeriod = actionInfo.strategy.approvalPeriod();
+      delayPeriodEndTime = action.creationTime + ((approvalPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS);
+      uint256 castingPeriodEndTime = delayPeriodEndTime + ((approvalPeriod * castingPeriodPct) / ONE_HUNDRED_IN_BPS);
+      if (block.timestamp <= delayPeriodEndTime) revert DelayPeriodNotOver();
+      if (block.timestamp > castingPeriodEndTime) revert CastingPeriodOver();
+    }
 
     uint96 weight =
       LlamaUtils.toUint96(tokenAdapter.getPastVotes(caster, tokenAdapter.timestampToTimepoint(delayPeriodEndTime)));
@@ -523,20 +541,25 @@ contract LlamaTokenCaster is Initializable {
     returns (uint96)
   {
     Action memory action = llamaCore.getAction(actionInfo.id);
+    uint256 checkpointTime = action.creationTime - 1;
 
     actionInfo.strategy.checkIfDisapprovalEnabled(actionInfo, address(this), role); // Reverts if not allowed.
     if (casts[actionInfo.id].castVeto[caster]) revert DuplicateCast();
-    _preCastAssertions(actionInfo, support, ActionState.Queued);
+    _preCastAssertions(actionInfo, support, ActionState.Queued, checkpointTime);
 
-    // Checks to ensure it's the casting period.
-    (uint16 delayPeriodPct, uint16 castingPeriodPct,) =
-      periodPctsCheckpoint.getAtProbablyRecentTimestamp(action.creationTime - 1);
-    uint256 queuingPeriod = actionInfo.strategy.queuingPeriod();
-    uint256 delayPeriodEndTime =
-      (action.minExecutionTime - queuingPeriod) + ((queuingPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS);
-    uint256 castingPeriodEndTime = delayPeriodEndTime + ((queuingPeriod * castingPeriodPct) / ONE_HUNDRED_IN_BPS);
-    if (block.timestamp <= delayPeriodEndTime) revert DelayPeriodNotOver();
-    if (block.timestamp > castingPeriodEndTime) revert CastingPeriodOver();
+    uint256 delayPeriodEndTime;
+    // Scoping to prevent stack too deep errors.
+    {
+      // Checks to ensure it's the casting period.
+      (uint16 delayPeriodPct, uint16 castingPeriodPct,) =
+        periodPctsCheckpoint.getAtProbablyRecentTimestamp(checkpointTime);
+      uint256 queuingPeriod = actionInfo.strategy.queuingPeriod();
+      delayPeriodEndTime =
+        (action.minExecutionTime - queuingPeriod) + ((queuingPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS);
+      uint256 castingPeriodEndTime = delayPeriodEndTime + ((queuingPeriod * castingPeriodPct) / ONE_HUNDRED_IN_BPS);
+      if (block.timestamp <= delayPeriodEndTime) revert DelayPeriodNotOver();
+      if (block.timestamp > castingPeriodEndTime) revert CastingPeriodOver();
+    }
 
     uint96 weight =
       LlamaUtils.toUint96(tokenAdapter.getPastVotes(caster, tokenAdapter.timestampToTimepoint(delayPeriodEndTime)));
@@ -555,11 +578,19 @@ contract LlamaTokenCaster is Initializable {
   }
 
   /// @dev The only `support` values allowed to be passed into this method are Against (0), For (1) or Abstain (2).
-  function _preCastAssertions(ActionInfo calldata actionInfo, uint8 support, ActionState expectedState) internal view {
+  function _preCastAssertions(
+    ActionInfo calldata actionInfo,
+    uint8 support,
+    ActionState expectedState,
+    uint256 checkpointTime
+  ) internal view {
     if (support > uint8(VoteType.Abstain)) revert InvalidSupport(support);
 
     ActionState currentState = ActionState(llamaCore.getActionState(actionInfo));
     if (currentState != expectedState) revert InvalidActionState(currentState);
+
+    bool hasRole = llamaCore.policy().hasRole(address(this), role, checkpointTime);
+    if (!hasRole) revert InvalidPolicyholder();
 
     // Reverts if clock or CLOCK_MODE() has changed
     tokenAdapter.checkIfInconsistentClock();

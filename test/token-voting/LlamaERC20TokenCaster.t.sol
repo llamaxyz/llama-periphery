@@ -141,6 +141,27 @@ contract CastVote is LlamaERC20TokenCasterTest {
     llamaERC20TokenCaster.castVote(actionInfo, uint8(VoteType.For), "");
   }
 
+  function test_RevertsIf_RoleHasBeenRevokedBeforeActionCreation() public {
+    // Revoking Caster role from Token Holder Caster and assigning it to a random address so that Role has supply.
+    vm.startPrank(address(EXECUTOR));
+    POLICY.setRoleHolder(tokenVotingCasterRole, address(llamaERC20TokenCaster), 0, 0);
+    POLICY.setRoleHolder(tokenVotingCasterRole, address(0xdeadbeef), DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION);
+    vm.stopPrank();
+
+    // Mine block so that the revoke will be effective
+    mineBlock();
+
+    ActionInfo memory _actionInfo = _createActionWithTokenVotingStrategy(tokenVotingStrategy);
+    Action memory action = CORE.getAction(_actionInfo.id);
+
+    // Skip voting delay
+    vm.warp(action.creationTime + ((APPROVAL_PERIOD * ONE_QUARTER_IN_BPS) / ONE_HUNDRED_IN_BPS) + 1);
+
+    vm.startPrank(tokenHolder1);
+    vm.expectRevert(LlamaTokenCaster.InvalidPolicyholder.selector);
+    llamaERC20TokenCaster.castVote(_actionInfo, uint8(VoteType.For), "");
+  }
+
   function test_RevertsIf_AlreadyCastedVote() public {
     vm.startPrank(tokenHolder1);
     llamaERC20TokenCaster.castVote(actionInfo, uint8(VoteType.For), "");
