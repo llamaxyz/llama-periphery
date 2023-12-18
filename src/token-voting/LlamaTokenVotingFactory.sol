@@ -4,7 +4,7 @@ pragma solidity ^0.8.23;
 import {Clones} from "@openzeppelin/proxy/Clones.sol";
 
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
-import {LlamaTokenVotingConfig, CasterConfig} from "src/lib/Structs.sol";
+import {CasterConfig, LlamaTokenVotingConfig} from "src/lib/Structs.sol";
 import {ILlamaTokenAdapter} from "src/token-voting/interfaces/ILlamaTokenAdapter.sol";
 import {LlamaTokenGovernor} from "src/token-voting/LlamaTokenGovernor.sol";
 

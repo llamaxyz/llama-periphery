@@ -41,7 +41,7 @@ contract DeployLlamaTokenVotingModule is Script {
     );
 
     vm.broadcast(deployer);
-    (LlamaTokenGovernor governor) = factory.deploy(config);
+    LlamaTokenGovernor governor = factory.deploy(config);
 
     DeployUtils.print("Successfully deployed a new Llama token voting module");
     DeployUtils.print(string.concat("  LlamaTokenGovernor:     ", vm.toString(address(governor))));

@@ -198,7 +198,7 @@ contract LlamaTokenGovernor is Initializable {
   /// @dev This role is expected to have the ability to create actions and force approve and disapprove actions.
   uint8 public role;
 
-  /// @notice The default number of tokens required to create an action.
+  /// @notice The number of tokens required to create an action.
   uint256 public creationThreshold;
 
   /// @dev The quorum checkpoints for this token voting module.
