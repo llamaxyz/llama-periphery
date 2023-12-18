@@ -5,6 +5,7 @@ import {Initializable} from "@openzeppelin/proxy/utils/Initializable.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
 
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
+import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
 import {ILlamaTokenAdapter} from "src/token-voting/interfaces/ILlamaTokenAdapter.sol";
 import {ActionState, VoteType} from "src/lib/Enums.sol";
 import {CasterConfig} from "src/lib/Structs.sol";
@@ -13,15 +14,15 @@ import {PeriodPctCheckpoints} from "src/lib/PeriodPctCheckpoints.sol";
 import {QuorumCheckpoints} from "src/lib/QuorumCheckpoints.sol";
 import {Action, ActionInfo} from "src/lib/Structs.sol";
 
-/// @title LlamaTokenCaster
+/// @title LlamaTokenGovernor
 /// @author Llama (devsdosomething@llama.xyz)
-/// @notice This contract lets holders of a given governance token collectively cast an approval or
-/// disapproval on created actions.
+/// @notice This contract lets holders of a given governance token create actions if they have a
+/// sufficient token balance and collectively cast an approval or disapproval on created actions.
 /// @dev This contract is deployed by `LlamaTokenVotingFactory`. Anyone can deploy this contract using the factory, but
-/// it must hold a Policy from the specified `LlamaCore` instance to actually be able to cast on an action. This
-/// contract does not verify that it holds the correct policy when voting and relies on `LlamaCore` to
+/// it must hold a Policy from the specified `LlamaCore` instance to actually be able to create and cast on an action.
+/// This contract does not verify that it holds the correct policy when voting and relies on `LlamaCore` to
 /// verify that during submission.
-contract LlamaTokenCaster is Initializable {
+contract LlamaTokenGovernor is Initializable {
   using PeriodPctCheckpoints for PeriodPctCheckpoints.History;
   using QuorumCheckpoints for QuorumCheckpoints.History;
   // =========================
@@ -59,12 +60,18 @@ contract LlamaTokenCaster is Initializable {
   /// @dev Thrown when a user tries to cast a vote or veto but the against surpasses for.
   error ForDoesNotSurpassAgainst(uint256 castsFor, uint256 castsAgainst);
 
+  /// @dev Thrown when a user tries to create an action but does not have enough tokens.
+  error InsufficientBalance(uint256 balance);
+
   /// @dev Thrown when a user tries to submit an approval but there are not enough votes.
   error InsufficientVotes(uint256 votes, uint256 threshold);
 
   /// @dev The action is not in the expected state.
   /// @param current The current state of the action.
   error InvalidActionState(ActionState current);
+
+  /// @dev Thrown when an invalid `creationThreshold` is passed to the constructor.
+  error InvalidCreationThreshold();
 
   /// @dev The indices would result in `Panic: Index Out of Bounds`.
   /// @dev Thrown when the `end` index is greater than array length or when the `start` index is greater than the `end`
@@ -86,11 +93,17 @@ contract LlamaTokenCaster is Initializable {
   /// @dev Thrown when an invalid `support` value is used when casting.
   error InvalidSupport(uint8 support);
 
+  /// @dev Thrown when a `token` with an invalid totaly supply is passed to the constructor.
+  error InvalidTotalSupply();
+
   /// @dev Thrown when an invalid `vetoQuorumPct` is passed to the constructor.
   error InvalidVetoQuorumPct(uint16 vetoQuorumPct);
 
   /// @dev Thrown when an invalid `voteQuorumPct` is passed to the constructor.
   error InvalidVoteQuorumPct(uint16 voteQuorumPct);
+
+  /// @dev Thrown when a user tries to cancel an action but they are not the action creator.
+  error OnlyActionCreator();
 
   /// @dev Thrown when an address other than the `LlamaExecutor` tries to call a function.
   error OnlyLlamaExecutor();
@@ -104,6 +117,15 @@ contract LlamaTokenCaster is Initializable {
   // ========================
   // ======== Events ========
   // ========================
+
+  /// @dev Emitted when an action is canceled.
+  event ActionCanceled(uint256 id, address indexed creator);
+
+  /// @dev Emitted when an action is created.
+  event ActionCreated(uint256 id, address indexed creator);
+
+  /// @dev Emitted when the default number of tokens required to create an action is changed.
+  event ActionThresholdSet(uint256 newThreshold);
 
   /// @dev Emitted when a cast approval is submitted to the `LlamaCore` contract.
   event ApprovalSubmitted(
@@ -135,6 +157,11 @@ contract LlamaTokenCaster is Initializable {
   bytes32 internal constant EIP712_DOMAIN_TYPEHASH =
     keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
 
+  /// @dev EIP-712 cancelAction typehash.
+  bytes32 internal constant CANCEL_ACTION_TYPEHASH = keccak256(
+    "CancelAction(address tokenHolder,ActionInfo actionInfo,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
+  );
+
   /// @notice EIP-712 castVote typehash.
   bytes32 internal constant CAST_VOTE_TYPEHASH = keccak256(
     "CastVote(address tokenHolder,ActionInfo actionInfo,uint8 support,string reason,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
@@ -143,6 +170,11 @@ contract LlamaTokenCaster is Initializable {
   /// @notice EIP-712 castVeto typehash.
   bytes32 internal constant CAST_VETO_TYPEHASH = keccak256(
     "CastVeto(address tokenHolder,ActionInfo actionInfo,uint8 support,string reason,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
+  );
+
+  /// @dev EIP-712 createAction typehash.
+  bytes32 internal constant CREATE_ACTION_TYPEHASH = keccak256(
+    "CreateAction(address tokenHolder,address strategy,address target,uint256 value,bytes data,string description,uint256 nonce)"
   );
 
   /// @dev EIP-712 actionInfo typehash.
@@ -165,16 +197,22 @@ contract LlamaTokenCaster is Initializable {
   /// @notice The contract that manages the timepoints for this token voting module.
   ILlamaTokenAdapter public tokenAdapter;
 
-  /// @notice The role used by this contract to cast approvals and disapprovals.
-  /// @dev This role is expected to have the ability to force approve and disapprove actions.
+  /// @notice The default number of tokens required to create an action.
+  uint256 public creationThreshold;
+
+  /// @notice The role used by this contract to create actions and cast approvals and disapprovals.
+  /// @dev This role is expected to have the ability to create actions and force approve and disapprove actions.
   uint8 public role;
+
+  /// @notice The address of the tokenholder that created the action.
+  mapping(uint256 => address) public actionCreators;
 
   /// @notice Mapping from action ID to the status of existing casts.
   mapping(uint256 actionId => CastData) public casts;
 
   /// @notice Mapping of tokenholders to function selectors to current nonces for EIP-712 signatures.
-  /// @dev This is used to prevent replay attacks by incrementing the nonce for each operation (`castVote` and
-  /// `castVeto`) signed by the tokenholders.
+  /// @dev This is used to prevent replay attacks by incrementing the nonce for each operation (`castVote`,
+  /// `createAction`, `cancelAction`, and `castVeto`) signed by the tokenholders.
   mapping(address tokenholders => mapping(bytes4 selector => uint256 currentNonce)) public nonces;
 
   // ================================
@@ -187,18 +225,22 @@ contract LlamaTokenCaster is Initializable {
     _disableInitializers();
   }
 
-  /// @notice Initializes a new `LlamaTokenCaster` clone.
+  /// @notice Initializes a new `LlamaTokenGovernor clone.
   /// @dev This function is called by the `deploy` function in the `LlamaTokenVotingFactory` contract.
   /// The `initializer` modifier ensures that this function can be invoked at most once.
   /// @param _llamaCore The `LlamaCore` contract for this Llama instance.
   /// @param _tokenAdapter The token adapter that manages the clock, timepoints, past votes and past supply for this
   /// token voting module.
-  /// @param _role The role used by this contract to cast approvals and disapprovals.
+  /// @param _role The role used by this contract to create actions and cast approvals and disapprovals.
+  /// @param _creationThreshold The default number of tokens required to create an action. This must
+  /// be in the same decimals as the token. For example, if the token has 18 decimals and you want a
+  /// creation threshold of 1000 tokens, pass in 1000e18.
   /// @param casterConfig Contains the quorum and period pct values to initialize the contract with.
   function initialize(
     ILlamaCore _llamaCore,
     ILlamaTokenAdapter _tokenAdapter,
     uint8 _role,
+    uint256 _creationThreshold,
     CasterConfig memory casterConfig
   ) external initializer {
     if (_llamaCore.actionsCount() < 0) revert InvalidLlamaCoreAddress();
@@ -207,6 +249,7 @@ contract LlamaTokenCaster is Initializable {
     llamaCore = _llamaCore;
     tokenAdapter = _tokenAdapter;
     role = _role;
+    _setActionThreshold(_creationThreshold);
     _setQuorumPct(casterConfig.voteQuorumPct, casterConfig.vetoQuorumPct);
     _setPeriodPct(casterConfig.delayPeriodPct, casterConfig.castingPeriodPct, casterConfig.submissionPeriodPct);
   }
@@ -215,7 +258,90 @@ contract LlamaTokenCaster is Initializable {
   // ======== External and Public Logic ========
   // ===========================================
 
-  // -------- Action Lifecycle Management --------
+  // -------- Action Creation Lifecycle Management --------
+
+  /// @notice Creates an action.
+  /// @dev Use `""` for `description` if there is no description.
+  /// @param strategy The strategy contract that will determine how the action is executed.
+  /// @param target The contract called when the action is executed.
+  /// @param value The value in wei to be sent when the action is executed.
+  /// @param data Data to be called on the target when the action is executed.
+  /// @param description A human readable description of the action and the changes it will enact.
+  /// @return actionId Action ID of the newly created action.
+  function createAction(
+    ILlamaStrategy strategy,
+    address target,
+    uint256 value,
+    bytes calldata data,
+    string calldata description
+  ) external returns (uint256 actionId) {
+    return _createAction(msg.sender, strategy, target, value, data, description);
+  }
+
+  /// @notice Creates an action via an off-chain signature. The creator needs to have sufficient token balance that is
+  /// greater than or equal to the creation threshold.
+  /// @dev Use `""` for `description` if there is no description.
+  /// @param tokenHolder The tokenHolder that signed the message.
+  /// @param strategy The strategy contract that will determine how the action is executed.
+  /// @param target The contract called when the action is executed.
+  /// @param value The value in wei to be sent when the action is executed.
+  /// @param data Data to be called on the target when the action is executed.
+  /// @param description A human readable description of the action and the changes it will enact.
+  /// @param v ECDSA signature component: Parity of the `y` coordinate of point `R`
+  /// @param r ECDSA signature component: x-coordinate of `R`
+  /// @param s ECDSA signature component: `s` value of the signature
+  /// @return actionId Action ID of the newly created action.
+  function createActionBySig(
+    address tokenHolder,
+    ILlamaStrategy strategy,
+    address target,
+    uint256 value,
+    bytes calldata data,
+    string calldata description,
+    uint8 v,
+    bytes32 r,
+    bytes32 s
+  ) external returns (uint256 actionId) {
+    bytes32 digest = _getCreateActionTypedDataHash(tokenHolder, strategy, target, value, data, description);
+    address signer = ecrecover(digest, v, r, s);
+    if (signer == address(0) || signer != tokenHolder) revert InvalidSignature();
+    actionId = _createAction(signer, strategy, target, value, data, description);
+  }
+
+  /// @notice Cancels an action.
+  /// @param actionInfo The action to cancel.
+  /// @dev Relies on the validation checks in `LlamaCore.cancelAction()`.
+  function cancelAction(ActionInfo calldata actionInfo) external {
+    _cancelAction(msg.sender, actionInfo);
+  }
+
+  /// @notice Cancels an action by its `actionInfo` struct via an off-chain signature.
+  /// @dev Rules for cancelation are defined by the strategy.
+  /// @param policyholder The policyholder that signed the message.
+  /// @param actionInfo Data required to create an action.
+  /// @param v ECDSA signature component: Parity of the `y` coordinate of point `R`
+  /// @param r ECDSA signature component: x-coordinate of `R`
+  /// @param s ECDSA signature component: `s` value of the signature
+  function cancelActionBySig(address policyholder, ActionInfo calldata actionInfo, uint8 v, bytes32 r, bytes32 s)
+    external
+  {
+    bytes32 digest = _getCancelActionTypedDataHash(policyholder, actionInfo);
+    address signer = ecrecover(digest, v, r, s);
+    if (signer == address(0) || signer != policyholder) revert InvalidSignature();
+    _cancelAction(signer, actionInfo);
+  }
+
+  // -------- Instance Management --------
+
+  /// @notice Sets the default number of tokens required to create an action.
+  /// @param _creationThreshold The number of tokens required to create an action.
+  /// @dev This must be in the same decimals as the token.
+  function setActionThreshold(uint256 _creationThreshold) external {
+    if (msg.sender != address(llamaCore.executor())) revert OnlyLlamaExecutor();
+    _setActionThreshold(_creationThreshold);
+  }
+
+  // -------- Action Casting Lifecycle Management --------
 
   /// @notice How tokenholders add their support of the approval of an action with a reason.
   /// @dev Use `""` for `reason` if there is no reason.
@@ -496,6 +622,89 @@ contract LlamaTokenCaster is Initializable {
   // ======== Internal Logic ========
   // ================================
 
+  // -------- Action Creation Internal Functions --------
+
+  /// @dev Creates an action. The creator needs to have sufficient token balance.
+  function _createAction(
+    address tokenHolder,
+    ILlamaStrategy strategy,
+    address target,
+    uint256 value,
+    bytes calldata data,
+    string calldata description
+  ) internal returns (uint256 actionId) {
+    // Reverts if clock or CLOCK_MODE() has changed
+    tokenAdapter.checkIfInconsistentClock();
+
+    uint256 balance = tokenAdapter.getPastVotes(tokenHolder, tokenAdapter.clock() - 1);
+    if (balance < creationThreshold) revert InsufficientBalance(balance);
+
+    actionId = llamaCore.createAction(role, strategy, target, value, data, description);
+    actionCreators[actionId] = tokenHolder;
+    emit ActionCreated(actionId, tokenHolder);
+  }
+
+  /// @dev Cancels an action by its `actionInfo` struct. Only the action creator can cancel.
+  function _cancelAction(address creator, ActionInfo calldata actionInfo) internal {
+    if (creator != actionCreators[actionInfo.id]) revert OnlyActionCreator();
+    llamaCore.cancelAction(actionInfo);
+    emit ActionCanceled(actionInfo.id, creator);
+  }
+
+  /// @dev Sets the default number of tokens required to create an action.
+  function _setActionThreshold(uint256 _creationThreshold) internal {
+    uint256 totalSupply = tokenAdapter.getPastTotalSupply(tokenAdapter.clock() - 1);
+    if (totalSupply == 0) revert InvalidTotalSupply();
+    if (_creationThreshold > totalSupply) revert InvalidCreationThreshold();
+    creationThreshold = _creationThreshold;
+    emit ActionThresholdSet(_creationThreshold);
+  }
+
+  /// @dev Returns the hash of the ABI-encoded EIP-712 message for the `CreateAction` domain, which can be used to
+  /// recover the signer.
+  function _getCreateActionTypedDataHash(
+    address tokenHolder,
+    ILlamaStrategy strategy,
+    address target,
+    uint256 value,
+    bytes calldata data,
+    string calldata description
+  ) internal returns (bytes32) {
+    // Calculating and storing nonce in memory and using that below, instead of calculating in place to prevent stack
+    // too deep error.
+    uint256 nonce = _useNonce(tokenHolder, msg.sig);
+
+    bytes32 createActionHash = keccak256(
+      abi.encode(
+        CREATE_ACTION_TYPEHASH,
+        tokenHolder,
+        address(strategy),
+        target,
+        value,
+        keccak256(data),
+        keccak256(bytes(description)),
+        nonce
+      )
+    );
+
+    return keccak256(abi.encodePacked("\x19\x01", _getDomainHash(), createActionHash));
+  }
+
+  /// @dev Returns the hash of the ABI-encoded EIP-712 message for the `CancelAction` domain, which can be used to
+  /// recover the signer.
+  function _getCancelActionTypedDataHash(address tokenHolder, ActionInfo calldata actionInfo)
+    internal
+    returns (bytes32)
+  {
+    bytes32 cancelActionHash = keccak256(
+      abi.encode(CANCEL_ACTION_TYPEHASH, tokenHolder, _getActionInfoHash(actionInfo), _useNonce(tokenHolder, msg.sig))
+    );
+
+    return keccak256(abi.encodePacked("\x19\x01", _getDomainHash(), cancelActionHash));
+  }
+
+  // -------- Action Casting Internal Functions --------
+
   /// @dev How token holders add their support of the approval of an action with a reason.
   function _castVote(address caster, ActionInfo calldata actionInfo, uint8 support, string calldata reason)
     internal
@@ -623,11 +832,11 @@ contract LlamaTokenCaster is Initializable {
     emit PeriodPctSet(_delayPeriodPct, _castingPeriodPct, _submissionPeriodPct);
   }
 
-  /// @dev Returns the current nonce for a given tokenholder and selector, and increments it. Used to prevent
+  /// @dev Returns the current nonce for a given tokenHolder and selector, and increments it. Used to prevent
   /// replay attacks.
-  function _useNonce(address tokenholder, bytes4 selector) internal returns (uint256 nonce) {
-    nonce = nonces[tokenholder][selector];
-    nonces[tokenholder][selector] = LlamaUtils.uncheckedIncrement(nonce);
+  function _useNonce(address tokenHolder, bytes4 selector) internal returns (uint256 nonce) {
+    nonce = nonces[tokenHolder][selector];
+    nonces[tokenHolder][selector] = LlamaUtils.uncheckedIncrement(nonce);
   }
 
   // -------- EIP-712 Getters --------
