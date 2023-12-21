@@ -20,12 +20,22 @@ import {LlamaTokenGovernor} from "src/token-voting/LlamaTokenGovernor.sol";
 contract LlamaTokenGovernorCasting is LlamaTokenVotingTestSetup, LlamaCoreSigUtils {
   event VoteCast(uint256 id, address indexed tokenholder, uint8 indexed support, uint256 weight, string reason);
   event ApprovalSubmitted(
-    uint256 id, address indexed caller, uint256 weightFor, uint256 weightAgainst, uint256 weightAbstain
+    uint256 id,
+    address indexed caller,
+    uint8 indexed role,
+    uint256 weightFor,
+    uint256 weightAgainst,
+    uint256 weightAbstain
+  );
+  event DisapprovalSubmitted(
+    uint256 id,
+    address indexed caller,
+    uint8 indexed role,
+    uint256 weightFor,
+    uint256 weightAgainst,
+    uint256 weightAbstain
   );
   event VetoCast(uint256 id, address indexed tokenholder, uint8 indexed support, uint256 weight, string reason);
-  event DisapprovalSubmitted(
-    uint256 id, address indexed caller, uint256 weightFor, uint256 weightAgainst, uint256 weightAbstain
-  );
   event QuorumPctSet(uint16 voteQuorumPct, uint16 vetoQuorumPct);
   event PeriodPctSet(uint16 delayPeriodPct, uint16 castingPeriodPct, uint16 submissionPeriodPct);
 
@@ -680,7 +690,7 @@ contract SubmitApprovals is LlamaTokenGovernorCasting {
 
   function test_SubmitsApprovalsCorrectly() public {
     vm.expectEmit();
-    emit ApprovalSubmitted(actionInfo.id, address(this), 750_000e18, 0, 0);
+    emit ApprovalSubmitted(actionInfo.id, address(this), tokenVotingGovernorRole, 750_000e18, 0, 0);
     llamaERC20TokenGovernor.submitApproval(actionInfo);
   }
 }
@@ -809,7 +819,7 @@ contract SubmitDisapprovals is LlamaTokenGovernorCasting {
 
   function test_SubmitsDisapprovalsCorrectly() public {
     vm.expectEmit();
-    emit DisapprovalSubmitted(actionInfo.id, address(this), 750_000e18, 0, 0);
+    emit DisapprovalSubmitted(actionInfo.id, address(this), tokenVotingGovernorRole, 750_000e18, 0, 0);
     llamaERC20TokenGovernor.submitDisapproval(actionInfo);
   }
 }
