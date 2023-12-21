@@ -19,11 +19,25 @@ interface ILlamaStrategy {
   /// @notice Returns the name of the Llama policy that this strategy is registered to.
   function policy() external view returns (ILlamaPolicy);
 
+  // -------- Required for Strategies used with LlamaTokenGovernor --------
+
   /// @notice Returns the approval period of the strategy in seconds.
   function approvalPeriod() external view returns (uint64);
 
   /// @notice Returns the queuing period of the strategy in seconds.
   function queuingPeriod() external view returns (uint64);
+
+  /// @notice The role that can approve an action.
+  function approvalRole() external view returns (uint8);
+
+  /// @notice The role that can disapprove an action.
+  function disapprovalRole() external view returns (uint8);
+
+  /// @notice Returns true if an action can force an action to be approved and false otherwise.
+  function forceApprovalRole(uint8 role) external view returns (bool isForceApproval);
+
+  /// @notice Returns true if an action can force an action to be disapproved and false otherwise.
+  function forceDisapprovalRole(uint8 role) external view returns (bool isForceDisapproval);
 
   // -------- At Strategy Creation --------
 

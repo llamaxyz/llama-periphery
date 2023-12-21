@@ -296,7 +296,7 @@ contract LlamaTokenGovernor is Initializable {
     address target,
     uint256 value,
     bytes calldata data,
-    string calldata description,
+    string memory description,
     uint8 v,
     bytes32 r,
     bytes32 s
@@ -456,7 +456,7 @@ contract LlamaTokenGovernor is Initializable {
     if (votesFor < threshold) revert InsufficientVotes(votesFor, threshold);
     if (votesFor <= votesAgainst) revert ForDoesNotSurpassAgainst(votesFor, votesAgainst);
 
-    uint8 governorRole = _determineGovernorRole();
+    uint8 governorRole = _getGovernorRole(actionInfo.strategy, true);
 
     llamaCore.castApproval(governorRole, actionInfo, "");
     emit ApprovalSubmitted(actionInfo.id, msg.sender, votesFor, votesAgainst, votesAbstain);
@@ -503,7 +503,7 @@ contract LlamaTokenGovernor is Initializable {
     if (vetoesFor < threshold) revert InsufficientVotes(vetoesFor, threshold);
     if (vetoesFor <= vetoesAgainst) revert ForDoesNotSurpassAgainst(vetoesFor, vetoesAgainst);
 
-    uint8 governorRole = _determineGovernorRole();
+    uint8 governorRole = _getGovernorRole(actionInfo.strategy, false);
 
     llamaCore.castDisapproval(governorRole, actionInfo, "");
     emit DisapprovalSubmitted(actionInfo.id, msg.sender, vetoesFor, vetoesAgainst, vetoesAbstain);
@@ -633,7 +633,7 @@ contract LlamaTokenGovernor is Initializable {
     address target,
     uint256 value,
     bytes calldata data,
-    string calldata description
+    string memory description
   ) internal returns (uint256 actionId) {
     // Reverts if clock or CLOCK_MODE() has changed
     tokenAdapter.checkIfInconsistentClock();
@@ -665,7 +665,7 @@ contract LlamaTokenGovernor is Initializable {
 
     CastData storage castData = casts[actionInfo.id];
 
-    uint8 governorRole = _determineGovernorRole();
+    uint8 governorRole = _getGovernorRole(actionInfo.strategy, true);
 
     actionInfo.strategy.checkIfApprovalEnabled(actionInfo, address(this), governorRole); // Reverts if not allowed.
     if (castData.castVote[caster]) revert DuplicateCast();
@@ -709,7 +709,7 @@ contract LlamaTokenGovernor is Initializable {
 
     CastData storage castData = casts[actionInfo.id];
 
-    uint8 governorRole = _determineGovernorRole();
+    uint8 governorRole = _getGovernorRole(actionInfo.strategy, false);
 
     actionInfo.strategy.checkIfDisapprovalEnabled(actionInfo, address(this), governorRole); // Reverts if not allowed.
     if (castData.castVeto[caster]) revert DuplicateCast();
@@ -771,8 +771,14 @@ contract LlamaTokenGovernor is Initializable {
   }
 
   /// @dev Returns the role that the Token Governor should use when casting an approval or disapproval to `LlamaCore`.
-  function _determineGovernorRole() internal returns (uint8) {
-    return uint8(1);
+  function _getGovernorRole(ILlamaStrategy strategy, bool isApproval) internal view returns (uint8) {
+    uint8 maxInitializedRole = llamaCore.policy().numRoles();
+    // We start from i = 1 here because a value of zero is reserved for the "all holders" role.
+    // Similarly, use we `<=` to make sure we check the last role.
+    for (uint256 i = 1; i <= maxInitializedRole; i = LlamaUtils.uncheckedIncrement(i)) {
+      if (isApproval ? strategy.forceApprovalRole(uint8(i)) : strategy.forceDisapprovalRole(uint8(i))) return uint8(i);
+    }
+    return isApproval ? strategy.approvalRole() : strategy.disapprovalRole();
   }
 
   // -------- Instance Management Internal Functions --------
@@ -832,7 +838,7 @@ contract LlamaTokenGovernor is Initializable {
     address target,
     uint256 value,
     bytes calldata data,
-    string calldata description
+    string memory description
   ) internal returns (bytes32) {
     // Calculating and storing nonce in memory and using that below, instead of calculating in place to prevent stack
     // too deep error.
