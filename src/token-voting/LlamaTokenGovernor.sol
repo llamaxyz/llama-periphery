@@ -162,7 +162,7 @@ contract LlamaTokenGovernor is Initializable {
 
   /// @dev EIP-712 createAction typehash.
   bytes32 internal constant CREATE_ACTION_TYPEHASH = keccak256(
-    "CreateAction(address tokenHolder,address strategy,address target,uint256 value,bytes data,string description,uint256 nonce)"
+    "CreateAction(address tokenHolder,uint8 role,address strategy,address target,uint256 value,bytes data,string description,uint256 nonce)"
   );
 
   /// @dev EIP-712 cancelAction typehash.
@@ -193,10 +193,6 @@ contract LlamaTokenGovernor is Initializable {
 
   /// @notice The contract that manages the timepoints for this token voting module.
   ILlamaTokenAdapter public tokenAdapter;
-
-  /// @notice The role used by this contract to create actions and cast approvals and disapprovals.
-  /// @dev This role is expected to have the ability to create actions and force approve and disapprove actions.
-  uint8 public role;
 
   /// @notice The number of tokens required to create an action.
   uint256 public creationThreshold;
@@ -234,7 +230,6 @@ contract LlamaTokenGovernor is Initializable {
   /// @param _llamaCore The `LlamaCore` contract for this Llama instance.
   /// @param _tokenAdapter The token adapter that manages the clock, timepoints, past votes and past supply for this
   /// token voting module.
-  /// @param _role The role used by this contract to create actions and cast approvals and disapprovals.
   /// @param _creationThreshold The default number of tokens required to create an action. This must
   /// be in the same decimals as the token. For example, if the token has 18 decimals and you want a
   /// creation threshold of 1000 tokens, pass in 1000e18.
@@ -242,16 +237,13 @@ contract LlamaTokenGovernor is Initializable {
   function initialize(
     ILlamaCore _llamaCore,
     ILlamaTokenAdapter _tokenAdapter,
-    uint8 _role,
     uint256 _creationThreshold,
     CasterConfig memory casterConfig
   ) external initializer {
     if (_llamaCore.actionsCount() < 0) revert InvalidLlamaCoreAddress();
-    if (_role > _llamaCore.policy().numRoles()) revert RoleNotInitialized(_role);
 
     llamaCore = _llamaCore;
     tokenAdapter = _tokenAdapter;
-    role = _role;
     _setActionThreshold(_creationThreshold);
     _setQuorumPct(casterConfig.voteQuorumPct, casterConfig.vetoQuorumPct);
     _setPeriodPct(casterConfig.delayPeriodPct, casterConfig.castingPeriodPct, casterConfig.submissionPeriodPct);
@@ -265,6 +257,7 @@ contract LlamaTokenGovernor is Initializable {
 
   /// @notice Creates an action.
   /// @dev Use `""` for `description` if there is no description.
+  /// @param role The role that will be used to determine the permission ID of the Token Governor.
   /// @param strategy The strategy contract that will determine how the action is executed.
   /// @param target The contract called when the action is executed.
   /// @param value The value in wei to be sent when the action is executed.
@@ -272,19 +265,21 @@ contract LlamaTokenGovernor is Initializable {
   /// @param description A human readable description of the action and the changes it will enact.
   /// @return actionId Action ID of the newly created action.
   function createAction(
+    uint8 role,
     ILlamaStrategy strategy,
     address target,
     uint256 value,
     bytes calldata data,
     string calldata description
   ) external returns (uint256 actionId) {
-    return _createAction(msg.sender, strategy, target, value, data, description);
+    return _createAction(msg.sender, role, strategy, target, value, data, description);
   }
 
   /// @notice Creates an action via an off-chain signature. The creator needs to have sufficient token balance that is
   /// greater than or equal to the creation threshold.
   /// @dev Use `""` for `description` if there is no description.
   /// @param tokenHolder The tokenHolder that signed the message.
+  /// @param role The role that will be used to determine the permission ID of the Token Governor.
   /// @param strategy The strategy contract that will determine how the action is executed.
   /// @param target The contract called when the action is executed.
   /// @param value The value in wei to be sent when the action is executed.
@@ -296,6 +291,7 @@ contract LlamaTokenGovernor is Initializable {
   /// @return actionId Action ID of the newly created action.
   function createActionBySig(
     address tokenHolder,
+    uint8 role,
     ILlamaStrategy strategy,
     address target,
     uint256 value,
@@ -305,10 +301,10 @@ contract LlamaTokenGovernor is Initializable {
     bytes32 r,
     bytes32 s
   ) external returns (uint256 actionId) {
-    bytes32 digest = _getCreateActionTypedDataHash(tokenHolder, strategy, target, value, data, description);
+    bytes32 digest = _getCreateActionTypedDataHash(tokenHolder, role, strategy, target, value, data, description);
     address signer = ecrecover(digest, v, r, s);
     if (signer == address(0) || signer != tokenHolder) revert InvalidSignature();
-    actionId = _createAction(signer, strategy, target, value, data, description);
+    actionId = _createAction(signer, role, strategy, target, value, data, description);
   }
 
   /// @notice Cancels an action.
@@ -460,7 +456,9 @@ contract LlamaTokenGovernor is Initializable {
     if (votesFor < threshold) revert InsufficientVotes(votesFor, threshold);
     if (votesFor <= votesAgainst) revert ForDoesNotSurpassAgainst(votesFor, votesAgainst);
 
-    llamaCore.castApproval(role, actionInfo, "");
+    uint8 governorRole = _determineGovernorRole();
+
+    llamaCore.castApproval(governorRole, actionInfo, "");
     emit ApprovalSubmitted(actionInfo.id, msg.sender, votesFor, votesAgainst, votesAbstain);
   }
 
@@ -505,7 +503,9 @@ contract LlamaTokenGovernor is Initializable {
     if (vetoesFor < threshold) revert InsufficientVotes(vetoesFor, threshold);
     if (vetoesFor <= vetoesAgainst) revert ForDoesNotSurpassAgainst(vetoesFor, vetoesAgainst);
 
-    llamaCore.castDisapproval(role, actionInfo, "");
+    uint8 governorRole = _determineGovernorRole();
+
+    llamaCore.castDisapproval(governorRole, actionInfo, "");
     emit DisapprovalSubmitted(actionInfo.id, msg.sender, vetoesFor, vetoesAgainst, vetoesAbstain);
   }
 
@@ -628,6 +628,7 @@ contract LlamaTokenGovernor is Initializable {
   /// @dev Creates an action. The creator needs to have sufficient token balance.
   function _createAction(
     address tokenHolder,
+    uint8 role,
     ILlamaStrategy strategy,
     address target,
     uint256 value,
@@ -664,9 +665,11 @@ contract LlamaTokenGovernor is Initializable {
 
     CastData storage castData = casts[actionInfo.id];
 
-    actionInfo.strategy.checkIfApprovalEnabled(actionInfo, address(this), role); // Reverts if not allowed.
+    uint8 governorRole = _determineGovernorRole();
+
+    actionInfo.strategy.checkIfApprovalEnabled(actionInfo, address(this), governorRole); // Reverts if not allowed.
     if (castData.castVote[caster]) revert DuplicateCast();
-    _preCastAssertions(actionInfo, support, ActionState.Active, checkpointTime);
+    _preCastAssertions(actionInfo, governorRole, support, ActionState.Active, checkpointTime);
 
     uint256 delayPeriodEndTime;
     uint256 castingPeriodEndTime;
@@ -706,9 +709,11 @@ contract LlamaTokenGovernor is Initializable {
 
     CastData storage castData = casts[actionInfo.id];
 
-    actionInfo.strategy.checkIfDisapprovalEnabled(actionInfo, address(this), role); // Reverts if not allowed.
+    uint8 governorRole = _determineGovernorRole();
+
+    actionInfo.strategy.checkIfDisapprovalEnabled(actionInfo, address(this), governorRole); // Reverts if not allowed.
     if (castData.castVeto[caster]) revert DuplicateCast();
-    _preCastAssertions(actionInfo, support, ActionState.Queued, checkpointTime);
+    _preCastAssertions(actionInfo, governorRole, support, ActionState.Queued, checkpointTime);
 
     uint256 delayPeriodEndTime;
     uint256 castingPeriodEndTime;
@@ -742,6 +747,7 @@ contract LlamaTokenGovernor is Initializable {
   /// @dev The only `support` values allowed to be passed into this method are Against (0), For (1) or Abstain (2).
   function _preCastAssertions(
     ActionInfo calldata actionInfo,
+    uint8 role,
     uint8 support,
     ActionState expectedState,
     uint256 checkpointTime
@@ -762,6 +768,11 @@ contract LlamaTokenGovernor is Initializable {
   function _newCastCount(uint128 currentCount, uint128 weight) internal pure returns (uint128) {
     if (uint256(currentCount) + weight >= type(uint128).max) return type(uint128).max;
     return currentCount + weight;
+  }
+
+  /// @dev Returns the role that the Token Governor should use when casting an approval or disapproval to `LlamaCore`.
+  function _determineGovernorRole() internal returns (uint8) {
+    return uint8(1);
   }
 
   // -------- Instance Management Internal Functions --------
@@ -816,6 +827,7 @@ contract LlamaTokenGovernor is Initializable {
   /// recover the signer.
   function _getCreateActionTypedDataHash(
     address tokenHolder,
+    uint8 role,
     ILlamaStrategy strategy,
     address target,
     uint256 value,
@@ -830,6 +842,7 @@ contract LlamaTokenGovernor is Initializable {
       abi.encode(
         CREATE_ACTION_TYPEHASH,
         tokenHolder,
+        role,
         address(strategy),
         target,
         value,

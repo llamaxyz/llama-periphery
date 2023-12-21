@@ -5,7 +5,6 @@
   "tokenAdapterLogic": "0x8CCe1b824EfF3A7966348528B6951A84eC0541A5",
   "tokenAddress": "0xf44d44a54440F22e5DC5adb7efA3233645f04007",
   "nonce": 0,
-  "governorRole": 0,
   "creationThreshold": 10000e18,
   "casterConfig": {
     "voteQuorumPct": 2000,

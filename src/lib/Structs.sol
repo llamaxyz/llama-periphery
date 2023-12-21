@@ -84,7 +84,6 @@ struct LlamaTokenVotingConfig {
   ILlamaTokenAdapter tokenAdapterLogic; // The logic contract of the token adapter.
   bytes adapterConfig; // The configuration of the token adapter.
   uint256 nonce; // The nonce to be used in the salt of the deterministic deployment.
-  uint8 governorRole; // The role required by the `LlamaTokenGovernor` to create actions and cast on them.
   uint256 creationThreshold; // The number of tokens required to create an action.
   CasterConfig casterConfig; // The quorum and period data for the `LlamaTokenGovernor`.
 }

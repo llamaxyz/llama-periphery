@@ -105,13 +105,7 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
   function _deployERC20TokenVotingModuleAndSetRole() internal returns (LlamaTokenGovernor) {
     bytes memory adapterConfig = abi.encode(LlamaTokenAdapterVotesTimestamp.Config(address(erc20VotesToken)));
     LlamaTokenVotingConfig memory config = LlamaTokenVotingConfig(
-      CORE,
-      llamaTokenAdapterTimestampLogic,
-      adapterConfig,
-      0,
-      tokenVotingGovernorRole,
-      ERC20_CREATION_THRESHOLD,
-      defaultCasterConfig
+      CORE, llamaTokenAdapterTimestampLogic, adapterConfig, 0, ERC20_CREATION_THRESHOLD, defaultCasterConfig
     );
 
     vm.startPrank(address(EXECUTOR));
@@ -129,13 +123,7 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
   function _deployERC721TokenVotingModuleAndSetRole() internal returns (LlamaTokenGovernor) {
     bytes memory adapterConfig = abi.encode(LlamaTokenAdapterVotesTimestamp.Config(address(erc721VotesToken)));
     LlamaTokenVotingConfig memory config = LlamaTokenVotingConfig(
-      CORE,
-      llamaTokenAdapterTimestampLogic,
-      adapterConfig,
-      0,
-      tokenVotingGovernorRole,
-      ERC721_CREATION_THRESHOLD,
-      defaultCasterConfig
+      CORE, llamaTokenAdapterTimestampLogic, adapterConfig, 0, ERC721_CREATION_THRESHOLD, defaultCasterConfig
     );
 
     vm.startPrank(address(EXECUTOR));

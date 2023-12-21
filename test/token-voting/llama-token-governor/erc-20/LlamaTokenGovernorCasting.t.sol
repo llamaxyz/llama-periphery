@@ -122,19 +122,6 @@ contract CastVote is LlamaTokenGovernorCasting {
     llamaERC20TokenGovernor.castVote(notActionInfo, uint8(VoteType.For), "");
   }
 
-  function test_RevertsIf_ApprovalNotEnabled() public {
-    LlamaTokenGovernor casterWithWrongRole = LlamaTokenGovernor(
-      Clones.cloneDeterministic(
-        address(llamaTokenGovernorLogic), keccak256(abi.encodePacked(address(erc20VotesToken), msg.sender))
-      )
-    );
-    ILlamaTokenAdapter tokenAdapter = createTimestampTokenAdapter(address(erc20VotesToken), 0);
-    casterWithWrongRole.initialize(CORE, tokenAdapter, madeUpRole, 0, defaultCasterConfig);
-
-    vm.expectRevert(abi.encodeWithSelector(ILlamaRelativeStrategyBase.InvalidRole.selector, tokenVotingGovernorRole));
-    casterWithWrongRole.castVote(actionInfo, uint8(VoteType.For), "");
-  }
-
   function test_RevertsIf_ActionNotActive() public {
     vm.warp(actionCreationTime + APPROVAL_PERIOD + 1);
     vm.expectRevert(abi.encodeWithSelector(LlamaTokenGovernor.InvalidActionState.selector, ActionState.Failed));
@@ -369,19 +356,6 @@ contract CastVeto is LlamaTokenGovernorCasting {
     vm.assume(notActionInfo.id != actionInfo.id);
     vm.expectRevert();
     llamaERC20TokenGovernor.castVeto(notActionInfo, uint8(VoteType.For), "");
-  }
-
-  function test_RevertsIf_DisapprovalNotEnabled() public {
-    LlamaTokenGovernor casterWithWrongRole = LlamaTokenGovernor(
-      Clones.cloneDeterministic(
-        address(llamaTokenGovernorLogic), keccak256(abi.encodePacked(address(erc20VotesToken), msg.sender))
-      )
-    );
-    ILlamaTokenAdapter tokenAdapter = createTimestampTokenAdapter(address(erc20VotesToken), 0);
-    casterWithWrongRole.initialize(CORE, tokenAdapter, madeUpRole, 0, defaultCasterConfig);
-
-    vm.expectRevert(abi.encodeWithSelector(ILlamaRelativeStrategyBase.InvalidRole.selector, tokenVotingGovernorRole));
-    casterWithWrongRole.castVeto(actionInfo, uint8(VoteType.For), "");
   }
 
   function test_RevertsIf_ActionNotQueued() public {

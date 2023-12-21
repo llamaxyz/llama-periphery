@@ -47,9 +47,9 @@ contract LlamaCoreSigUtils {
   bytes32 internal constant EIP712_DOMAIN_TYPEHASH =
     keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
 
-  /// @notice EIP-712 createAction typehash.
+  /// @dev EIP-712 createAction typehash.
   bytes32 internal constant CREATE_ACTION_TYPEHASH = keccak256(
-    "CreateAction(address tokenHolder,address strategy,address target,uint256 value,bytes data,string description,uint256 nonce)"
+    "CreateAction(address tokenHolder,uint8 role,address strategy,address target,uint256 value,bytes data,string description,uint256 nonce)"
   );
 
   /// @dev EIP-712 cancelAction typehash.

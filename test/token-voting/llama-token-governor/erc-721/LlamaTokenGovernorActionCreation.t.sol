@@ -95,7 +95,7 @@ contract CreateAction is LlamaERC721TokenGovernorActionCreationTest {
 
     vm.expectRevert(abi.encodeWithSelector(LlamaTokenGovernor.InsufficientBalance.selector, 0));
     vm.prank(notTokenHolder);
-    llamaERC721TokenGovernor.createAction(STRATEGY, address(mockProtocol), 0, data, "");
+    llamaERC721TokenGovernor.createAction(tokenVotingGovernorRole, STRATEGY, address(mockProtocol), 0, data, "");
   }
 
   function test_RevertsIf_LlamaTokenGovernorDoesNotHavePermission() public {
@@ -107,7 +107,19 @@ contract CreateAction is LlamaERC721TokenGovernorActionCreationTest {
 
     vm.expectRevert(ILlamaCore.PolicyholderDoesNotHavePermission.selector);
     vm.prank(tokenHolder1);
-    llamaERC721TokenGovernor.createAction(STRATEGY, address(mockProtocol), 0, data, "");
+    llamaERC721TokenGovernor.createAction(tokenVotingGovernorRole, STRATEGY, address(mockProtocol), 0, data, "");
+  }
+
+  function test_RevertIf_LlamaTokenGovernorDoesNotHaveRole() public {
+    erc721VotesToken.mint(tokenHolder1, ERC721_CREATION_THRESHOLD);
+    vm.prank(tokenHolder1);
+    erc721VotesToken.delegate(tokenHolder1);
+
+    mineBlock();
+
+    vm.expectRevert(ILlamaCore.PolicyholderDoesNotHavePermission.selector);
+    vm.prank(tokenHolder1);
+    llamaERC721TokenGovernor.createAction(madeUpRole, STRATEGY, address(mockProtocol), 0, data, "");
   }
 
   function test_ProperlyCreatesAction() public {
@@ -127,7 +139,8 @@ contract CreateAction is LlamaERC721TokenGovernorActionCreationTest {
     vm.expectEmit();
     emit ActionCreated(actionCount, address(tokenHolder1));
     vm.prank(tokenHolder1);
-    uint256 actionId = llamaERC721TokenGovernor.createAction(STRATEGY, address(mockProtocol), 0, data, "");
+    uint256 actionId =
+      llamaERC721TokenGovernor.createAction(tokenVotingGovernorRole, STRATEGY, address(mockProtocol), 0, data, "");
 
     Action memory action = CORE.getAction(actionId);
     assertEq(actionId, actionCount);
@@ -175,7 +188,16 @@ contract CreateActionBySig is LlamaERC721TokenGovernorActionCreationTest {
 
   function createActionBySig(uint8 v, bytes32 r, bytes32 s) internal returns (uint256 actionId) {
     actionId = llamaERC721TokenGovernor.createActionBySig(
-      tokenHolder1, STRATEGY, address(mockProtocol), 0, abi.encodeCall(mockProtocol.pause, (true)), "", v, r, s
+      tokenHolder1,
+      tokenVotingGovernorRole,
+      STRATEGY,
+      address(mockProtocol),
+      0,
+      abi.encodeCall(mockProtocol.pause, (true)),
+      "",
+      v,
+      r,
+      s
     );
   }
 
@@ -206,6 +228,7 @@ contract CreateActionBySig is LlamaERC721TokenGovernorActionCreationTest {
 
     uint256 actionId = llamaERC721TokenGovernor.createActionBySig(
       tokenHolder1,
+      tokenVotingGovernorRole,
       STRATEGY,
       address(mockProtocol),
       0,
@@ -289,7 +312,8 @@ contract CancelAction is LlamaERC721TokenGovernorActionCreationTest {
     bytes memory data = abi.encodeCall(mockProtocol.pause, (true));
 
     vm.prank(tokenHolder1);
-    actionId = llamaERC721TokenGovernor.createAction(STRATEGY, address(mockProtocol), 0, data, "");
+    actionId =
+      llamaERC721TokenGovernor.createAction(tokenVotingGovernorRole, STRATEGY, address(mockProtocol), 0, data, "");
 
     actionInfo = ActionInfo(
       actionId, address(llamaERC721TokenGovernor), tokenVotingGovernorRole, STRATEGY, address(mockProtocol), 0, data
@@ -332,7 +356,8 @@ contract CancelActionBySig is LlamaERC721TokenGovernorActionCreationTest {
     bytes memory data = abi.encodeCall(mockProtocol.pause, (true));
 
     vm.prank(tokenHolder1);
-    actionId = llamaERC721TokenGovernor.createAction(STRATEGY, address(mockProtocol), 0, data, "");
+    actionId =
+      llamaERC721TokenGovernor.createAction(tokenVotingGovernorRole, STRATEGY, address(mockProtocol), 0, data, "");
 
     actionInfo = ActionInfo(
       actionId, address(llamaERC721TokenGovernor), tokenVotingGovernorRole, STRATEGY, address(mockProtocol), 0, data

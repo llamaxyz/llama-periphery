@@ -35,7 +35,6 @@ contract DeployLlamaTokenVotingModule is Script {
       ILlamaTokenAdapter(jsonInput.readAddress(".tokenAdapterLogic")),
       DeployUtils.readTokenAdapter(jsonInput),
       abi.decode(jsonInput.parseRaw(".nonce"), (uint256)),
-      abi.decode(jsonInput.parseRaw(".governorRole"), (uint8)),
       abi.decode(jsonInput.parseRaw(".creationThreshold"), (uint256)),
       casterConfig
     );
