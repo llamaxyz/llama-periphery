@@ -10,7 +10,6 @@ enum ActionState {
   Queued, // Action queued for queueing duration and disapproval period begins.
   Expired, // block.timestamp is greater than Action's executionTime + expirationDelay.
   Executed // Action has executed successfully.
-
 }
 
 /// @dev Possible states of a user cast vote.
