@@ -82,7 +82,7 @@ library PeriodPctCheckpoints {
 
     /**
      * @dev Returns whether there is a checkpoint in the structure (i.e. it is not empty), and if so the timestamp and
-     * period in the most recent checkpoint.
+     * periods in the most recent checkpoint.
      */
     function latestCheckpoint(History storage self)
         internal
