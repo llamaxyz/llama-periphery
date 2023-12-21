@@ -175,6 +175,7 @@ contract CreateActionBySig is LlamaERC721TokenGovernorActionCreationTest {
   {
     LlamaCoreSigUtils.CreateAction memory _createAction = LlamaCoreSigUtils.CreateAction({
       tokenHolder: tokenHolder1,
+      role: tokenVotingGovernorRole,
       strategy: address(STRATEGY),
       target: address(mockProtocol),
       value: 0,

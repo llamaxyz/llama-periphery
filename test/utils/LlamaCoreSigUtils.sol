@@ -13,6 +13,7 @@ contract LlamaCoreSigUtils {
 
   struct CreateAction {
     address tokenHolder;
+    uint8 role;
     address strategy;
     address target;
     uint256 value;
@@ -29,6 +30,7 @@ contract LlamaCoreSigUtils {
 
   struct CastVote {
     address tokenHolder;
+    uint8 role;
     ActionInfo actionInfo;
     uint8 support;
     string reason;
@@ -37,6 +39,7 @@ contract LlamaCoreSigUtils {
 
   struct CastVeto {
     address tokenHolder;
+    uint8 role;
     ActionInfo actionInfo;
     uint8 support;
     string reason;
@@ -59,12 +62,12 @@ contract LlamaCoreSigUtils {
 
   /// @notice EIP-712 castVote typehash.
   bytes32 internal constant CAST_VOTE_TYPEHASH = keccak256(
-    "CastVote(address tokenHolder,ActionInfo actionInfo,uint8 support,string reason,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
+    "CastVote(address tokenHolder,uint8 role,ActionInfo actionInfo,uint8 support,string reason,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
   );
 
   /// @notice EIP-712 castVeto typehash.
   bytes32 internal constant CAST_VETO_TYPEHASH = keccak256(
-    "CastVeto(address tokenHolder,ActionInfo actionInfo,uint8 support,string reason,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
+    "CastVeto(address tokenHolder,uint8 role,ActionInfo actionInfo,uint8 support,string reason,uint256 nonce)ActionInfo(uint256 id,address creator,uint8 creatorRole,address strategy,address target,uint256 value,bytes data)"
   );
 
   /// @notice EIP-712 actionInfo typehash.
@@ -93,6 +96,7 @@ contract LlamaCoreSigUtils {
       abi.encode(
         CREATE_ACTION_TYPEHASH,
         createAction.tokenHolder,
+        createAction.role,
         createAction.strategy,
         createAction.target,
         createAction.value,
@@ -130,6 +134,7 @@ contract LlamaCoreSigUtils {
       abi.encode(
         CAST_VOTE_TYPEHASH,
         castVote.tokenHolder,
+        castVote.role,
         getActionInfoHash(castVote.actionInfo),
         castVote.support,
         keccak256(bytes(castVote.reason)),
@@ -150,6 +155,7 @@ contract LlamaCoreSigUtils {
       abi.encode(
         CAST_VETO_TYPEHASH,
         castVeto.tokenHolder,
+        castVeto.role,
         getActionInfoHash(castVeto.actionInfo),
         castVeto.support,
         keccak256(bytes(castVeto.reason)),

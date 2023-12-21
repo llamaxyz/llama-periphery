@@ -239,6 +239,7 @@ contract CastVoteBySig is LlamaTokenGovernorCastingTest {
     returns (uint8 v, bytes32 r, bytes32 s)
   {
     LlamaCoreSigUtils.CastVote memory castApproval = LlamaCoreSigUtils.CastVote({
+      role: tokenVotingGovernorRole,
       actionInfo: _actionInfo,
       support: uint8(VoteType.For),
       reason: "",
@@ -443,6 +444,7 @@ contract CastVetoBySig is LlamaTokenGovernorCastingTest {
     returns (uint8 v, bytes32 r, bytes32 s)
   {
     LlamaCoreSigUtils.CastVeto memory castDisapproval = LlamaCoreSigUtils.CastVeto({
+      role: tokenVotingGovernorRole,
       actionInfo: _actionInfo,
       support: uint8(VoteType.For),
       reason: "",
