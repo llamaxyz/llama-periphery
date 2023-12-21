@@ -783,8 +783,8 @@ contract LlamaTokenGovernor is Initializable {
 
   /// @dev Sets the voting quorum and vetoing quorum.
   function _setQuorumPct(uint16 _voteQuorumPct, uint16 _vetoQuorumPct) internal {
-    if (_voteQuorumPct > ONE_HUNDRED_IN_BPS || _voteQuorumPct <= 0) revert InvalidVoteQuorumPct(_voteQuorumPct);
-    if (_vetoQuorumPct > ONE_HUNDRED_IN_BPS || _vetoQuorumPct <= 0) revert InvalidVetoQuorumPct(_vetoQuorumPct);
+    if (_voteQuorumPct > ONE_HUNDRED_IN_BPS || _voteQuorumPct == 0) revert InvalidVoteQuorumPct(_voteQuorumPct);
+    if (_vetoQuorumPct > ONE_HUNDRED_IN_BPS || _vetoQuorumPct == 0) revert InvalidVetoQuorumPct(_vetoQuorumPct);
     quorumCheckpoints.push(_voteQuorumPct, _vetoQuorumPct);
     emit QuorumPctSet(_voteQuorumPct, _vetoQuorumPct);
   }
