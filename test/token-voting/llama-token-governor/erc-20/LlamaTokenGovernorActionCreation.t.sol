@@ -429,7 +429,7 @@ contract SetActionThreshold is LlamaTokenGovernorActionCreation {
     assertEq(llamaERC20TokenGovernor.creationThreshold(), threshold);
   }
 
-  function testFuzz_RevertsIf_CreationThresholdExceedsTotalSupply(uint256 threshold) public {
+  function testFuzz_RevertIf_CreationThresholdExceedsTotalSupply(uint256 threshold) public {
     vm.assume(threshold > erc20VotesToken.getPastTotalSupply(block.timestamp - 1));
 
     vm.expectRevert(LlamaTokenGovernor.InvalidCreationThreshold.selector);
@@ -437,7 +437,7 @@ contract SetActionThreshold is LlamaTokenGovernorActionCreation {
     llamaERC20TokenGovernor.setActionThreshold(threshold);
   }
 
-  function testFuzz_RevertsIf_CalledByNotLlamaExecutor(address notLlamaExecutor) public {
+  function testFuzz_RevertIf_CalledByNotLlamaExecutor(address notLlamaExecutor) public {
     vm.assume(notLlamaExecutor != address(EXECUTOR));
 
     vm.expectRevert(LlamaTokenGovernor.OnlyLlamaExecutor.selector);
