@@ -656,7 +656,7 @@ contract LlamaTokenGovernor is Initializable {
   // -------- Action Casting Internal Functions --------
 
   /// @dev How token holders add their support of the approval of an action with a reason.
-  function _castVote(address caster, ActionInfo calldata actionInfo, uint8 support, string calldata reason)
+  function _castVote(address caster, uint8 role, ActionInfo calldata actionInfo, uint8 support, string calldata reason)
     internal
     returns (uint128)
   {
@@ -665,11 +665,9 @@ contract LlamaTokenGovernor is Initializable {
 
     CastData storage castData = casts[actionInfo.id];
 
-    uint8 governorRole = _getGovernorRole(actionInfo.strategy, true);
-
-    actionInfo.strategy.checkIfApprovalEnabled(actionInfo, address(this), governorRole); // Reverts if not allowed.
+    actionInfo.strategy.checkIfApprovalEnabled(actionInfo, address(this), role); // Reverts if not allowed.
     if (castData.castVote[caster]) revert DuplicateCast();
-    _preCastAssertions(actionInfo, governorRole, support, ActionState.Active, checkpointTime);
+    _preCastAssertions(actionInfo, role, support, ActionState.Active, checkpointTime);
 
     uint256 delayPeriodEndTime;
     uint256 castingPeriodEndTime;
@@ -700,7 +698,7 @@ contract LlamaTokenGovernor is Initializable {
   }
 
   /// @dev How token holders add their support of the disapproval of an action with a reason.
-  function _castVeto(address caster, ActionInfo calldata actionInfo, uint8 support, string calldata reason)
+  function _castVeto(address caster, uint8 role, ActionInfo calldata actionInfo, uint8 support, string calldata reason)
     internal
     returns (uint128)
   {
@@ -709,11 +707,9 @@ contract LlamaTokenGovernor is Initializable {
 
     CastData storage castData = casts[actionInfo.id];
 
-    uint8 governorRole = _getGovernorRole(actionInfo.strategy, false);
-
-    actionInfo.strategy.checkIfDisapprovalEnabled(actionInfo, address(this), governorRole); // Reverts if not allowed.
+    actionInfo.strategy.checkIfDisapprovalEnabled(actionInfo, address(this), role); // Reverts if not allowed.
     if (castData.castVeto[caster]) revert DuplicateCast();
-    _preCastAssertions(actionInfo, governorRole, support, ActionState.Queued, checkpointTime);
+    _preCastAssertions(actionInfo, role, support, ActionState.Queued, checkpointTime);
 
     uint256 delayPeriodEndTime;
     uint256 castingPeriodEndTime;
