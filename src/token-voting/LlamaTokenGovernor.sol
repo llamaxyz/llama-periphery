@@ -246,7 +246,7 @@ contract LlamaTokenGovernor is Initializable {
     uint256 _creationThreshold,
     CasterConfig memory casterConfig
   ) external initializer {
-    if (_llamaCore.actionsCount() < 0) revert InvalidLlamaCoreAddress();
+    if (!(_llamaCore.actionsCount() >= 0)) revert InvalidLlamaCoreAddress();
     if (_role > _llamaCore.policy().numRoles()) revert RoleNotInitialized(_role);
 
     llamaCore = _llamaCore;
