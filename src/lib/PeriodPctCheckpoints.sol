@@ -13,7 +13,7 @@ import {LlamaUtils} from "src/lib/LlamaUtils.sol";
  *
  * @dev This was created by modifying then running the OpenZeppelin `Checkpoints.js` script, which generated a version
  * of this library that uses a 64 bit `timestamp` and 96 bit `quantity` field in the `Checkpoint` struct. The struct
- * was then modified to use uint48 timestamps and add three uint16 period fields. For simplicity, safe cast and math methods were inlined from
+ * was then modified to use uint48 timestamps and add three uint16 periods fields. For simplicity, safe cast and math methods were inlined from
  * the OpenZeppelin versions at the same commit. We disable forge-fmt for this file to simplify diffing against the
  * original OpenZeppelin version: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/d00acef4059807535af0bd0dd0ddf619747a044b/contracts/utils/Checkpoints.sol
  */
@@ -71,7 +71,7 @@ library PeriodPctCheckpoints {
     }
 
     /**
-     * @dev Returns the period in the most recent checkpoint, or zero if there are no checkpoints.
+     * @dev Returns the periods in the most recent checkpoint, or zero if there are no checkpoints.
      */
     function latest(History storage self) internal view returns (uint16, uint16, uint16) {
         uint256 pos = self._checkpoints.length;
