@@ -563,6 +563,7 @@ contract LlamaTokenGovernor is Initializable {
   }
 
   /// @notice Returns the voting quorum and vetoing quorum at a given timestamp.
+  /// @param timestamp The timestamp to get the quorum at.
   function getPastQuorum(uint256 timestamp) external view returns (uint16, uint16) {
     return quorumCheckpoints.getAtProbablyRecentTimestamp(timestamp);
   }
@@ -573,6 +574,8 @@ contract LlamaTokenGovernor is Initializable {
   }
 
   /// @notice Returns the quorum checkpoints array from a given set of indices.
+  /// @param start Start index of the checkpoints to get from their checkpoint history array. This index is inclusive.
+  /// @param end End index of the checkpoints to get from their checkpoint history array. This index is exclusive.
   function getQuorumCheckpoints(uint256 start, uint256 end) external view returns (QuorumCheckpoints.History memory) {
     if (start > end) revert InvalidIndices();
     uint256 checkpointsLength = quorumCheckpoints._checkpoints.length;
@@ -592,6 +595,7 @@ contract LlamaTokenGovernor is Initializable {
   }
 
   /// @notice Returns the delay, casting and submission period ratio at a given timestamp.
+  /// @param timestamp The timestamp to get the period pcts at.
   function getPastPeriodPcts(uint256 timestamp) external view returns (uint16, uint16, uint16) {
     return periodPctsCheckpoint.getAtProbablyRecentTimestamp(timestamp);
   }
@@ -602,6 +606,8 @@ contract LlamaTokenGovernor is Initializable {
   }
 
   /// @notice Returns the period pct checkpoints array from a given set of indices.
+  /// @param start Start index of the checkpoints to get from their checkpoint history array. This index is inclusive.
+  /// @param end End index of the checkpoints to get from their checkpoint history array. This index is exclusive.
   function getPeriodPctCheckpoints(uint256 start, uint256 end)
     external
     view
