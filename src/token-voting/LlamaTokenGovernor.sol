@@ -561,17 +561,20 @@ contract LlamaTokenGovernor is Initializable {
   }
 
   /// @notice Returns the current voting quorum and vetoing quorum.
+  /// @return The current voting quorum and vetoing quorum.
   function getQuorum() external view returns (uint16, uint16) {
     return quorumCheckpoints.latest();
   }
 
   /// @notice Returns the voting quorum and vetoing quorum at a given timestamp.
   /// @param timestamp The timestamp to get the quorums at.
+  /// @return The voting quorum and vetoing quorum at a given timestamp.
   function getPastQuorum(uint256 timestamp) external view returns (uint16, uint16) {
     return quorumCheckpoints.getAtProbablyRecentTimestamp(timestamp);
   }
 
   /// @notice Returns all quorum checkpoints.
+  /// @return All quorum checkpoints.
   function getQuorumCheckpoints() external view returns (QuorumCheckpoints.History memory) {
     return quorumCheckpoints;
   }
@@ -579,6 +582,7 @@ contract LlamaTokenGovernor is Initializable {
   /// @notice Returns the quorum checkpoints array from a given set of indices.
   /// @param start Start index of the checkpoints to get from their checkpoint history array. This index is inclusive.
   /// @param end End index of the checkpoints to get from their checkpoint history array. This index is exclusive.
+  /// @return The quorum checkpoints array from a given set of indices.
   function getQuorumCheckpoints(uint256 start, uint256 end) external view returns (QuorumCheckpoints.History memory) {
     if (start > end) revert InvalidIndices();
     uint256 checkpointsLength = quorumCheckpoints._checkpoints.length;
@@ -593,17 +597,20 @@ contract LlamaTokenGovernor is Initializable {
   }
 
   /// @notice Returns the current delay, casting and submission period ratio.
+  /// @return The current delay, casting and submission period ratio.
   function getPeriodPcts() external view returns (uint16, uint16, uint16) {
     return periodPctsCheckpoint.latest();
   }
 
   /// @notice Returns the delay, casting and submission period ratio at a given timestamp.
   /// @param timestamp The timestamp to get the period pcts at.
+  /// @return The delay, casting and submission period ratio at a given timestamp.
   function getPastPeriodPcts(uint256 timestamp) external view returns (uint16, uint16, uint16) {
     return periodPctsCheckpoint.getAtProbablyRecentTimestamp(timestamp);
   }
 
   /// @notice Returns all period pct checkpoints.
+  /// @return All period pct checkpoints.
   function getPeriodPctCheckpoints() external view returns (PeriodPctCheckpoints.History memory) {
     return periodPctsCheckpoint;
   }
@@ -611,6 +618,7 @@ contract LlamaTokenGovernor is Initializable {
   /// @notice Returns the period pct checkpoints array from a given set of indices.
   /// @param start Start index of the checkpoints to get from their checkpoint history array. This index is inclusive.
   /// @param end End index of the checkpoints to get from their checkpoint history array. This index is exclusive.
+  /// @return The period pct checkpoints array from a given set of indices.
   function getPeriodPctCheckpoints(uint256 start, uint256 end)
     external
     view
