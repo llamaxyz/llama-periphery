@@ -44,18 +44,18 @@ contract LlamaTokenGovernorActionCreation is LlamaTokenVotingTestSetup, LlamaCor
 }
 
 // contract Constructor is LlamaTokenGovernorActionCreation {
-//   function test_RevertsIf_InvalidLlamaCore() public {
+//   function test_RevertIf_InvalidLlamaCore() public {
 //     // With invalid LlamaCore instance, LlamaTokenGovernor.InvalidLlamaCoreAddress is unreachable
 //     vm.expectRevert();
 //     new LlamaTokenGovernor(erc20VotesToken, ILlamaCore(makeAddr("invalid-llama-core")), uint256(0));
 //   }
 
-//   function test_RevertsIf_InvalidTokenAddress() public {
+//   function test_RevertIf_InvalidTokenAddress() public {
 //     vm.expectRevert(); // will EvmError: Revert vecause totalSupply fn does not exist
 //     new LlamaTokenGovernor(ERC20Votes(makeAddr("invalid-erc20VotesToken")), CORE, uint256(0));
 //   }
 
-//   function test_RevertsIf_CreationThresholdExceedsTotalSupply() public {
+//   function test_RevertIf_CreationThresholdExceedsTotalSupply() public {
 //     erc20VotesToken.mint(tokenHolder1, 1_000_000e18); // we use erc20VotesToken because IVotesToken is an interface
 //     // without the `mint` function
 
@@ -85,7 +85,7 @@ contract LlamaTokenGovernorActionCreation is LlamaTokenVotingTestSetup, LlamaCor
 contract CreateAction is LlamaTokenGovernorActionCreation {
   bytes data = abi.encodeCall(mockProtocol.pause, (true));
 
-  function test_RevertsIf_InsufficientBalance() public {
+  function test_RevertIf_InsufficientBalance() public {
     erc20VotesToken.mint(tokenHolder1, ERC20_CREATION_THRESHOLD);
     vm.prank(tokenHolder1);
     erc20VotesToken.delegate(tokenHolder1);
@@ -97,7 +97,7 @@ contract CreateAction is LlamaTokenGovernorActionCreation {
     llamaERC20TokenGovernor.createAction(STRATEGY, address(mockProtocol), 0, data, "");
   }
 
-  function test_RevertsIf_LlamaTokenGovernorDoesNotHavePermission() public {
+  function test_RevertIf_LlamaTokenGovernorDoesNotHavePermission() public {
     erc20VotesToken.mint(tokenHolder1, ERC20_CREATION_THRESHOLD);
     vm.prank(tokenHolder1);
     erc20VotesToken.delegate(tokenHolder1);
@@ -302,7 +302,7 @@ contract CancelAction is LlamaTokenGovernorActionCreation {
     llamaERC20TokenGovernor.cancelAction(actionInfo);
   }
 
-  function test_RevertsIf_CallerIsNotActionCreator(address notCreator) public {
+  function test_RevertIf_CallerIsNotActionCreator(address notCreator) public {
     vm.assume(notCreator != tokenHolder1);
     vm.expectRevert(LlamaTokenGovernor.OnlyActionCreator.selector);
     vm.prank(notCreator);
