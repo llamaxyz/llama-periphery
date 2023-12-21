@@ -566,7 +566,7 @@ contract LlamaTokenGovernor is Initializable {
   }
 
   /// @notice Returns the voting quorum and vetoing quorum at a given timestamp.
-  /// @param timestamp The timestamp to get the quorum at.
+  /// @param timestamp The timestamp to get the quorums at.
   function getPastQuorum(uint256 timestamp) external view returns (uint16, uint16) {
     return quorumCheckpoints.getAtProbablyRecentTimestamp(timestamp);
   }
