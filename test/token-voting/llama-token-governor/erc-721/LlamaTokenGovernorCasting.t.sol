@@ -80,20 +80,20 @@ contract LlamaTokenGovernorCastingTest is LlamaTokenVotingTestSetup, LlamaCoreSi
 
   function castVotesFor() public {
     vm.prank(tokenHolder1);
-    llamaERC721TokenGovernor.castVote(actionInfo, uint8(VoteType.For), "");
+    llamaERC721TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
     vm.prank(tokenHolder2);
-    llamaERC721TokenGovernor.castVote(actionInfo, uint8(VoteType.For), "");
+    llamaERC721TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
     vm.prank(tokenHolder3);
-    llamaERC721TokenGovernor.castVote(actionInfo, uint8(VoteType.For), "");
+    llamaERC721TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
   }
 
   function castVetosFor() public {
     vm.prank(tokenHolder1);
-    llamaERC721TokenGovernor.castVeto(actionInfo, uint8(VoteType.For), "");
+    llamaERC721TokenGovernor.castVeto(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
     vm.prank(tokenHolder2);
-    llamaERC721TokenGovernor.castVeto(actionInfo, uint8(VoteType.For), "");
+    llamaERC721TokenGovernor.castVeto(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
     vm.prank(tokenHolder3);
-    llamaERC721TokenGovernor.castVeto(actionInfo, uint8(VoteType.For), "");
+    llamaERC721TokenGovernor.castVeto(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
   }
 
   function createTimestampTokenAdapter(address token, uint256 nonce) public returns (ILlamaTokenAdapter tokenAdapter) {
@@ -115,19 +115,19 @@ contract CastVote is LlamaTokenGovernorCastingTest {
   function test_RevertsIf_NotPastVotingDelay() public {
     vm.warp(block.timestamp - 1);
     vm.expectRevert(LlamaTokenGovernor.DelayPeriodNotOver.selector);
-    llamaERC721TokenGovernor.castVote(actionInfo, uint8(VoteType.For), "");
+    llamaERC721TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
   }
 
   function test_RevertsIf_ActionInfoMismatch(ActionInfo memory notActionInfo) public {
     vm.assume(notActionInfo.id != actionInfo.id);
     vm.expectRevert();
-    llamaERC721TokenGovernor.castVote(notActionInfo, uint8(VoteType.For), "");
+    llamaERC721TokenGovernor.castVote(tokenVotingGovernorRole, notActionInfo, uint8(VoteType.For), "");
   }
 
   function test_RevertsIf_ActionNotActive() public {
     vm.warp(actionCreationTime + APPROVAL_PERIOD + 1);
     vm.expectRevert(abi.encodeWithSelector(LlamaTokenGovernor.InvalidActionState.selector, ActionState.Failed));
-    llamaERC721TokenGovernor.castVote(actionInfo, uint8(VoteType.For), "");
+    llamaERC721TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
   }
 
   function test_RevertsIf_RoleHasBeenRevokedBeforeActionCreation() public {
@@ -148,20 +148,20 @@ contract CastVote is LlamaTokenGovernorCastingTest {
 
     vm.startPrank(tokenHolder1);
     vm.expectRevert(LlamaTokenGovernor.InvalidPolicyholder.selector);
-    llamaERC721TokenGovernor.castVote(_actionInfo, uint8(VoteType.For), "");
+    llamaERC721TokenGovernor.castVote(tokenVotingGovernorRole, _actionInfo, uint8(VoteType.For), "");
   }
 
   function test_RevertsIf_AlreadyCastedVote() public {
     vm.startPrank(tokenHolder1);
-    llamaERC721TokenGovernor.castVote(actionInfo, uint8(VoteType.For), "");
+    llamaERC721TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
 
     vm.expectRevert(LlamaTokenGovernor.DuplicateCast.selector);
-    llamaERC721TokenGovernor.castVote(actionInfo, uint8(VoteType.For), "");
+    llamaERC721TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
   }
 
   function test_RevertsIf_InvalidSupport() public {
     vm.expectRevert(abi.encodeWithSelector(LlamaTokenGovernor.InvalidSupport.selector, uint8(3)));
-    llamaERC721TokenGovernor.castVote(actionInfo, 3, "");
+    llamaERC721TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, 3, "");
   }
 
   function test_RevertsIf_CastingPeriodOver() public {
@@ -169,13 +169,13 @@ contract CastVote is LlamaTokenGovernorCastingTest {
     uint256 castingPeriodEndTime = delayPeriodEndTime + ((APPROVAL_PERIOD * TWO_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS);
     vm.warp(castingPeriodEndTime + 1);
     vm.expectRevert(LlamaTokenGovernor.CastingPeriodOver.selector);
-    llamaERC721TokenGovernor.castVote(actionInfo, uint8(VoteType.For), "");
+    llamaERC721TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
   }
 
   function test_CanCastWithWeightZero() public {
     vm.expectEmit();
     emit VoteCast(actionInfo.id, address(this), uint8(VoteType.For), 0, "");
-    llamaERC721TokenGovernor.castVote(actionInfo, uint8(VoteType.For), "");
+    llamaERC721TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
   }
 
   function test_CastsVoteCorrectly(uint8 support) public {
@@ -185,7 +185,7 @@ contract CastVote is LlamaTokenGovernorCastingTest {
       actionInfo.id, tokenHolder1, support, erc721VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1), ""
     );
     vm.prank(tokenHolder1);
-    uint128 weight = llamaERC721TokenGovernor.castVote(actionInfo, support, "");
+    uint128 weight = llamaERC721TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, support, "");
     assertEq(weight, erc721VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1));
   }
 
@@ -199,7 +199,7 @@ contract CastVote is LlamaTokenGovernorCastingTest {
       "reason"
     );
     vm.prank(tokenHolder1);
-    llamaERC721TokenGovernor.castVote(actionInfo, uint8(VoteType.For), "reason");
+    llamaERC721TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "reason");
   }
 
   function test_GetsWeightAtDelayPeriodTimestamp() public {
@@ -212,7 +212,7 @@ contract CastVote is LlamaTokenGovernorCastingTest {
     // However tokenholder1 is able to vote with the weight they had at delayPeriodEndTime
     vm.expectEmit();
     emit VoteCast(actionInfo.id, tokenHolder1, 1, 1, "");
-    uint128 weight = llamaERC721TokenGovernor.castVote(actionInfo, 1, "");
+    uint128 weight = llamaERC721TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, 1, "");
     assertEq(weight, 1);
     vm.stopPrank();
   }
@@ -241,7 +241,7 @@ contract CastVoteBySig is LlamaTokenGovernorCastingTest {
   }
 
   function castVoteBySig(ActionInfo memory _actionInfo, uint8 support, uint8 v, bytes32 r, bytes32 s) internal {
-    llamaERC721TokenGovernor.castVoteBySig(tokenHolder1, _actionInfo, support, "", v, r, s);
+    llamaERC721TokenGovernor.castVoteBySig(tokenHolder1, tokenVotingGovernorRole, _actionInfo, support, "", v, r, s);
   }
 
   function test_CastsVoteBySig() public {
@@ -324,13 +324,13 @@ contract CastVeto is LlamaTokenGovernorCastingTest {
   function test_RevertsIf_NotPastVotingDelay() public {
     vm.warp(block.timestamp - 1);
     vm.expectRevert(LlamaTokenGovernor.DelayPeriodNotOver.selector);
-    llamaERC721TokenGovernor.castVeto(actionInfo, uint8(VoteType.For), "");
+    llamaERC721TokenGovernor.castVeto(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
   }
 
   function test_RevertsIf_ActionInfoMismatch(ActionInfo memory notActionInfo) public {
     vm.assume(notActionInfo.id != actionInfo.id);
     vm.expectRevert();
-    llamaERC721TokenGovernor.castVeto(notActionInfo, uint8(VoteType.For), "");
+    llamaERC721TokenGovernor.castVeto(tokenVotingGovernorRole, notActionInfo, uint8(VoteType.For), "");
   }
 
   function test_RevertsIf_ActionNotQueued() public {
@@ -341,20 +341,20 @@ contract CastVeto is LlamaTokenGovernorCastingTest {
       ActionInfo(actionId, coreTeam1, CORE_TEAM_ROLE, tokenVotingStrategy, address(mockProtocol), 0, data);
     // Currently at actionCreationTime which is Active state.
     vm.expectRevert(abi.encodeWithSelector(LlamaTokenGovernor.InvalidActionState.selector, ActionState.Active));
-    llamaERC721TokenGovernor.castVeto(_actionInfo, uint8(VoteType.For), "");
+    llamaERC721TokenGovernor.castVeto(tokenVotingGovernorRole, _actionInfo, uint8(VoteType.For), "");
   }
 
   function test_RevertsIf_AlreadyCastedVote() public {
     vm.startPrank(tokenHolder1);
-    llamaERC721TokenGovernor.castVeto(actionInfo, uint8(VoteType.For), "");
+    llamaERC721TokenGovernor.castVeto(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
 
     vm.expectRevert(LlamaTokenGovernor.DuplicateCast.selector);
-    llamaERC721TokenGovernor.castVeto(actionInfo, uint8(VoteType.For), "");
+    llamaERC721TokenGovernor.castVeto(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
   }
 
   function test_RevertsIf_InvalidSupport() public {
     vm.expectRevert(abi.encodeWithSelector(LlamaTokenGovernor.InvalidSupport.selector, uint8(3)));
-    llamaERC721TokenGovernor.castVeto(actionInfo, 3, "");
+    llamaERC721TokenGovernor.castVeto(tokenVotingGovernorRole, actionInfo, 3, "");
   }
 
   function test_RevertsIf_CastingPeriodOver() public {
@@ -364,13 +364,13 @@ contract CastVeto is LlamaTokenGovernorCastingTest {
     uint256 castingPeriodEndTime = delayPeriodEndTime + ((QUEUING_PERIOD * TWO_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS);
     vm.warp(castingPeriodEndTime + 1);
     vm.expectRevert(LlamaTokenGovernor.CastingPeriodOver.selector);
-    llamaERC721TokenGovernor.castVeto(actionInfo, uint8(VoteType.For), "");
+    llamaERC721TokenGovernor.castVeto(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
   }
 
   function test_CanCastWithWeightZero() public {
     vm.expectEmit();
     emit VetoCast(actionInfo.id, address(this), uint8(VoteType.For), 0, "");
-    llamaERC721TokenGovernor.castVeto(actionInfo, uint8(VoteType.For), "");
+    llamaERC721TokenGovernor.castVeto(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
   }
 
   function test_CastsVetoCorrectly(uint8 support) public {
@@ -380,7 +380,7 @@ contract CastVeto is LlamaTokenGovernorCastingTest {
       actionInfo.id, tokenHolder1, support, erc721VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1), ""
     );
     vm.prank(tokenHolder1);
-    uint128 weight = llamaERC721TokenGovernor.castVeto(actionInfo, support, "");
+    uint128 weight = llamaERC721TokenGovernor.castVeto(tokenVotingGovernorRole, actionInfo, support, "");
     assertEq(weight, erc721VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1));
   }
 
@@ -394,7 +394,7 @@ contract CastVeto is LlamaTokenGovernorCastingTest {
       "reason"
     );
     vm.prank(tokenHolder1);
-    llamaERC721TokenGovernor.castVeto(actionInfo, uint8(VoteType.For), "reason");
+    llamaERC721TokenGovernor.castVeto(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "reason");
   }
 
   function test_GetsWeightAtDelayPeriodTimestamp() public {
@@ -407,7 +407,7 @@ contract CastVeto is LlamaTokenGovernorCastingTest {
     // However tokenholder1 is able to vote with the weight they had at delayPeriodEndTime
     vm.expectEmit();
     emit VetoCast(actionInfo.id, tokenHolder1, 1, 1, "");
-    uint128 weight = llamaERC721TokenGovernor.castVeto(actionInfo, 1, "");
+    uint128 weight = llamaERC721TokenGovernor.castVeto(tokenVotingGovernorRole, actionInfo, 1, "");
     assertEq(weight, 1);
     vm.stopPrank();
   }
@@ -445,7 +445,9 @@ contract CastVetoBySig is LlamaTokenGovernorCastingTest {
   }
 
   function castVetoBySig(ActionInfo memory _actionInfo, uint8 v, bytes32 r, bytes32 s) internal {
-    llamaERC721TokenGovernor.castVetoBySig(tokenHolder1, _actionInfo, uint8(VoteType.For), "", v, r, s);
+    llamaERC721TokenGovernor.castVetoBySig(
+      tokenHolder1, tokenVotingGovernorRole, _actionInfo, uint8(VoteType.For), "", v, r, s
+    );
   }
 
   function test_CastsVetoBySig() public {
@@ -531,7 +533,7 @@ contract CastVetoBySig is LlamaTokenGovernorCastingTest {
 
     // Second disapproval.
     vm.prank(tokenHolder2);
-    llamaERC721TokenGovernor.castVeto(actionInfo, uint8(VoteType.For), "");
+    llamaERC721TokenGovernor.castVeto(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
 
     Action memory action = CORE.getAction(actionInfo.id);
     uint256 delayPeriodEndTime =
@@ -610,11 +612,11 @@ contract SubmitApprovals is LlamaTokenGovernorCastingTest {
     vm.warp(delayPeriodEndTime + 1);
 
     vm.prank(tokenHolder1);
-    llamaERC721TokenGovernor.castVote(_actionInfo, uint8(VoteType.For), "");
+    llamaERC721TokenGovernor.castVote(tokenVotingGovernorRole, _actionInfo, uint8(VoteType.For), "");
     vm.prank(tokenHolder2);
-    llamaERC721TokenGovernor.castVote(_actionInfo, uint8(VoteType.Against), "");
+    llamaERC721TokenGovernor.castVote(tokenVotingGovernorRole, _actionInfo, uint8(VoteType.Against), "");
     vm.prank(tokenHolder3);
-    llamaERC721TokenGovernor.castVote(_actionInfo, uint8(VoteType.Against), "");
+    llamaERC721TokenGovernor.castVote(tokenVotingGovernorRole, _actionInfo, uint8(VoteType.Against), "");
 
     vm.warp(castingPeriodEndTime + 1);
     vm.expectRevert(abi.encodeWithSelector(LlamaTokenGovernor.ForDoesNotSurpassAgainst.selector, 1, 2));
@@ -684,11 +686,11 @@ contract SubmitDisapprovals is LlamaTokenGovernorCastingTest {
     vm.warp(delayPeriodEndTime + 1);
 
     vm.prank(tokenHolder1);
-    llamaERC721TokenGovernor.castVote(_actionInfo, uint8(VoteType.For), "");
+    llamaERC721TokenGovernor.castVote(tokenVotingGovernorRole, _actionInfo, uint8(VoteType.For), "");
     vm.prank(tokenHolder2);
-    llamaERC721TokenGovernor.castVote(_actionInfo, uint8(VoteType.For), "");
+    llamaERC721TokenGovernor.castVote(tokenVotingGovernorRole, _actionInfo, uint8(VoteType.For), "");
     vm.prank(tokenHolder3);
-    llamaERC721TokenGovernor.castVote(_actionInfo, uint8(VoteType.For), "");
+    llamaERC721TokenGovernor.castVote(tokenVotingGovernorRole, _actionInfo, uint8(VoteType.For), "");
 
     vm.warp(castingPeriodEndTime + 1);
     llamaERC721TokenGovernor.submitApproval(_actionInfo);
@@ -719,11 +721,11 @@ contract SubmitDisapprovals is LlamaTokenGovernorCastingTest {
     vm.warp(delayPeriodEndTime + 1);
 
     vm.prank(tokenHolder1);
-    llamaERC721TokenGovernor.castVote(_actionInfo, uint8(VoteType.For), "");
+    llamaERC721TokenGovernor.castVote(tokenVotingGovernorRole, _actionInfo, uint8(VoteType.For), "");
     vm.prank(tokenHolder2);
-    llamaERC721TokenGovernor.castVote(_actionInfo, uint8(VoteType.For), "");
+    llamaERC721TokenGovernor.castVote(tokenVotingGovernorRole, _actionInfo, uint8(VoteType.For), "");
     vm.prank(tokenHolder3);
-    llamaERC721TokenGovernor.castVote(_actionInfo, uint8(VoteType.For), "");
+    llamaERC721TokenGovernor.castVote(tokenVotingGovernorRole, _actionInfo, uint8(VoteType.For), "");
 
     vm.warp(castingPeriodEndTime + 1);
     llamaERC721TokenGovernor.submitApproval(_actionInfo);
@@ -737,11 +739,11 @@ contract SubmitDisapprovals is LlamaTokenGovernorCastingTest {
     vm.warp(delayPeriodEndTime + 1);
 
     vm.prank(tokenHolder1);
-    llamaERC721TokenGovernor.castVeto(_actionInfo, uint8(VoteType.For), "");
+    llamaERC721TokenGovernor.castVeto(tokenVotingGovernorRole, _actionInfo, uint8(VoteType.For), "");
     vm.prank(tokenHolder2);
-    llamaERC721TokenGovernor.castVeto(_actionInfo, uint8(VoteType.Against), "");
+    llamaERC721TokenGovernor.castVeto(tokenVotingGovernorRole, _actionInfo, uint8(VoteType.Against), "");
     vm.prank(tokenHolder3);
-    llamaERC721TokenGovernor.castVeto(_actionInfo, uint8(VoteType.Against), "");
+    llamaERC721TokenGovernor.castVeto(tokenVotingGovernorRole, _actionInfo, uint8(VoteType.Against), "");
 
     vm.warp(castingPeriodEndTime + 1);
     vm.expectRevert(abi.encodeWithSelector(LlamaTokenGovernor.ForDoesNotSurpassAgainst.selector, 1, 2));

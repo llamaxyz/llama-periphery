@@ -129,12 +129,22 @@ contract LlamaTokenGovernor is Initializable {
 
   /// @dev Emitted when a cast approval is submitted to the `LlamaCore` contract.
   event ApprovalSubmitted(
-    uint256 id, address indexed caller, uint256 weightFor, uint256 weightAgainst, uint256 weightAbstain
+    uint256 id,
+    address indexed caller,
+    uint8 indexed role,
+    uint256 weightFor,
+    uint256 weightAgainst,
+    uint256 weightAbstain
   );
 
   /// @dev Emitted when a cast disapproval is submitted to the `LlamaCore` contract.
   event DisapprovalSubmitted(
-    uint256 id, address indexed caller, uint256 weightFor, uint256 weightAgainst, uint256 weightAbstain
+    uint256 id,
+    address indexed caller,
+    uint8 indexed role,
+    uint256 weightFor,
+    uint256 weightAgainst,
+    uint256 weightAbstain
   );
 
   /// @dev Emitted when the casting and submission period ratio is set.
@@ -479,7 +489,7 @@ contract LlamaTokenGovernor is Initializable {
 
     uint8 governorRole = _determineGovernorRole(actionInfo.strategy, true);
     llamaCore.castApproval(governorRole, actionInfo, "");
-    emit ApprovalSubmitted(actionInfo.id, msg.sender, votesFor, votesAgainst, votesAbstain);
+    emit ApprovalSubmitted(actionInfo.id, msg.sender, governorRole, votesFor, votesAgainst, votesAbstain);
   }
 
   /// @notice Submits a cast disapproval to the `LlamaCore` contract.
@@ -525,7 +535,7 @@ contract LlamaTokenGovernor is Initializable {
 
     uint8 governorRole = _determineGovernorRole(actionInfo.strategy, false);
     llamaCore.castDisapproval(governorRole, actionInfo, "");
-    emit DisapprovalSubmitted(actionInfo.id, msg.sender, vetoesFor, vetoesAgainst, vetoesAbstain);
+    emit DisapprovalSubmitted(actionInfo.id, msg.sender, governorRole, vetoesFor, vetoesAgainst, vetoesAbstain);
   }
 
   // -------- Instance Management --------
