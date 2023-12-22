@@ -44,19 +44,19 @@ contract LlamaERC721TokenGovernorActionCreationTest is LlamaTokenVotingTestSetup
 }
 
 // contract Constructor is LlamaERC721TokenGovernorActionCreationTest {
-//   function test_RevertsIf_InvalidLlamaCore() public {
+//   function test_RevertIf_InvalidLlamaCore() public {
 //     // With invalid LlamaCore instance, LlamaTokenGovernor.InvalidLlamaCoreAddress is unreachable
 //     vm.expectRevert();
 //     new LlamaTokenGovernor(erc721VotesToken, ILlamaCore(makeAddr("invalid-llama-core")),
 // uint256(0));
 //   }
 
-//   function test_RevertsIf_InvalidTokenAddress() public {
+//   function test_RevertIf_InvalidTokenAddress() public {
 //     vm.expectRevert(); // will EvmError: Revert vecause totalSupply fn does not exist
 //     new LlamaTokenGovernor(ERC20Votes(makeAddr("invalid-erc721VotesToken")), CORE, uint256(0));
 //   }
 
-//   function test_RevertsIf_CreationThresholdExceedsTotalSupply() public {
+//   function test_RevertIf_CreationThresholdExceedsTotalSupply() public {
 //     erc721VotesToken.mint(tokenHolder1, 1_000_000e18); // we use erc721VotesToken because IVotesToken is an interface
 //     // without the `mint` function
 
@@ -86,7 +86,7 @@ contract LlamaERC721TokenGovernorActionCreationTest is LlamaTokenVotingTestSetup
 contract CreateAction is LlamaERC721TokenGovernorActionCreationTest {
   bytes data = abi.encodeCall(mockProtocol.pause, (true));
 
-  function test_RevertsIf_InsufficientBalance() public {
+  function test_RevertIf_InsufficientBalance() public {
     erc721VotesToken.mint(tokenHolder1, ERC721_CREATION_THRESHOLD);
     vm.prank(tokenHolder1);
     erc721VotesToken.delegate(tokenHolder1);
@@ -98,7 +98,7 @@ contract CreateAction is LlamaERC721TokenGovernorActionCreationTest {
     llamaERC721TokenGovernor.createAction(STRATEGY, address(mockProtocol), 0, data, "");
   }
 
-  function test_RevertsIf_LlamaTokenGovernorDoesNotHavePermission() public {
+  function test_RevertIf_LlamaTokenGovernorDoesNotHavePermission() public {
     erc721VotesToken.mint(tokenHolder1, ERC721_CREATION_THRESHOLD);
     vm.prank(tokenHolder1);
     erc721VotesToken.delegate(tokenHolder1);
@@ -303,7 +303,7 @@ contract CancelAction is LlamaERC721TokenGovernorActionCreationTest {
     llamaERC721TokenGovernor.cancelAction(actionInfo);
   }
 
-  function test_RevertsIf_CallerIsNotActionCreator(address notCreator) public {
+  function test_RevertIf_CallerIsNotActionCreator(address notCreator) public {
     vm.assume(notCreator != tokenHolder1);
     vm.expectRevert(LlamaTokenGovernor.OnlyActionCreator.selector);
     vm.prank(notCreator);
@@ -430,7 +430,7 @@ contract SetActionThreshold is LlamaERC721TokenGovernorActionCreationTest {
     assertEq(llamaERC721TokenGovernor.creationThreshold(), threshold);
   }
 
-  function testFuzz_RevertsIf_CreationThresholdExceedsTotalSupply(uint256 threshold) public {
+  function testFuzz_RevertIf_CreationThresholdExceedsTotalSupply(uint256 threshold) public {
     vm.assume(threshold > erc721VotesToken.getPastTotalSupply(block.timestamp - 1));
 
     vm.expectRevert(LlamaTokenGovernor.InvalidCreationThreshold.selector);
@@ -438,7 +438,7 @@ contract SetActionThreshold is LlamaERC721TokenGovernorActionCreationTest {
     llamaERC721TokenGovernor.setActionThreshold(threshold);
   }
 
-  function testFuzz_RevertsIf_CalledByNotLlamaExecutor(address notLlamaExecutor) public {
+  function testFuzz_RevertIf_CalledByNotLlamaExecutor(address notLlamaExecutor) public {
     vm.assume(notLlamaExecutor != address(EXECUTOR));
 
     vm.expectRevert(LlamaTokenGovernor.OnlyLlamaExecutor.selector);
