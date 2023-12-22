@@ -122,6 +122,18 @@ contract CreateAction is LlamaERC721TokenGovernorActionCreationTest {
     llamaERC721TokenGovernor.createAction(madeUpRole, STRATEGY, address(mockProtocol), 0, data, "");
   }
 
+  function test_RevertIf_CreatesActionWithRoleWithoutPermission() public {
+    erc721VotesToken.mint(tokenHolder1, ERC721_CREATION_THRESHOLD);
+    vm.prank(tokenHolder1);
+    erc721VotesToken.delegate(tokenHolder1);
+
+    mineBlock();
+
+    vm.expectRevert(ILlamaCore.PolicyholderDoesNotHavePermission.selector);
+    vm.prank(tokenHolder1);
+    llamaERC721TokenGovernor.createAction(madeUpRole, STRATEGY, address(mockProtocol), 0, data, "");
+  }
+
   function test_ProperlyCreatesAction() public {
     // Assigns Permission to LlamaTokenGovernor.
     _setRolePermissionToLlamaTokenGovernor();

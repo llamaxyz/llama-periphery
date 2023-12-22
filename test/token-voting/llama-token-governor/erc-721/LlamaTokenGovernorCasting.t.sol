@@ -11,10 +11,13 @@ import {LlamaCoreSigUtils} from "test/utils/LlamaCoreSigUtils.sol";
 import {ActionState, VoteType} from "src/lib/Enums.sol";
 import {Action, ActionInfo} from "src/lib/Structs.sol";
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
+import {ILlamaPolicy} from "src/interfaces/ILlamaPolicy.sol";
+import {ILlamaRelativeStrategyBase} from "src/interfaces/ILlamaRelativeStrategyBase.sol";
 import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
 import {ILlamaTokenAdapter} from "src/token-voting/interfaces/ILlamaTokenAdapter.sol";
 import {LlamaTokenAdapterVotesTimestamp} from "src/token-voting/token-adapters/LlamaTokenAdapterVotesTimestamp.sol";
 import {LlamaTokenGovernor} from "src/token-voting/LlamaTokenGovernor.sol";
+import {RoleDescription} from "src/lib/UDVTs.sol";
 
 contract LlamaTokenGovernorCastingTest is LlamaTokenVotingTestSetup, LlamaCoreSigUtils {
   event VoteCast(uint256 id, address indexed tokenholder, uint8 indexed support, uint256 weight, string reason);
@@ -634,6 +637,79 @@ contract SubmitApprovals is LlamaTokenGovernorCastingTest {
     llamaERC721TokenGovernor.submitApproval(_actionInfo);
   }
 
+  function test_GovernorRoleDeterminedCorrectlyForApproval(uint8 governorRole) public {
+    vm.assume(governorRole > 0);
+
+    uint8 startingRole = POLICY.numRoles() + 1;
+    if (governorRole >= startingRole) {
+      for (uint256 i = startingRole; i <= governorRole; i++) {
+        vm.prank(address(EXECUTOR));
+        POLICY.initializeRole(RoleDescription.wrap(bytes32(abi.encode(i))));
+      }
+    }
+
+    vm.prank(address(EXECUTOR));
+    POLICY.setRoleHolder(governorRole, address(llamaERC721TokenGovernor), DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION);
+
+    mineBlock();
+
+    uint8[] memory forceRoles = new uint8[](1);
+    forceRoles[0] = governorRole;
+
+    ILlamaRelativeStrategyBase.Config memory strategyConfig = ILlamaRelativeStrategyBase.Config({
+      approvalPeriod: APPROVAL_PERIOD,
+      queuingPeriod: QUEUING_PERIOD,
+      expirationPeriod: EXPIRATION_PERIOD,
+      isFixedLengthApprovalPeriod: false,
+      minApprovalPct: ONE_HUNDRED_IN_BPS,
+      minDisapprovalPct: ONE_HUNDRED_IN_BPS,
+      approvalRole: tokenVotingGovernorRole,
+      disapprovalRole: tokenVotingGovernorRole,
+      forceApprovalRoles: forceRoles,
+      forceDisapprovalRoles: forceRoles
+    });
+
+    ILlamaRelativeStrategyBase.Config[] memory strategyConfigs = new ILlamaRelativeStrategyBase.Config[](1);
+    strategyConfigs[0] = strategyConfig;
+
+    vm.prank(address(EXECUTOR));
+    CORE.createStrategies(RELATIVE_QUANTITY_QUORUM_LOGIC, encodeStrategyConfigs(strategyConfigs));
+
+    ILlamaStrategy newStrategy = ILlamaStrategy(
+      LENS.computeLlamaStrategyAddress(
+        address(RELATIVE_QUANTITY_QUORUM_LOGIC), encodeStrategy(strategyConfig), address(CORE)
+      )
+    );
+
+    {
+      vm.prank(address(EXECUTOR));
+      POLICY.setRolePermission(
+        CORE_TEAM_ROLE, ILlamaPolicy.PermissionData(address(mockProtocol), PAUSE_SELECTOR, address(newStrategy)), true
+      );
+    }
+
+    actionInfo = _createActionWithTokenVotingStrategy(newStrategy);
+    Action memory action = CORE.getAction(actionInfo.id);
+    actionCreationTime = action.creationTime;
+
+    _skipVotingDelay(actionInfo);
+
+    vm.prank(tokenHolder1);
+    llamaERC721TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
+    vm.prank(tokenHolder2);
+    llamaERC721TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
+    vm.prank(tokenHolder3);
+    llamaERC721TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
+
+    uint256 delayPeriodEndTime = actionCreationTime + ((APPROVAL_PERIOD * ONE_QUARTER_IN_BPS) / ONE_HUNDRED_IN_BPS);
+    uint256 castingPeriodEndTime = delayPeriodEndTime + ((APPROVAL_PERIOD * TWO_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS);
+    vm.warp(castingPeriodEndTime + 1);
+
+    vm.expectEmit();
+    emit ApprovalSubmitted(actionInfo.id, address(this), governorRole, 3, 0, 0);
+    llamaERC721TokenGovernor.submitApproval(actionInfo);
+  }
+
   function test_SubmitsApprovalsCorrectly() public {
     vm.expectEmit();
     emit ApprovalSubmitted(actionInfo.id, address(this), tokenVotingGovernorRole, 3, 0, 0);
@@ -759,6 +835,98 @@ contract SubmitDisapprovals is LlamaTokenGovernorCastingTest {
     vm.warp(castingPeriodEndTime + 1);
     vm.expectRevert(abi.encodeWithSelector(LlamaTokenGovernor.ForDoesNotSurpassAgainst.selector, 1, 2));
     llamaERC721TokenGovernor.submitDisapproval(_actionInfo);
+  }
+
+  function test_GovernorRoleDeterminedCorrectlyForDisapproval(uint8 governorRole) public {
+    vm.assume(governorRole > 0);
+
+    uint8 startingRole = POLICY.numRoles() + 1;
+    if (governorRole >= startingRole) {
+      for (uint256 i = startingRole; i <= governorRole; i++) {
+        vm.prank(address(EXECUTOR));
+        POLICY.initializeRole(RoleDescription.wrap(bytes32(abi.encode(i))));
+      }
+    }
+
+    vm.prank(address(EXECUTOR));
+    POLICY.setRoleHolder(governorRole, address(llamaERC721TokenGovernor), DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION);
+
+    mineBlock();
+
+    uint8[] memory forceRoles = new uint8[](1);
+    forceRoles[0] = governorRole;
+
+    ILlamaRelativeStrategyBase.Config memory strategyConfig = ILlamaRelativeStrategyBase.Config({
+      approvalPeriod: APPROVAL_PERIOD,
+      queuingPeriod: QUEUING_PERIOD,
+      expirationPeriod: EXPIRATION_PERIOD,
+      isFixedLengthApprovalPeriod: false,
+      minApprovalPct: ONE_HUNDRED_IN_BPS,
+      minDisapprovalPct: ONE_HUNDRED_IN_BPS,
+      approvalRole: tokenVotingGovernorRole,
+      disapprovalRole: tokenVotingGovernorRole,
+      forceApprovalRoles: forceRoles,
+      forceDisapprovalRoles: forceRoles
+    });
+
+    ILlamaRelativeStrategyBase.Config[] memory strategyConfigs = new ILlamaRelativeStrategyBase.Config[](1);
+    strategyConfigs[0] = strategyConfig;
+
+    vm.prank(address(EXECUTOR));
+    CORE.createStrategies(RELATIVE_QUANTITY_QUORUM_LOGIC, encodeStrategyConfigs(strategyConfigs));
+
+    ILlamaStrategy newStrategy = ILlamaStrategy(
+      LENS.computeLlamaStrategyAddress(
+        address(RELATIVE_QUANTITY_QUORUM_LOGIC), encodeStrategy(strategyConfig), address(CORE)
+      )
+    );
+
+    {
+      vm.prank(address(EXECUTOR));
+      POLICY.setRolePermission(
+        CORE_TEAM_ROLE, ILlamaPolicy.PermissionData(address(mockProtocol), PAUSE_SELECTOR, address(newStrategy)), true
+      );
+    }
+
+    actionInfo = _createActionWithTokenVotingStrategy(newStrategy);
+    Action memory action = CORE.getAction(actionInfo.id);
+    actionCreationTime = action.creationTime;
+
+    _skipVotingDelay(actionInfo);
+
+    vm.prank(tokenHolder1);
+    llamaERC721TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
+    vm.prank(tokenHolder2);
+    llamaERC721TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
+    vm.prank(tokenHolder3);
+    llamaERC721TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
+
+    uint256 delayPeriodEndTime = actionCreationTime + ((APPROVAL_PERIOD * ONE_QUARTER_IN_BPS) / ONE_HUNDRED_IN_BPS);
+    uint256 castingPeriodEndTime = delayPeriodEndTime + ((APPROVAL_PERIOD * TWO_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS);
+    vm.warp(castingPeriodEndTime + 1);
+
+    llamaERC721TokenGovernor.submitApproval(actionInfo);
+
+    action = CORE.getAction(actionInfo.id);
+
+    delayPeriodEndTime =
+      (action.minExecutionTime - QUEUING_PERIOD) + ((QUEUING_PERIOD * ONE_QUARTER_IN_BPS) / ONE_HUNDRED_IN_BPS);
+    castingPeriodEndTime = delayPeriodEndTime + ((QUEUING_PERIOD * TWO_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS);
+
+    vm.warp(delayPeriodEndTime + 1);
+
+    vm.prank(tokenHolder1);
+    llamaERC721TokenGovernor.castVeto(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
+    vm.prank(tokenHolder2);
+    llamaERC721TokenGovernor.castVeto(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
+    vm.prank(tokenHolder3);
+    llamaERC721TokenGovernor.castVeto(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
+
+    vm.warp(castingPeriodEndTime + 1);
+
+    vm.expectEmit();
+    emit DisapprovalSubmitted(actionInfo.id, address(this), governorRole, 3, 0, 0);
+    llamaERC721TokenGovernor.submitDisapproval(actionInfo);
   }
 
   function test_SubmitsDisapprovalsCorrectly() public {

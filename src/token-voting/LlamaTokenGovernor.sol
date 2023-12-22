@@ -798,8 +798,10 @@ contract LlamaTokenGovernor is Initializable {
   /// @dev Returns the role that the Token Governor should use when casting an approval or disapproval to `LlamaCore`.
   function _determineGovernorRole(ILlamaStrategy strategy, bool isApproval) internal view returns (uint8) {
     uint8 maxInitializedRole = llamaCore.policy().numRoles();
-    // We use `<=` to make sure we check the last role.
-    for (uint256 i = 0; i <= maxInitializedRole; i = LlamaUtils.uncheckedIncrement(i)) {
+    // We start from i = 1 here because a value of zero is reserved for the "all holders" role.
+    // The "All holders" role cannot be used as a force approval or disapproval role in relative or absolute strategies.
+    // Similarly, use we `<=` to make sure we check the last role.
+    for (uint256 i = 1; i <= maxInitializedRole; i = LlamaUtils.uncheckedIncrement(i)) {
       if (isApproval ? strategy.forceApprovalRole(uint8(i)) : strategy.forceDisapprovalRole(uint8(i))) return uint8(i);
     }
     return isApproval ? strategy.approvalRole() : strategy.disapprovalRole();
