@@ -522,10 +522,7 @@ contract LlamaTokenGovernor is Initializable {
           (action.minExecutionTime - queuingPeriod) + ((queuingPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS);
         castingPeriodEndTime = delayPeriodEndTime + ((queuingPeriod * castingPeriodPct) / ONE_HUNDRED_IN_BPS);
       }
-      // Using castingPeriodEndTime vs
-      // (action.minExecutionTime - ((queuingPeriod *
-      // (ONE_HUNDRED_IN_BPS - delayPeriodPct - castingPeriodPct)) / (ONE_HUNDRED_IN_BPS))
-      // to prevent any off-by-one errors due to precision loss.
+      // submissionPeriod is implicitly calculated as (queuingPeriod - delayPeriod - castingPeriod).
       if (block.timestamp <= castingPeriodEndTime) revert CastingPeriodNotOver();
       // Llama disapproval period is exclusive of min execution time.
       if (block.timestamp >= action.minExecutionTime) revert SubmissionPeriodOver();
