@@ -23,7 +23,6 @@ contract LlamaTokenVotingFactoryTest is LlamaTokenVotingTestSetup {
     ILlamaTokenAdapter tokenAdapterLogic,
     ILlamaTokenAdapter tokenAdapter,
     uint256 nonce,
-    uint8 governorRole,
     LlamaTokenGovernor llamaTokenGovernor,
     uint256 chainId
   );
@@ -76,13 +75,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
   function test_CanDeployERC20TokenVotingModule() public {
     bytes memory adapterConfig = abi.encode(LlamaTokenAdapterVotesTimestamp.Config(address(erc20VotesToken)));
     LlamaTokenVotingConfig memory config = LlamaTokenVotingConfig(
-      CORE,
-      llamaTokenAdapterTimestampLogic,
-      adapterConfig,
-      0,
-      tokenVotingGovernorRole,
-      ERC20_CREATION_THRESHOLD,
-      defaultCasterConfig
+      CORE, llamaTokenAdapterTimestampLogic, adapterConfig, 0, ERC20_CREATION_THRESHOLD, defaultCasterConfig
     );
 
     // Set up action to call `deploy` with the ERC20 token.
@@ -122,7 +115,6 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
       llamaTokenAdapterTimestampLogic,
       llamaERC20TokenAdapter,
       0,
-      tokenVotingGovernorRole,
       llamaERC20TokenGovernor,
       block.chainid
     );
@@ -133,7 +125,6 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     (uint16 voteQuorumPct, uint16 vetoQuorumPct) = llamaERC20TokenGovernor.getQuorum();
     assertEq(ERC20_VOTE_QUORUM_PCT, voteQuorumPct);
     assertEq(ERC20_VETO_QUORUM_PCT, vetoQuorumPct);
-    assertEq(llamaERC20TokenGovernor.role(), tokenVotingGovernorRole);
     assertEq(llamaERC20TokenGovernor.creationThreshold(), ERC20_CREATION_THRESHOLD);
     assertEq(address(llamaERC20TokenAdapter.token()), address(erc20VotesToken));
   }
@@ -141,13 +132,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
   function test_CanDeployERC721TokenVotingModule() public {
     bytes memory adapterConfig = abi.encode(LlamaTokenAdapterVotesTimestamp.Config(address(erc721VotesToken)));
     LlamaTokenVotingConfig memory config = LlamaTokenVotingConfig(
-      CORE,
-      llamaTokenAdapterTimestampLogic,
-      adapterConfig,
-      0,
-      tokenVotingGovernorRole,
-      ERC721_CREATION_THRESHOLD,
-      defaultCasterConfig
+      CORE, llamaTokenAdapterTimestampLogic, adapterConfig, 0, ERC721_CREATION_THRESHOLD, defaultCasterConfig
     );
 
     // Set up action to call `deploy` with the ERC721 token.
@@ -187,7 +172,6 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
       llamaTokenAdapterTimestampLogic,
       llamaERC721TokenAdapter,
       0,
-      tokenVotingGovernorRole,
       llamaERC721TokenGovernor,
       block.chainid
     );
@@ -198,7 +182,6 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     (uint16 voteQuorumPct, uint16 vetoQuorumPct) = llamaERC721TokenGovernor.getQuorum();
     assertEq(ERC721_VOTE_QUORUM_PCT, voteQuorumPct);
     assertEq(ERC721_VETO_QUORUM_PCT, vetoQuorumPct);
-    assertEq(llamaERC721TokenGovernor.role(), tokenVotingGovernorRole);
     assertEq(llamaERC721TokenGovernor.creationThreshold(), ERC721_CREATION_THRESHOLD);
     assertEq(address(llamaERC721TokenAdapter.token()), address(erc721VotesToken));
   }
@@ -239,19 +222,12 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
       llamaTokenAdapterTimestampLogic,
       llamaERC20TokenAdapter,
       0,
-      tokenVotingGovernorRole,
       llamaERC20TokenGovernor,
       block.chainid
     );
 
     LlamaTokenVotingConfig memory config = LlamaTokenVotingConfig(
-      CORE,
-      llamaTokenAdapterTimestampLogic,
-      adapterConfig,
-      0,
-      tokenVotingGovernorRole,
-      ERC20_CREATION_THRESHOLD,
-      defaultCasterConfig
+      CORE, llamaTokenAdapterTimestampLogic, adapterConfig, 0, ERC20_CREATION_THRESHOLD, defaultCasterConfig
     );
 
     vm.prank(randomCaller);
@@ -262,7 +238,6 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     (uint16 voteQuorumPct, uint16 vetoQuorumPct) = llamaERC20TokenGovernor.getQuorum();
     assertEq(ERC20_VOTE_QUORUM_PCT, voteQuorumPct);
     assertEq(ERC20_VETO_QUORUM_PCT, vetoQuorumPct);
-    assertEq(llamaERC20TokenGovernor.role(), tokenVotingGovernorRole);
     assertEq(llamaERC20TokenGovernor.creationThreshold(), ERC20_CREATION_THRESHOLD);
     assertEq(address(llamaERC20TokenAdapter.token()), address(erc20VotesToken));
   }
@@ -274,13 +249,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
 
     bytes memory adapterConfig = abi.encode(LlamaTokenAdapterVotesTimestamp.Config(address(erc20VotesToken)));
     LlamaTokenVotingConfig memory config = LlamaTokenVotingConfig(
-      CORE,
-      llamaTokenAdapterTimestampLogic,
-      adapterConfig,
-      0,
-      tokenVotingGovernorRole,
-      ERC20_CREATION_THRESHOLD,
-      defaultCasterConfig
+      CORE, llamaTokenAdapterTimestampLogic, adapterConfig, 0, ERC20_CREATION_THRESHOLD, defaultCasterConfig
     );
 
     // Set up action to call `deploy` with the ERC20 token.
@@ -315,7 +284,6 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
       llamaTokenAdapterTimestampLogic,
       llamaERC20TokenAdapter,
       0,
-      tokenVotingGovernorRole,
       llamaERC20TokenGovernor,
       block.chainid
     );
@@ -327,13 +295,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
 
     adapterConfig = abi.encode(LlamaTokenAdapterVotesTimestamp.Config(address(erc20VotesToken)));
     config = LlamaTokenVotingConfig(
-      CORE,
-      llamaTokenAdapterTimestampLogic,
-      adapterConfig,
-      1,
-      tokenVotingGovernorRole,
-      ERC20_CREATION_THRESHOLD,
-      defaultCasterConfig
+      CORE, llamaTokenAdapterTimestampLogic, adapterConfig, 1, ERC20_CREATION_THRESHOLD, defaultCasterConfig
     );
 
     // Set up action to call `deploy` with the ERC20 token.
@@ -368,7 +330,6 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
       llamaTokenAdapterTimestampLogic,
       llamaERC20TokenAdapter,
       1,
-      tokenVotingGovernorRole,
       llamaERC20TokenGovernor,
       block.chainid
     );

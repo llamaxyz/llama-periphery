@@ -11,21 +11,33 @@ import {LlamaCoreSigUtils} from "test/utils/LlamaCoreSigUtils.sol";
 import {ActionState, VoteType} from "src/lib/Enums.sol";
 import {Action, ActionInfo} from "src/lib/Structs.sol";
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
+import {ILlamaPolicy} from "src/interfaces/ILlamaPolicy.sol";
 import {ILlamaRelativeStrategyBase} from "src/interfaces/ILlamaRelativeStrategyBase.sol";
 import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
 import {LlamaTokenAdapterVotesTimestamp} from "src/token-voting/token-adapters/LlamaTokenAdapterVotesTimestamp.sol";
 import {ILlamaTokenAdapter} from "src/token-voting/interfaces/ILlamaTokenAdapter.sol";
 import {LlamaTokenGovernor} from "src/token-voting/LlamaTokenGovernor.sol";
+import {RoleDescription} from "src/lib/UDVTs.sol";
 
 contract LlamaTokenGovernorCasting is LlamaTokenVotingTestSetup, LlamaCoreSigUtils {
   event VoteCast(uint256 id, address indexed tokenholder, uint8 indexed support, uint256 weight, string reason);
   event ApprovalSubmitted(
-    uint256 id, address indexed caller, uint256 weightFor, uint256 weightAgainst, uint256 weightAbstain
+    uint256 id,
+    address indexed caller,
+    uint8 indexed role,
+    uint256 weightFor,
+    uint256 weightAgainst,
+    uint256 weightAbstain
+  );
+  event DisapprovalSubmitted(
+    uint256 id,
+    address indexed caller,
+    uint8 indexed role,
+    uint256 weightFor,
+    uint256 weightAgainst,
+    uint256 weightAbstain
   );
   event VetoCast(uint256 id, address indexed tokenholder, uint8 indexed support, uint256 weight, string reason);
-  event DisapprovalSubmitted(
-    uint256 id, address indexed caller, uint256 weightFor, uint256 weightAgainst, uint256 weightAbstain
-  );
   event QuorumPctSet(uint16 voteQuorumPct, uint16 vetoQuorumPct);
   event PeriodPctSet(uint16 delayPeriodPct, uint16 castingPeriodPct, uint16 submissionPeriodPct);
 
@@ -78,20 +90,20 @@ contract LlamaTokenGovernorCasting is LlamaTokenVotingTestSetup, LlamaCoreSigUti
 
   function castVotesFor() public {
     vm.prank(tokenHolder1);
-    llamaERC20TokenGovernor.castVote(actionInfo, uint8(VoteType.For), "");
+    llamaERC20TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
     vm.prank(tokenHolder2);
-    llamaERC20TokenGovernor.castVote(actionInfo, uint8(VoteType.For), "");
+    llamaERC20TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
     vm.prank(tokenHolder3);
-    llamaERC20TokenGovernor.castVote(actionInfo, uint8(VoteType.For), "");
+    llamaERC20TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
   }
 
   function castVetosFor() public {
     vm.prank(tokenHolder1);
-    llamaERC20TokenGovernor.castVeto(actionInfo, uint8(VoteType.For), "");
+    llamaERC20TokenGovernor.castVeto(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
     vm.prank(tokenHolder2);
-    llamaERC20TokenGovernor.castVeto(actionInfo, uint8(VoteType.For), "");
+    llamaERC20TokenGovernor.castVeto(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
     vm.prank(tokenHolder3);
-    llamaERC20TokenGovernor.castVeto(actionInfo, uint8(VoteType.For), "");
+    llamaERC20TokenGovernor.castVeto(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
   }
 
   function createTimestampTokenAdapter(address token, uint256 nonce) public returns (ILlamaTokenAdapter tokenAdapter) {
@@ -113,32 +125,19 @@ contract CastVote is LlamaTokenGovernorCasting {
   function test_RevertIf_NotPastVotingDelay() public {
     vm.warp(block.timestamp - 1);
     vm.expectRevert(LlamaTokenGovernor.DelayPeriodNotOver.selector);
-    llamaERC20TokenGovernor.castVote(actionInfo, uint8(VoteType.For), "");
+    llamaERC20TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
   }
 
   function test_RevertIf_ActionInfoMismatch(ActionInfo memory notActionInfo) public {
     vm.assume(notActionInfo.id != actionInfo.id);
     vm.expectRevert();
-    llamaERC20TokenGovernor.castVote(notActionInfo, uint8(VoteType.For), "");
-  }
-
-  function test_RevertIf_ApprovalNotEnabled() public {
-    LlamaTokenGovernor casterWithWrongRole = LlamaTokenGovernor(
-      Clones.cloneDeterministic(
-        address(llamaTokenGovernorLogic), keccak256(abi.encodePacked(address(erc20VotesToken), msg.sender))
-      )
-    );
-    ILlamaTokenAdapter tokenAdapter = createTimestampTokenAdapter(address(erc20VotesToken), 0);
-    casterWithWrongRole.initialize(CORE, tokenAdapter, madeUpRole, 0, defaultCasterConfig);
-
-    vm.expectRevert(abi.encodeWithSelector(ILlamaRelativeStrategyBase.InvalidRole.selector, tokenVotingGovernorRole));
-    casterWithWrongRole.castVote(actionInfo, uint8(VoteType.For), "");
+    llamaERC20TokenGovernor.castVote(tokenVotingGovernorRole, notActionInfo, uint8(VoteType.For), "");
   }
 
   function test_RevertIf_ActionNotActive() public {
     vm.warp(actionCreationTime + APPROVAL_PERIOD + 1);
     vm.expectRevert(abi.encodeWithSelector(LlamaTokenGovernor.InvalidActionState.selector, ActionState.Failed));
-    llamaERC20TokenGovernor.castVote(actionInfo, uint8(VoteType.For), "");
+    llamaERC20TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
   }
 
   function test_RevertIf_RoleHasBeenRevokedBeforeActionCreation() public {
@@ -159,20 +158,20 @@ contract CastVote is LlamaTokenGovernorCasting {
 
     vm.startPrank(tokenHolder1);
     vm.expectRevert(LlamaTokenGovernor.InvalidPolicyholder.selector);
-    llamaERC20TokenGovernor.castVote(_actionInfo, uint8(VoteType.For), "");
+    llamaERC20TokenGovernor.castVote(tokenVotingGovernorRole, _actionInfo, uint8(VoteType.For), "");
   }
 
   function test_RevertIf_AlreadyCastedVote() public {
     vm.startPrank(tokenHolder1);
-    llamaERC20TokenGovernor.castVote(actionInfo, uint8(VoteType.For), "");
+    llamaERC20TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
 
     vm.expectRevert(LlamaTokenGovernor.DuplicateCast.selector);
-    llamaERC20TokenGovernor.castVote(actionInfo, uint8(VoteType.For), "");
+    llamaERC20TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
   }
 
   function test_RevertIf_InvalidSupport() public {
     vm.expectRevert(abi.encodeWithSelector(LlamaTokenGovernor.InvalidSupport.selector, uint8(3)));
-    llamaERC20TokenGovernor.castVote(actionInfo, 3, "");
+    llamaERC20TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, 3, "");
   }
 
   function test_RevertIf_CastingPeriodOver() public {
@@ -180,13 +179,13 @@ contract CastVote is LlamaTokenGovernorCasting {
     uint256 castingPeriodEndTime = delayPeriodEndTime + ((APPROVAL_PERIOD * TWO_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS);
     vm.warp(castingPeriodEndTime + 1);
     vm.expectRevert(LlamaTokenGovernor.CastingPeriodOver.selector);
-    llamaERC20TokenGovernor.castVote(actionInfo, uint8(VoteType.For), "");
+    llamaERC20TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
   }
 
   function test_CanCastWithWeightZero() public {
     vm.expectEmit();
     emit VoteCast(actionInfo.id, address(this), uint8(VoteType.For), 0, "");
-    llamaERC20TokenGovernor.castVote(actionInfo, uint8(VoteType.For), "");
+    llamaERC20TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
   }
 
   function test_CanCastWhenCountisMax() public {
@@ -201,7 +200,7 @@ contract CastVote is LlamaTokenGovernorCasting {
     mineBlock();
     // Casting vote with weight type(uint128).max. Count should now be type(uint128).max.
     vm.prank(address(0xdeadbeef));
-    llamaERC20TokenGovernor.castVote(actionInfo, uint8(VoteType.For), "");
+    llamaERC20TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
 
     (uint128 votesFor,,,,,) = llamaERC20TokenGovernor.casts(actionInfo.id);
     assertEq(votesFor, type(uint128).max);
@@ -210,7 +209,7 @@ contract CastVote is LlamaTokenGovernorCasting {
     vm.expectEmit();
     emit VoteCast(actionInfo.id, tokenHolder1, uint8(VoteType.For), ERC20_CREATION_THRESHOLD / 2, "");
     vm.prank(tokenHolder1);
-    llamaERC20TokenGovernor.castVote(actionInfo, uint8(VoteType.For), "");
+    llamaERC20TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
 
     (votesFor,,,,,) = llamaERC20TokenGovernor.casts(actionInfo.id);
     assertEq(votesFor, type(uint128).max);
@@ -223,7 +222,7 @@ contract CastVote is LlamaTokenGovernorCasting {
       actionInfo.id, tokenHolder1, support, erc20VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1), ""
     );
     vm.prank(tokenHolder1);
-    uint128 weight = llamaERC20TokenGovernor.castVote(actionInfo, support, "");
+    uint128 weight = llamaERC20TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, support, "");
     assertEq(weight, erc20VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1));
   }
 
@@ -237,7 +236,7 @@ contract CastVote is LlamaTokenGovernorCasting {
       "reason"
     );
     vm.prank(tokenHolder1);
-    llamaERC20TokenGovernor.castVote(actionInfo, uint8(VoteType.For), "reason");
+    llamaERC20TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "reason");
   }
 
   function test_GetsWeightAtDelayPeriodTimestamp() public {
@@ -250,7 +249,7 @@ contract CastVote is LlamaTokenGovernorCasting {
     // However tokenholder1 is able to vote with the weight they had at delayPeriodEndTime
     vm.expectEmit();
     emit VoteCast(actionInfo.id, tokenHolder1, 1, ERC20_CREATION_THRESHOLD / 2, "");
-    uint128 weight = llamaERC20TokenGovernor.castVote(actionInfo, 1, "");
+    uint128 weight = llamaERC20TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, 1, "");
     assertEq(weight, ERC20_CREATION_THRESHOLD / 2);
     vm.stopPrank();
   }
@@ -268,6 +267,7 @@ contract CastVoteBySig is LlamaTokenGovernorCasting {
     returns (uint8 v, bytes32 r, bytes32 s)
   {
     LlamaCoreSigUtils.CastVote memory castApproval = LlamaCoreSigUtils.CastVote({
+      role: tokenVotingGovernorRole,
       actionInfo: _actionInfo,
       support: uint8(VoteType.For),
       reason: "",
@@ -279,7 +279,7 @@ contract CastVoteBySig is LlamaTokenGovernorCasting {
   }
 
   function castVoteBySig(ActionInfo memory _actionInfo, uint8 support, uint8 v, bytes32 r, bytes32 s) internal {
-    llamaERC20TokenGovernor.castVoteBySig(tokenHolder1, _actionInfo, support, "", v, r, s);
+    llamaERC20TokenGovernor.castVoteBySig(tokenHolder1, tokenVotingGovernorRole, _actionInfo, support, "", v, r, s);
   }
 
   function test_CastsVoteBySig() public {
@@ -362,26 +362,13 @@ contract CastVeto is LlamaTokenGovernorCasting {
   function test_RevertIf_NotPastVotingDelay() public {
     vm.warp(block.timestamp - 1);
     vm.expectRevert(LlamaTokenGovernor.DelayPeriodNotOver.selector);
-    llamaERC20TokenGovernor.castVeto(actionInfo, uint8(VoteType.For), "");
+    llamaERC20TokenGovernor.castVeto(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
   }
 
   function test_RevertIf_ActionInfoMismatch(ActionInfo memory notActionInfo) public {
     vm.assume(notActionInfo.id != actionInfo.id);
     vm.expectRevert();
-    llamaERC20TokenGovernor.castVeto(notActionInfo, uint8(VoteType.For), "");
-  }
-
-  function test_RevertIf_DisapprovalNotEnabled() public {
-    LlamaTokenGovernor casterWithWrongRole = LlamaTokenGovernor(
-      Clones.cloneDeterministic(
-        address(llamaTokenGovernorLogic), keccak256(abi.encodePacked(address(erc20VotesToken), msg.sender))
-      )
-    );
-    ILlamaTokenAdapter tokenAdapter = createTimestampTokenAdapter(address(erc20VotesToken), 0);
-    casterWithWrongRole.initialize(CORE, tokenAdapter, madeUpRole, 0, defaultCasterConfig);
-
-    vm.expectRevert(abi.encodeWithSelector(ILlamaRelativeStrategyBase.InvalidRole.selector, tokenVotingGovernorRole));
-    casterWithWrongRole.castVeto(actionInfo, uint8(VoteType.For), "");
+    llamaERC20TokenGovernor.castVeto(tokenVotingGovernorRole, notActionInfo, uint8(VoteType.For), "");
   }
 
   function test_RevertIf_ActionNotQueued() public {
@@ -392,20 +379,20 @@ contract CastVeto is LlamaTokenGovernorCasting {
       ActionInfo(actionId, coreTeam1, CORE_TEAM_ROLE, tokenVotingStrategy, address(mockProtocol), 0, data);
     // Currently at actionCreationTime which is Active state.
     vm.expectRevert(abi.encodeWithSelector(LlamaTokenGovernor.InvalidActionState.selector, ActionState.Active));
-    llamaERC20TokenGovernor.castVeto(_actionInfo, uint8(VoteType.For), "");
+    llamaERC20TokenGovernor.castVeto(tokenVotingGovernorRole, _actionInfo, uint8(VoteType.For), "");
   }
 
   function test_RevertIf_AlreadyCastedVote() public {
     vm.startPrank(tokenHolder1);
-    llamaERC20TokenGovernor.castVeto(actionInfo, uint8(VoteType.For), "");
+    llamaERC20TokenGovernor.castVeto(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
 
     vm.expectRevert(LlamaTokenGovernor.DuplicateCast.selector);
-    llamaERC20TokenGovernor.castVeto(actionInfo, uint8(VoteType.For), "");
+    llamaERC20TokenGovernor.castVeto(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
   }
 
   function test_RevertIf_InvalidSupport() public {
     vm.expectRevert(abi.encodeWithSelector(LlamaTokenGovernor.InvalidSupport.selector, uint8(3)));
-    llamaERC20TokenGovernor.castVeto(actionInfo, 3, "");
+    llamaERC20TokenGovernor.castVeto(tokenVotingGovernorRole, actionInfo, 3, "");
   }
 
   function test_RevertIf_CastingPeriodOver() public {
@@ -415,13 +402,13 @@ contract CastVeto is LlamaTokenGovernorCasting {
     uint256 castingPeriodEndTime = delayPeriodEndTime + ((QUEUING_PERIOD * TWO_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS);
     vm.warp(castingPeriodEndTime + 1);
     vm.expectRevert(LlamaTokenGovernor.CastingPeriodOver.selector);
-    llamaERC20TokenGovernor.castVeto(actionInfo, uint8(VoteType.For), "");
+    llamaERC20TokenGovernor.castVeto(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
   }
 
   function test_CanCastWithWeightZero() public {
     vm.expectEmit();
     emit VetoCast(actionInfo.id, address(this), uint8(VoteType.For), 0, "");
-    llamaERC20TokenGovernor.castVeto(actionInfo, uint8(VoteType.For), "");
+    llamaERC20TokenGovernor.castVeto(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
   }
 
   function test_CanCastWhenCountisMax() public {
@@ -437,7 +424,7 @@ contract CastVeto is LlamaTokenGovernorCasting {
     mineBlock();
     // Casting vote with weight type(uint128).max. Count should now be type(uint128).max.
     vm.prank(address(0xdeadbeef));
-    llamaERC20TokenGovernor.castVeto(actionInfo, uint8(VoteType.For), "");
+    llamaERC20TokenGovernor.castVeto(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
 
     (,,, uint128 vetoesFor,,) = llamaERC20TokenGovernor.casts(actionInfo.id);
     assertEq(vetoesFor, type(uint128).max);
@@ -446,7 +433,7 @@ contract CastVeto is LlamaTokenGovernorCasting {
     vm.expectEmit();
     emit VetoCast(actionInfo.id, tokenHolder1, uint8(VoteType.For), ERC20_CREATION_THRESHOLD / 2, "");
     vm.prank(tokenHolder1);
-    llamaERC20TokenGovernor.castVeto(actionInfo, uint8(VoteType.For), "");
+    llamaERC20TokenGovernor.castVeto(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
 
     (,,, vetoesFor,,) = llamaERC20TokenGovernor.casts(actionInfo.id);
     assertEq(vetoesFor, type(uint128).max);
@@ -459,7 +446,7 @@ contract CastVeto is LlamaTokenGovernorCasting {
       actionInfo.id, tokenHolder1, support, erc20VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1), ""
     );
     vm.prank(tokenHolder1);
-    uint128 weight = llamaERC20TokenGovernor.castVeto(actionInfo, support, "");
+    uint128 weight = llamaERC20TokenGovernor.castVeto(tokenVotingGovernorRole, actionInfo, support, "");
     assertEq(weight, erc20VotesToken.getPastVotes(tokenHolder1, block.timestamp - 1));
   }
 
@@ -473,7 +460,7 @@ contract CastVeto is LlamaTokenGovernorCasting {
       "reason"
     );
     vm.prank(tokenHolder1);
-    llamaERC20TokenGovernor.castVeto(actionInfo, uint8(VoteType.For), "reason");
+    llamaERC20TokenGovernor.castVeto(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "reason");
   }
 
   function test_GetsWeightAtDelayPeriodTimestamp() public {
@@ -486,7 +473,7 @@ contract CastVeto is LlamaTokenGovernorCasting {
     // However tokenholder1 is able to vote with the weight they had at delayPeriodEndTime
     vm.expectEmit();
     emit VetoCast(actionInfo.id, tokenHolder1, 1, ERC20_CREATION_THRESHOLD / 2, "");
-    uint128 weight = llamaERC20TokenGovernor.castVeto(actionInfo, 1, "");
+    uint128 weight = llamaERC20TokenGovernor.castVeto(tokenVotingGovernorRole, actionInfo, 1, "");
     assertEq(weight, ERC20_CREATION_THRESHOLD / 2);
     vm.stopPrank();
   }
@@ -513,6 +500,7 @@ contract CastVetoBySig is LlamaTokenGovernorCasting {
     returns (uint8 v, bytes32 r, bytes32 s)
   {
     LlamaCoreSigUtils.CastVeto memory castDisapproval = LlamaCoreSigUtils.CastVeto({
+      role: tokenVotingGovernorRole,
       actionInfo: _actionInfo,
       support: uint8(VoteType.For),
       reason: "",
@@ -524,7 +512,9 @@ contract CastVetoBySig is LlamaTokenGovernorCasting {
   }
 
   function castVetoBySig(ActionInfo memory _actionInfo, uint8 v, bytes32 r, bytes32 s) internal {
-    llamaERC20TokenGovernor.castVetoBySig(tokenHolder1, _actionInfo, uint8(VoteType.For), "", v, r, s);
+    llamaERC20TokenGovernor.castVetoBySig(
+      tokenHolder1, tokenVotingGovernorRole, _actionInfo, uint8(VoteType.For), "", v, r, s
+    );
   }
 
   function test_CastsVetoBySig() public {
@@ -610,7 +600,7 @@ contract CastVetoBySig is LlamaTokenGovernorCasting {
 
     // Second disapproval.
     vm.prank(tokenHolder2);
-    llamaERC20TokenGovernor.castVeto(actionInfo, uint8(VoteType.For), "");
+    llamaERC20TokenGovernor.castVeto(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
 
     Action memory action = CORE.getAction(actionInfo.id);
     uint256 delayPeriodEndTime =
@@ -689,11 +679,11 @@ contract SubmitApprovals is LlamaTokenGovernorCasting {
     vm.warp(delayPeriodEndTime + 1);
 
     vm.prank(tokenHolder1);
-    llamaERC20TokenGovernor.castVote(_actionInfo, uint8(VoteType.For), "");
+    llamaERC20TokenGovernor.castVote(tokenVotingGovernorRole, _actionInfo, uint8(VoteType.For), "");
     vm.prank(tokenHolder2);
-    llamaERC20TokenGovernor.castVote(_actionInfo, uint8(VoteType.Against), "");
+    llamaERC20TokenGovernor.castVote(tokenVotingGovernorRole, _actionInfo, uint8(VoteType.Against), "");
     vm.prank(tokenHolder3);
-    llamaERC20TokenGovernor.castVote(_actionInfo, uint8(VoteType.Against), "");
+    llamaERC20TokenGovernor.castVote(tokenVotingGovernorRole, _actionInfo, uint8(VoteType.Against), "");
 
     vm.warp(castingPeriodEndTime + 1);
     vm.expectRevert(
@@ -702,9 +692,97 @@ contract SubmitApprovals is LlamaTokenGovernorCasting {
     llamaERC20TokenGovernor.submitApproval(_actionInfo);
   }
 
+  function test_GovernorRoleDeterminedCorrectlyForApproval(uint8 governorRole) public {
+    vm.assume(governorRole > 0);
+
+    uint8 startingRole = POLICY.numRoles() + 1;
+    if (governorRole >= startingRole) {
+      for (uint256 i = startingRole; i <= governorRole; i++) {
+        vm.prank(address(EXECUTOR));
+        POLICY.initializeRole(RoleDescription.wrap(bytes32(abi.encode(i))));
+      }
+    }
+
+    vm.prank(address(EXECUTOR));
+    POLICY.setRoleHolder(governorRole, address(llamaERC20TokenGovernor), DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION);
+
+    uint8[] memory forceRoles;
+    if (governorRole < type(uint8).max - 1) {
+      vm.prank(address(EXECUTOR));
+      POLICY.initializeRole(RoleDescription.wrap(bytes32(abi.encode(governorRole + 1))));
+
+      vm.prank(address(EXECUTOR));
+      POLICY.setRoleHolder(
+        governorRole + 1, address(llamaERC20TokenGovernor), DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION
+      );
+
+      forceRoles = new uint8[](2);
+      forceRoles[0] = governorRole;
+      forceRoles[1] = governorRole + 1;
+    } else {
+      forceRoles = new uint8[](1);
+      forceRoles[0] = governorRole;
+    }
+
+    mineBlock();
+
+    ILlamaRelativeStrategyBase.Config memory strategyConfig = ILlamaRelativeStrategyBase.Config({
+      approvalPeriod: APPROVAL_PERIOD,
+      queuingPeriod: QUEUING_PERIOD,
+      expirationPeriod: EXPIRATION_PERIOD,
+      isFixedLengthApprovalPeriod: false,
+      minApprovalPct: ONE_HUNDRED_IN_BPS,
+      minDisapprovalPct: ONE_HUNDRED_IN_BPS,
+      approvalRole: tokenVotingGovernorRole,
+      disapprovalRole: tokenVotingGovernorRole,
+      forceApprovalRoles: forceRoles,
+      forceDisapprovalRoles: forceRoles
+    });
+
+    ILlamaRelativeStrategyBase.Config[] memory strategyConfigs = new ILlamaRelativeStrategyBase.Config[](1);
+    strategyConfigs[0] = strategyConfig;
+
+    vm.prank(address(EXECUTOR));
+    CORE.createStrategies(RELATIVE_QUANTITY_QUORUM_LOGIC, encodeStrategyConfigs(strategyConfigs));
+
+    ILlamaStrategy newStrategy = ILlamaStrategy(
+      LENS.computeLlamaStrategyAddress(
+        address(RELATIVE_QUANTITY_QUORUM_LOGIC), encodeStrategy(strategyConfig), address(CORE)
+      )
+    );
+
+    {
+      vm.prank(address(EXECUTOR));
+      POLICY.setRolePermission(
+        CORE_TEAM_ROLE, ILlamaPolicy.PermissionData(address(mockProtocol), PAUSE_SELECTOR, address(newStrategy)), true
+      );
+    }
+
+    actionInfo = _createActionWithTokenVotingStrategy(newStrategy);
+    Action memory action = CORE.getAction(actionInfo.id);
+    actionCreationTime = action.creationTime;
+
+    _skipVotingDelay(actionInfo);
+
+    vm.prank(tokenHolder1);
+    llamaERC20TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
+    vm.prank(tokenHolder2);
+    llamaERC20TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
+    vm.prank(tokenHolder3);
+    llamaERC20TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
+
+    uint256 delayPeriodEndTime = actionCreationTime + ((APPROVAL_PERIOD * ONE_QUARTER_IN_BPS) / ONE_HUNDRED_IN_BPS);
+    uint256 castingPeriodEndTime = delayPeriodEndTime + ((APPROVAL_PERIOD * TWO_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS);
+    vm.warp(castingPeriodEndTime + 1);
+
+    vm.expectEmit();
+    emit ApprovalSubmitted(actionInfo.id, address(this), governorRole, 750_000e18, 0, 0);
+    llamaERC20TokenGovernor.submitApproval(actionInfo);
+  }
+
   function test_SubmitsApprovalsCorrectly() public {
     vm.expectEmit();
-    emit ApprovalSubmitted(actionInfo.id, address(this), 750_000e18, 0, 0);
+    emit ApprovalSubmitted(actionInfo.id, address(this), tokenVotingGovernorRole, 750_000e18, 0, 0);
     llamaERC20TokenGovernor.submitApproval(actionInfo);
   }
 }
@@ -765,11 +843,11 @@ contract SubmitDisapprovals is LlamaTokenGovernorCasting {
     vm.warp(delayPeriodEndTime + 1);
 
     vm.prank(tokenHolder1);
-    llamaERC20TokenGovernor.castVote(_actionInfo, uint8(VoteType.For), "");
+    llamaERC20TokenGovernor.castVote(tokenVotingGovernorRole, _actionInfo, uint8(VoteType.For), "");
     vm.prank(tokenHolder2);
-    llamaERC20TokenGovernor.castVote(_actionInfo, uint8(VoteType.For), "");
+    llamaERC20TokenGovernor.castVote(tokenVotingGovernorRole, _actionInfo, uint8(VoteType.For), "");
     vm.prank(tokenHolder3);
-    llamaERC20TokenGovernor.castVote(_actionInfo, uint8(VoteType.For), "");
+    llamaERC20TokenGovernor.castVote(tokenVotingGovernorRole, _actionInfo, uint8(VoteType.For), "");
 
     vm.warp(castingPeriodEndTime + 1);
     llamaERC20TokenGovernor.submitApproval(_actionInfo);
@@ -800,11 +878,11 @@ contract SubmitDisapprovals is LlamaTokenGovernorCasting {
     vm.warp(delayPeriodEndTime + 1);
 
     vm.prank(tokenHolder1);
-    llamaERC20TokenGovernor.castVote(_actionInfo, uint8(VoteType.For), "");
+    llamaERC20TokenGovernor.castVote(tokenVotingGovernorRole, _actionInfo, uint8(VoteType.For), "");
     vm.prank(tokenHolder2);
-    llamaERC20TokenGovernor.castVote(_actionInfo, uint8(VoteType.For), "");
+    llamaERC20TokenGovernor.castVote(tokenVotingGovernorRole, _actionInfo, uint8(VoteType.For), "");
     vm.prank(tokenHolder3);
-    llamaERC20TokenGovernor.castVote(_actionInfo, uint8(VoteType.For), "");
+    llamaERC20TokenGovernor.castVote(tokenVotingGovernorRole, _actionInfo, uint8(VoteType.For), "");
 
     vm.warp(castingPeriodEndTime + 1);
     llamaERC20TokenGovernor.submitApproval(_actionInfo);
@@ -818,11 +896,11 @@ contract SubmitDisapprovals is LlamaTokenGovernorCasting {
     vm.warp(delayPeriodEndTime + 1);
 
     vm.prank(tokenHolder1);
-    llamaERC20TokenGovernor.castVeto(_actionInfo, uint8(VoteType.For), "");
+    llamaERC20TokenGovernor.castVeto(tokenVotingGovernorRole, _actionInfo, uint8(VoteType.For), "");
     vm.prank(tokenHolder2);
-    llamaERC20TokenGovernor.castVeto(_actionInfo, uint8(VoteType.Against), "");
+    llamaERC20TokenGovernor.castVeto(tokenVotingGovernorRole, _actionInfo, uint8(VoteType.Against), "");
     vm.prank(tokenHolder3);
-    llamaERC20TokenGovernor.castVeto(_actionInfo, uint8(VoteType.Against), "");
+    llamaERC20TokenGovernor.castVeto(tokenVotingGovernorRole, _actionInfo, uint8(VoteType.Against), "");
 
     vm.warp(castingPeriodEndTime + 1);
     vm.expectRevert(
@@ -831,9 +909,116 @@ contract SubmitDisapprovals is LlamaTokenGovernorCasting {
     llamaERC20TokenGovernor.submitDisapproval(_actionInfo);
   }
 
+  function test_GovernorRoleDeterminedCorrectlyForDisapproval(uint8 governorRole) public {
+    vm.assume(governorRole > 0);
+
+    uint8 startingRole = POLICY.numRoles() + 1;
+    if (governorRole >= startingRole) {
+      for (uint256 i = startingRole; i <= governorRole; i++) {
+        vm.prank(address(EXECUTOR));
+        POLICY.initializeRole(RoleDescription.wrap(bytes32(abi.encode(i))));
+      }
+    }
+
+    vm.prank(address(EXECUTOR));
+    POLICY.setRoleHolder(governorRole, address(llamaERC20TokenGovernor), DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION);
+
+    uint8[] memory forceRoles;
+    if (governorRole < type(uint8).max - 1) {
+      vm.prank(address(EXECUTOR));
+      POLICY.initializeRole(RoleDescription.wrap(bytes32(abi.encode(governorRole + 1))));
+
+      vm.prank(address(EXECUTOR));
+      POLICY.setRoleHolder(
+        governorRole + 1, address(llamaERC20TokenGovernor), DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION
+      );
+
+      forceRoles = new uint8[](2);
+      forceRoles[0] = governorRole;
+      forceRoles[1] = governorRole + 1;
+    } else {
+      forceRoles = new uint8[](1);
+      forceRoles[0] = governorRole;
+    }
+
+    mineBlock();
+
+    ILlamaRelativeStrategyBase.Config memory strategyConfig = ILlamaRelativeStrategyBase.Config({
+      approvalPeriod: APPROVAL_PERIOD,
+      queuingPeriod: QUEUING_PERIOD,
+      expirationPeriod: EXPIRATION_PERIOD,
+      isFixedLengthApprovalPeriod: false,
+      minApprovalPct: ONE_HUNDRED_IN_BPS,
+      minDisapprovalPct: ONE_HUNDRED_IN_BPS,
+      approvalRole: tokenVotingGovernorRole,
+      disapprovalRole: tokenVotingGovernorRole,
+      forceApprovalRoles: forceRoles,
+      forceDisapprovalRoles: forceRoles
+    });
+
+    ILlamaRelativeStrategyBase.Config[] memory strategyConfigs = new ILlamaRelativeStrategyBase.Config[](1);
+    strategyConfigs[0] = strategyConfig;
+
+    vm.prank(address(EXECUTOR));
+    CORE.createStrategies(RELATIVE_QUANTITY_QUORUM_LOGIC, encodeStrategyConfigs(strategyConfigs));
+
+    ILlamaStrategy newStrategy = ILlamaStrategy(
+      LENS.computeLlamaStrategyAddress(
+        address(RELATIVE_QUANTITY_QUORUM_LOGIC), encodeStrategy(strategyConfig), address(CORE)
+      )
+    );
+
+    {
+      vm.prank(address(EXECUTOR));
+      POLICY.setRolePermission(
+        CORE_TEAM_ROLE, ILlamaPolicy.PermissionData(address(mockProtocol), PAUSE_SELECTOR, address(newStrategy)), true
+      );
+    }
+
+    actionInfo = _createActionWithTokenVotingStrategy(newStrategy);
+    Action memory action = CORE.getAction(actionInfo.id);
+    actionCreationTime = action.creationTime;
+
+    _skipVotingDelay(actionInfo);
+
+    vm.prank(tokenHolder1);
+    llamaERC20TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
+    vm.prank(tokenHolder2);
+    llamaERC20TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
+    vm.prank(tokenHolder3);
+    llamaERC20TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
+
+    uint256 delayPeriodEndTime = actionCreationTime + ((APPROVAL_PERIOD * ONE_QUARTER_IN_BPS) / ONE_HUNDRED_IN_BPS);
+    uint256 castingPeriodEndTime = delayPeriodEndTime + ((APPROVAL_PERIOD * TWO_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS);
+    vm.warp(castingPeriodEndTime + 1);
+
+    llamaERC20TokenGovernor.submitApproval(actionInfo);
+
+    action = CORE.getAction(actionInfo.id);
+
+    delayPeriodEndTime =
+      (action.minExecutionTime - QUEUING_PERIOD) + ((QUEUING_PERIOD * ONE_QUARTER_IN_BPS) / ONE_HUNDRED_IN_BPS);
+    castingPeriodEndTime = delayPeriodEndTime + ((QUEUING_PERIOD * TWO_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS);
+
+    vm.warp(delayPeriodEndTime + 1);
+
+    vm.prank(tokenHolder1);
+    llamaERC20TokenGovernor.castVeto(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
+    vm.prank(tokenHolder2);
+    llamaERC20TokenGovernor.castVeto(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
+    vm.prank(tokenHolder3);
+    llamaERC20TokenGovernor.castVeto(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
+
+    vm.warp(castingPeriodEndTime + 1);
+
+    vm.expectEmit();
+    emit DisapprovalSubmitted(actionInfo.id, address(this), governorRole, 750_000e18, 0, 0);
+    llamaERC20TokenGovernor.submitDisapproval(actionInfo);
+  }
+
   function test_SubmitsDisapprovalsCorrectly() public {
     vm.expectEmit();
-    emit DisapprovalSubmitted(actionInfo.id, address(this), 750_000e18, 0, 0);
+    emit DisapprovalSubmitted(actionInfo.id, address(this), tokenVotingGovernorRole, 750_000e18, 0, 0);
     llamaERC20TokenGovernor.submitDisapproval(actionInfo);
   }
 }

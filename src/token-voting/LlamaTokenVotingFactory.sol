@@ -31,7 +31,6 @@ contract LlamaTokenVotingFactory {
     ILlamaTokenAdapter tokenAdapterLogic,
     ILlamaTokenAdapter tokenAdapter,
     uint256 nonce,
-    uint8 governorRole,
     LlamaTokenGovernor llamaTokenGovernor,
     uint256 chainId
   );
@@ -73,11 +72,7 @@ contract LlamaTokenVotingFactory {
     // Deploy and initialize `LlamaTokenGovernor` contract
     governor = LlamaTokenGovernor(Clones.cloneDeterministic(address(LLAMA_TOKEN_GOVERNOR_LOGIC), salt));
     governor.initialize(
-      tokenVotingConfig.llamaCore,
-      tokenAdapter,
-      tokenVotingConfig.governorRole,
-      tokenVotingConfig.creationThreshold,
-      tokenVotingConfig.casterConfig
+      tokenVotingConfig.llamaCore, tokenAdapter, tokenVotingConfig.creationThreshold, tokenVotingConfig.casterConfig
     );
 
     emit LlamaTokenVotingInstanceCreated(
@@ -87,7 +82,6 @@ contract LlamaTokenVotingFactory {
       tokenVotingConfig.tokenAdapterLogic,
       tokenAdapter,
       tokenVotingConfig.nonce,
-      tokenVotingConfig.governorRole,
       governor,
       block.chainid
     );
