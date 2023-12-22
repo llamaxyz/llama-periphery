@@ -124,25 +124,25 @@ contract CastVote is LlamaTokenGovernorCastingTest {
     _skipVotingDelay(actionInfo);
   }
 
-  function test_RevertsIf_NotPastVotingDelay() public {
+  function test_RevertIf_NotPastVotingDelay() public {
     vm.warp(block.timestamp - 1);
     vm.expectRevert(LlamaTokenGovernor.DelayPeriodNotOver.selector);
     llamaERC721TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
   }
 
-  function test_RevertsIf_ActionInfoMismatch(ActionInfo memory notActionInfo) public {
+  function test_RevertIf_ActionInfoMismatch(ActionInfo memory notActionInfo) public {
     vm.assume(notActionInfo.id != actionInfo.id);
     vm.expectRevert();
     llamaERC721TokenGovernor.castVote(tokenVotingGovernorRole, notActionInfo, uint8(VoteType.For), "");
   }
 
-  function test_RevertsIf_ActionNotActive() public {
+  function test_RevertIf_ActionNotActive() public {
     vm.warp(actionCreationTime + APPROVAL_PERIOD + 1);
     vm.expectRevert(abi.encodeWithSelector(LlamaTokenGovernor.InvalidActionState.selector, ActionState.Failed));
     llamaERC721TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
   }
 
-  function test_RevertsIf_RoleHasBeenRevokedBeforeActionCreation() public {
+  function test_RevertIf_RoleHasBeenRevokedBeforeActionCreation() public {
     // Revoking Caster role from Token Holder Caster and assigning it to a random address so that Role has supply.
     vm.startPrank(address(EXECUTOR));
     POLICY.setRoleHolder(tokenVotingGovernorRole, address(llamaERC721TokenGovernor), 0, 0);
@@ -163,7 +163,7 @@ contract CastVote is LlamaTokenGovernorCastingTest {
     llamaERC721TokenGovernor.castVote(tokenVotingGovernorRole, _actionInfo, uint8(VoteType.For), "");
   }
 
-  function test_RevertsIf_AlreadyCastedVote() public {
+  function test_RevertIf_AlreadyCastedVote() public {
     vm.startPrank(tokenHolder1);
     llamaERC721TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
 
@@ -171,12 +171,12 @@ contract CastVote is LlamaTokenGovernorCastingTest {
     llamaERC721TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
   }
 
-  function test_RevertsIf_InvalidSupport() public {
+  function test_RevertIf_InvalidSupport() public {
     vm.expectRevert(abi.encodeWithSelector(LlamaTokenGovernor.InvalidSupport.selector, uint8(3)));
     llamaERC721TokenGovernor.castVote(tokenVotingGovernorRole, actionInfo, 3, "");
   }
 
-  function test_RevertsIf_CastingPeriodOver() public {
+  function test_RevertIf_CastingPeriodOver() public {
     uint256 delayPeriodEndTime = actionCreationTime + ((APPROVAL_PERIOD * ONE_QUARTER_IN_BPS) / ONE_HUNDRED_IN_BPS);
     uint256 castingPeriodEndTime = delayPeriodEndTime + ((APPROVAL_PERIOD * TWO_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS);
     vm.warp(castingPeriodEndTime + 1);
@@ -334,19 +334,19 @@ contract CastVeto is LlamaTokenGovernorCastingTest {
     _skipVetoDelay(actionInfo);
   }
 
-  function test_RevertsIf_NotPastVotingDelay() public {
+  function test_RevertIf_NotPastVotingDelay() public {
     vm.warp(block.timestamp - 1);
     vm.expectRevert(LlamaTokenGovernor.DelayPeriodNotOver.selector);
     llamaERC721TokenGovernor.castVeto(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
   }
 
-  function test_RevertsIf_ActionInfoMismatch(ActionInfo memory notActionInfo) public {
+  function test_RevertIf_ActionInfoMismatch(ActionInfo memory notActionInfo) public {
     vm.assume(notActionInfo.id != actionInfo.id);
     vm.expectRevert();
     llamaERC721TokenGovernor.castVeto(tokenVotingGovernorRole, notActionInfo, uint8(VoteType.For), "");
   }
 
-  function test_RevertsIf_ActionNotQueued() public {
+  function test_RevertIf_ActionNotQueued() public {
     bytes memory data = abi.encodeCall(mockProtocol.pause, (true));
     vm.prank(coreTeam1);
     uint256 actionId = CORE.createAction(CORE_TEAM_ROLE, tokenVotingStrategy, address(mockProtocol), 0, data, "");
@@ -357,7 +357,7 @@ contract CastVeto is LlamaTokenGovernorCastingTest {
     llamaERC721TokenGovernor.castVeto(tokenVotingGovernorRole, _actionInfo, uint8(VoteType.For), "");
   }
 
-  function test_RevertsIf_AlreadyCastedVote() public {
+  function test_RevertIf_AlreadyCastedVote() public {
     vm.startPrank(tokenHolder1);
     llamaERC721TokenGovernor.castVeto(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
 
@@ -365,12 +365,12 @@ contract CastVeto is LlamaTokenGovernorCastingTest {
     llamaERC721TokenGovernor.castVeto(tokenVotingGovernorRole, actionInfo, uint8(VoteType.For), "");
   }
 
-  function test_RevertsIf_InvalidSupport() public {
+  function test_RevertIf_InvalidSupport() public {
     vm.expectRevert(abi.encodeWithSelector(LlamaTokenGovernor.InvalidSupport.selector, uint8(3)));
     llamaERC721TokenGovernor.castVeto(tokenVotingGovernorRole, actionInfo, 3, "");
   }
 
-  function test_RevertsIf_CastingPeriodOver() public {
+  function test_RevertIf_CastingPeriodOver() public {
     Action memory action = CORE.getAction(actionInfo.id);
     uint256 delayPeriodEndTime =
       (action.minExecutionTime - QUEUING_PERIOD) + ((QUEUING_PERIOD * ONE_QUARTER_IN_BPS) / ONE_HUNDRED_IN_BPS);
@@ -578,13 +578,13 @@ contract SubmitApprovals is LlamaTokenGovernorCastingTest {
     vm.warp(castingPeriodEndTime + 1);
   }
 
-  function test_RevertsIf_ActionInfoMismatch(ActionInfo memory notActionInfo) public {
+  function test_RevertIf_ActionInfoMismatch(ActionInfo memory notActionInfo) public {
     vm.assume(notActionInfo.id != actionInfo.id);
     vm.expectRevert();
     llamaERC721TokenGovernor.submitApproval(notActionInfo);
   }
 
-  function test_RevertsIf_AlreadySubmittedApproval() public {
+  function test_RevertIf_AlreadySubmittedApproval() public {
     vm.startPrank(tokenHolder1);
     llamaERC721TokenGovernor.submitApproval(actionInfo);
 
@@ -594,13 +594,13 @@ contract SubmitApprovals is LlamaTokenGovernorCastingTest {
     llamaERC721TokenGovernor.submitApproval(actionInfo);
   }
 
-  function test_RevertsIf_SubmissionPeriodOver() public {
+  function test_RevertIf_SubmissionPeriodOver() public {
     vm.warp(actionCreationTime + APPROVAL_PERIOD + 1);
     vm.expectRevert(LlamaTokenGovernor.SubmissionPeriodOver.selector);
     llamaERC721TokenGovernor.submitApproval(actionInfo);
   }
 
-  function test_RevertsIf_InsufficientVotes() public {
+  function test_RevertIf_InsufficientVotes() public {
     ActionInfo memory _actionInfo = _createActionWithTokenVotingStrategy(tokenVotingStrategy);
     Action memory action = CORE.getAction(_actionInfo.id);
     uint256 delayPeriodEndTime = action.creationTime + ((APPROVAL_PERIOD * ONE_QUARTER_IN_BPS) / ONE_HUNDRED_IN_BPS);
@@ -610,13 +610,13 @@ contract SubmitApprovals is LlamaTokenGovernorCastingTest {
     llamaERC721TokenGovernor.submitApproval(_actionInfo);
   }
 
-  function test_RevertsIf_CastingPeriodNotOver() public {
+  function test_RevertIf_CastingPeriodNotOver() public {
     vm.warp(block.timestamp - 1);
     vm.expectRevert(LlamaTokenGovernor.CastingPeriodNotOver.selector);
     llamaERC721TokenGovernor.submitApproval(actionInfo);
   }
 
-  function test_RevertsIf_ForDoesNotSurpassAgainst() public {
+  function test_RevertIf_ForDoesNotSurpassAgainst() public {
     ActionInfo memory _actionInfo = _createActionWithTokenVotingStrategy(tokenVotingStrategy);
     Action memory action = CORE.getAction(_actionInfo.id);
 
@@ -755,13 +755,13 @@ contract SubmitDisapprovals is LlamaTokenGovernorCastingTest {
     vm.warp(castingPeriodEndTime + 1);
   }
 
-  function test_RevertsIf_ActionInfoMismatch(ActionInfo memory notActionInfo) public {
+  function test_RevertIf_ActionInfoMismatch(ActionInfo memory notActionInfo) public {
     vm.assume(notActionInfo.id != actionInfo.id);
     vm.expectRevert();
     llamaERC721TokenGovernor.submitDisapproval(notActionInfo);
   }
 
-  function test_RevertsIf_AlreadySubmittedDisapproval() public {
+  function test_RevertIf_AlreadySubmittedDisapproval() public {
     vm.startPrank(tokenHolder1);
     llamaERC721TokenGovernor.submitDisapproval(actionInfo);
 
@@ -771,14 +771,14 @@ contract SubmitDisapprovals is LlamaTokenGovernorCastingTest {
     llamaERC721TokenGovernor.submitDisapproval(actionInfo);
   }
 
-  function test_RevertsIf_SubmissionPeriodOver() public {
+  function test_RevertIf_SubmissionPeriodOver() public {
     Action memory action = CORE.getAction(actionInfo.id);
     vm.warp(action.minExecutionTime);
     vm.expectRevert(LlamaTokenGovernor.SubmissionPeriodOver.selector);
     llamaERC721TokenGovernor.submitDisapproval(actionInfo);
   }
 
-  function test_RevertsIf_InsufficientDisapprovals() public {
+  function test_RevertIf_InsufficientDisapprovals() public {
     ActionInfo memory _actionInfo = _createActionWithTokenVotingStrategy(tokenVotingStrategy);
     Action memory action = CORE.getAction(_actionInfo.id);
 
@@ -807,13 +807,13 @@ contract SubmitDisapprovals is LlamaTokenGovernorCastingTest {
     llamaERC721TokenGovernor.submitDisapproval(_actionInfo);
   }
 
-  function test_RevertsIf_CastingPeriodNotOver() public {
+  function test_RevertIf_CastingPeriodNotOver() public {
     vm.warp(block.timestamp - 1);
     vm.expectRevert(LlamaTokenGovernor.CastingPeriodNotOver.selector);
     llamaERC721TokenGovernor.submitDisapproval(actionInfo);
   }
 
-  function test_RevertsIf_ForDoesNotSurpassAgainst() public {
+  function test_RevertIf_ForDoesNotSurpassAgainst() public {
     ActionInfo memory _actionInfo = _createActionWithTokenVotingStrategy(tokenVotingStrategy);
     Action memory action = CORE.getAction(_actionInfo.id);
 
@@ -967,14 +967,14 @@ contract SubmitDisapprovals is LlamaTokenGovernorCastingTest {
 }
 
 contract SetQuorumPct is LlamaTokenGovernorCastingTest {
-  function test_RevertsIf_NotLlamaExecutor(address notLlamaExecutor) public {
+  function test_RevertIf_NotLlamaExecutor(address notLlamaExecutor) public {
     vm.assume(notLlamaExecutor != address(EXECUTOR));
     vm.expectRevert(LlamaTokenGovernor.OnlyLlamaExecutor.selector);
     vm.prank(notLlamaExecutor);
     llamaERC721TokenGovernor.setQuorumPct(ERC721_VOTE_QUORUM_PCT, ERC721_VETO_QUORUM_PCT);
   }
 
-  function test_RevertsIf_InvalidQuorumPct() public {
+  function test_RevertIf_InvalidQuorumPct() public {
     vm.startPrank(address(EXECUTOR));
     vm.expectRevert(abi.encodeWithSelector(LlamaTokenGovernor.InvalidVetoQuorumPct.selector, uint256(0)));
     llamaERC721TokenGovernor.setQuorumPct(ERC721_VOTE_QUORUM_PCT, 0);
@@ -998,7 +998,7 @@ contract SetQuorumPct is LlamaTokenGovernorCastingTest {
 }
 
 contract SetPeriodPct is LlamaTokenGovernorCastingTest {
-  function test_RevertsIf_NotLlamaExecutor(address notLlamaExecutor) public {
+  function test_RevertIf_NotLlamaExecutor(address notLlamaExecutor) public {
     vm.assume(notLlamaExecutor != address(EXECUTOR));
     vm.expectRevert(LlamaTokenGovernor.OnlyLlamaExecutor.selector);
     vm.prank(notLlamaExecutor);
@@ -1007,7 +1007,7 @@ contract SetPeriodPct is LlamaTokenGovernorCastingTest {
     );
   }
 
-  function test_RevertsIf_InvalidPeriodPct() public {
+  function test_RevertIf_InvalidPeriodPct() public {
     vm.startPrank(address(EXECUTOR));
     vm.expectRevert(
       abi.encodeWithSelector(

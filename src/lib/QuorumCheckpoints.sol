@@ -70,7 +70,7 @@ library QuorumCheckpoints {
     }
 
     /**
-     * @dev Returns the quorum in the most recent checkpoint, or zero if there are no checkpoints.
+     * @dev Returns the quorums in the most recent checkpoint, or zero if there are no checkpoints.
      */
     function latest(History storage self) internal view returns (uint16, uint16) {
         uint256 pos = self._checkpoints.length;
@@ -81,7 +81,7 @@ library QuorumCheckpoints {
 
     /**
      * @dev Returns whether there is a checkpoint in the structure (i.e. it is not empty), and if so the timestamp and
-     * quorum in the most recent checkpoint.
+     * quorums in the most recent checkpoint.
      */
     function latestCheckpoint(History storage self)
         internal
