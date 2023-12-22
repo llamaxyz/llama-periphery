@@ -706,10 +706,25 @@ contract SubmitApprovals is LlamaTokenGovernorCasting {
     vm.prank(address(EXECUTOR));
     POLICY.setRoleHolder(governorRole, address(llamaERC20TokenGovernor), DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION);
 
-    mineBlock();
+    uint8[] memory forceRoles;
+    if (governorRole < type(uint8).max - 1) {
+      vm.prank(address(EXECUTOR));
+      POLICY.initializeRole(RoleDescription.wrap(bytes32(abi.encode(governorRole + 1))));
 
-    uint8[] memory forceRoles = new uint8[](1);
-    forceRoles[0] = governorRole;
+      vm.prank(address(EXECUTOR));
+      POLICY.setRoleHolder(
+        governorRole + 1, address(llamaERC20TokenGovernor), DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION
+      );
+
+      forceRoles = new uint8[](2);
+      forceRoles[0] = governorRole;
+      forceRoles[1] = governorRole + 1;
+    } else {
+      forceRoles = new uint8[](1);
+      forceRoles[0] = governorRole;
+    }
+
+    mineBlock();
 
     ILlamaRelativeStrategyBase.Config memory strategyConfig = ILlamaRelativeStrategyBase.Config({
       approvalPeriod: APPROVAL_PERIOD,
@@ -908,10 +923,25 @@ contract SubmitDisapprovals is LlamaTokenGovernorCasting {
     vm.prank(address(EXECUTOR));
     POLICY.setRoleHolder(governorRole, address(llamaERC20TokenGovernor), DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION);
 
-    mineBlock();
+    uint8[] memory forceRoles;
+    if (governorRole < type(uint8).max - 1) {
+      vm.prank(address(EXECUTOR));
+      POLICY.initializeRole(RoleDescription.wrap(bytes32(abi.encode(governorRole + 1))));
 
-    uint8[] memory forceRoles = new uint8[](1);
-    forceRoles[0] = governorRole;
+      vm.prank(address(EXECUTOR));
+      POLICY.setRoleHolder(
+        governorRole + 1, address(llamaERC20TokenGovernor), DEFAULT_ROLE_QTY, DEFAULT_ROLE_EXPIRATION
+      );
+
+      forceRoles = new uint8[](2);
+      forceRoles[0] = governorRole;
+      forceRoles[1] = governorRole + 1;
+    } else {
+      forceRoles = new uint8[](1);
+      forceRoles[0] = governorRole;
+    }
+
+    mineBlock();
 
     ILlamaRelativeStrategyBase.Config memory strategyConfig = ILlamaRelativeStrategyBase.Config({
       approvalPeriod: APPROVAL_PERIOD,
