@@ -250,7 +250,10 @@ contract LlamaTokenGovernor is Initializable {
     uint256 _creationThreshold,
     CasterConfig memory casterConfig
   ) external initializer {
-    if (_llamaCore.actionsCount() < 0) revert InvalidLlamaCoreAddress();
+    // This call has two purposes:
+    // 1. To check that _llamaCore is not the zero address (otherwise it would revert).
+    // 2. By duck testing the actionsCount method we can be confident that `_llamaCore` is a `LlamaCore`contract.
+    _llamaCore.actionsCount();
 
     llamaCore = _llamaCore;
     tokenAdapter = _tokenAdapter;
@@ -473,9 +476,7 @@ contract LlamaTokenGovernor is Initializable {
         castingPeriodEndTime = delayPeriodEndTime + ((approvalPeriod * castingPeriodPct) / ONE_HUNDRED_IN_BPS);
       }
       if (block.timestamp <= castingPeriodEndTime) revert CastingPeriodNotOver();
-      // Doing (action.creationTime + approvalPeriod) vs
-      // (castingPeriodEndTime + ((approvalPeriod * (ONE_HUNDRED_IN_BPS - delayPeriodPct - castingPeriodPct))
-      // / ONE_HUNDRED_IN_BPS)) to prevent any off-by-one errors due to precision loss.
+      // submissionPeriod is implicitly calculated as (approvalPeriod - delayPeriod - castingPeriod).
       // Llama approval period is inclusive of approval end time.
       if (block.timestamp > action.creationTime + approvalPeriod) revert SubmissionPeriodOver();
     }
@@ -519,10 +520,7 @@ contract LlamaTokenGovernor is Initializable {
           (action.minExecutionTime - queuingPeriod) + ((queuingPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS);
         castingPeriodEndTime = delayPeriodEndTime + ((queuingPeriod * castingPeriodPct) / ONE_HUNDRED_IN_BPS);
       }
-      // Using castingPeriodEndTime vs
-      // (action.minExecutionTime - ((queuingPeriod *
-      // (ONE_HUNDRED_IN_BPS - delayPeriodPct - castingPeriodPct)) / (ONE_HUNDRED_IN_BPS))
-      // to prevent any off-by-one errors due to precision loss.
+      // submissionPeriod is implicitly calculated as (queuingPeriod - delayPeriod - castingPeriod).
       if (block.timestamp <= castingPeriodEndTime) revert CastingPeriodNotOver();
       // Llama disapproval period is exclusive of min execution time.
       if (block.timestamp >= action.minExecutionTime) revert SubmissionPeriodOver();
@@ -561,7 +559,7 @@ contract LlamaTokenGovernor is Initializable {
   }
 
   /// @notice Sets the delay period and casting period.
-  /// @dev The submission period is inherently equal to `ONE_HUNDRED_IN_BPS - delayPeriodPct - castingPeriodPct`
+  /// @dev The submission period is implicitly equal to `ONE_HUNDRED_IN_BPS - delayPeriodPct - castingPeriodPct`
   /// @param _delayPeriodPct The % of the total approval or queuing period used as a delay.
   /// @param _castingPeriodPct The % of the total approval or queuing period used to cast votes or vetoes.
   function setPeriodPct(uint16 _delayPeriodPct, uint16 _castingPeriodPct) external onlyLlama {
@@ -590,21 +588,28 @@ contract LlamaTokenGovernor is Initializable {
   }
 
   /// @notice Returns the current voting quorum and vetoing quorum.
+  /// @return The current voting quorum and vetoing quorum.
   function getQuorum() external view returns (uint16, uint16) {
     return quorumCheckpoints.latest();
   }
 
   /// @notice Returns the voting quorum and vetoing quorum at a given timestamp.
+  /// @param timestamp The timestamp to get the quorums at.
+  /// @return The voting quorum and vetoing quorum at a given timestamp.
   function getPastQuorum(uint256 timestamp) external view returns (uint16, uint16) {
     return quorumCheckpoints.getAtProbablyRecentTimestamp(timestamp);
   }
 
   /// @notice Returns all quorum checkpoints.
+  /// @return All quorum checkpoints.
   function getQuorumCheckpoints() external view returns (QuorumCheckpoints.History memory) {
     return quorumCheckpoints;
   }
 
   /// @notice Returns the quorum checkpoints array from a given set of indices.
+  /// @param start Start index of the checkpoints to get from their checkpoint history array. This index is inclusive.
+  /// @param end End index of the checkpoints to get from their checkpoint history array. This index is exclusive.
+  /// @return The quorum checkpoints array from a given set of indices.
   function getQuorumCheckpoints(uint256 start, uint256 end) external view returns (QuorumCheckpoints.History memory) {
     if (start > end) revert InvalidIndices();
     uint256 checkpointsLength = quorumCheckpoints._checkpoints.length;
@@ -618,22 +623,29 @@ contract LlamaTokenGovernor is Initializable {
     return QuorumCheckpoints.History(checkpoints);
   }
 
-  /// @notice Returns the current delay and casting periods.
+  /// @notice Returns the current delay and casting period percentages.
+  /// @return The current delay and casting period percentages.
   function getPeriodPcts() external view returns (uint16, uint16) {
     return periodPctsCheckpoint.latest();
   }
 
-  /// @notice Returns the delay and casting periods at a given timestamp.
+  /// @notice Returns the delay and casting period percentages at a given timestamp.
+  /// @param timestamp The timestamp to get the period percentages at.
+  /// @return The delay and casting period percentages at a given timestamp.
   function getPastPeriodPcts(uint256 timestamp) external view returns (uint16, uint16) {
     return periodPctsCheckpoint.getAtProbablyRecentTimestamp(timestamp);
   }
 
   /// @notice Returns all period pct checkpoints.
+  /// @return All period pct checkpoints.
   function getPeriodPctCheckpoints() external view returns (PeriodPctCheckpoints.History memory) {
     return periodPctsCheckpoint;
   }
 
   /// @notice Returns the period pct checkpoints array from a given set of indices.
+  /// @param start Start index of the checkpoints to get from their checkpoint history array. This index is inclusive.
+  /// @param end End index of the checkpoints to get from their checkpoint history array. This index is exclusive.
+  /// @return The period pct checkpoints array from a given set of indices.
   function getPeriodPctCheckpoints(uint256 start, uint256 end)
     external
     view
@@ -823,8 +835,8 @@ contract LlamaTokenGovernor is Initializable {
 
   /// @dev Sets the voting quorum and vetoing quorum.
   function _setQuorumPct(uint16 _voteQuorumPct, uint16 _vetoQuorumPct) internal {
-    if (_voteQuorumPct > ONE_HUNDRED_IN_BPS || _voteQuorumPct <= 0) revert InvalidVoteQuorumPct(_voteQuorumPct);
-    if (_vetoQuorumPct > ONE_HUNDRED_IN_BPS || _vetoQuorumPct <= 0) revert InvalidVetoQuorumPct(_vetoQuorumPct);
+    if (_voteQuorumPct > ONE_HUNDRED_IN_BPS || _voteQuorumPct == 0) revert InvalidVoteQuorumPct(_voteQuorumPct);
+    if (_vetoQuorumPct > ONE_HUNDRED_IN_BPS || _vetoQuorumPct == 0) revert InvalidVetoQuorumPct(_vetoQuorumPct);
     quorumCheckpoints.push(_voteQuorumPct, _vetoQuorumPct);
     emit QuorumPctSet(_voteQuorumPct, _vetoQuorumPct);
   }
