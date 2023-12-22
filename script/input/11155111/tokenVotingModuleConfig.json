@@ -10,7 +10,6 @@
     "voteQuorumPct": 2000,
     "vetoQuorumPct": 1000,
     "delayPeriodPct": 2500,
-    "castingPeriodPct": 5000,
-    "submissionPeriodPct": 2500
+    "castingPeriodPct": 5000
   }
 }

@@ -28,7 +28,7 @@ contract LlamaTokenVotingFactoryTest is LlamaTokenVotingTestSetup {
   );
   event ActionThresholdSet(uint256 newThreshold);
   event QuorumPctSet(uint16 voteQuorumPct, uint16 vetoQuorumPct);
-  event PeriodPctSet(uint16 delayPeriodPct, uint16 castingPeriodPct, uint16 submissionPeriodPct);
+  event PeriodPctSet(uint16 delayPeriodPct, uint16 castingPeriodPct);
 
   function setUp() public override {
     LlamaTokenVotingTestSetup.setUp();
@@ -106,7 +106,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     vm.expectEmit();
     emit QuorumPctSet(ERC20_VOTE_QUORUM_PCT, ERC20_VETO_QUORUM_PCT);
     vm.expectEmit();
-    emit PeriodPctSet(uint16(ONE_QUARTER_IN_BPS), uint16(TWO_QUARTERS_IN_BPS), uint16(ONE_QUARTER_IN_BPS));
+    emit PeriodPctSet(uint16(ONE_QUARTER_IN_BPS), uint16(TWO_QUARTERS_IN_BPS));
     vm.expectEmit();
     emit LlamaTokenVotingInstanceCreated(
       address(EXECUTOR),
@@ -163,7 +163,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     vm.expectEmit();
     emit QuorumPctSet(ERC721_VOTE_QUORUM_PCT, ERC721_VETO_QUORUM_PCT);
     vm.expectEmit();
-    emit PeriodPctSet(uint16(ONE_QUARTER_IN_BPS), uint16(TWO_QUARTERS_IN_BPS), uint16(ONE_QUARTER_IN_BPS));
+    emit PeriodPctSet(uint16(ONE_QUARTER_IN_BPS), uint16(TWO_QUARTERS_IN_BPS));
     vm.expectEmit();
     emit LlamaTokenVotingInstanceCreated(
       address(EXECUTOR),
@@ -213,7 +213,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     vm.expectEmit();
     emit QuorumPctSet(ERC20_VOTE_QUORUM_PCT, ERC20_VETO_QUORUM_PCT);
     vm.expectEmit();
-    emit PeriodPctSet(uint16(ONE_QUARTER_IN_BPS), uint16(TWO_QUARTERS_IN_BPS), uint16(ONE_QUARTER_IN_BPS));
+    emit PeriodPctSet(uint16(ONE_QUARTER_IN_BPS), uint16(TWO_QUARTERS_IN_BPS));
     vm.expectEmit();
     emit LlamaTokenVotingInstanceCreated(
       randomCaller,

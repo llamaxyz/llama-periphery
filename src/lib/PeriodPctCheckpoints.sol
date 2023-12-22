@@ -26,7 +26,6 @@ library PeriodPctCheckpoints {
         uint48 timestamp;
         uint16 delayPeriodPct;
         uint16 castingPeriodPct;
-        uint16 submissionPeriodPct;
     }
 
     /**
@@ -35,7 +34,7 @@ library PeriodPctCheckpoints {
      * searched checkpoint is probably "recent", defined as being among the last sqrt(N) checkpoints where N is the
      * timestamp of checkpoints.
      */
-    function getAtProbablyRecentTimestamp(History storage self, uint256 timestamp) internal view returns (uint16, uint16, uint16) {
+    function getAtProbablyRecentTimestamp(History storage self, uint256 timestamp) internal view returns (uint16, uint16) {
         require(timestamp < block.timestamp, "PeriodPctCheckpoints: timestamp is not in the past");
         uint48 _timestamp = LlamaUtils.toUint48(timestamp);
 
@@ -55,29 +54,29 @@ library PeriodPctCheckpoints {
 
         uint256 pos = _upperBinaryLookup(self._checkpoints, _timestamp, low, high);
 
-        if (pos == 0) return (0, 0, 0);
+        if (pos == 0) return (0, 0);
         Checkpoint memory ckpt = _unsafeAccess(self._checkpoints, pos - 1);
-        return (ckpt.delayPeriodPct, ckpt.castingPeriodPct, ckpt.submissionPeriodPct);
+        return (ckpt.delayPeriodPct, ckpt.castingPeriodPct);
     }
 
     /**
-     * @dev Pushes a `delayPeriodPct`, `castingPeriodPct` and `submissionPeriodPct` onto a History so that it is stored as the checkpoint for the current
+     * @dev Pushes a `delayPeriodPct` and `castingPeriodPct` onto a History so that it is stored as the checkpoint for the current
      * `timestamp`.
      *
      * For simplicity, this method does not return anything, since the return values are not needed by Llama.
      */
-    function push(History storage self, uint16 delayPeriodPct, uint16 castingPeriodPct, uint16 submissionPeriodPct) internal {
-        _insert(self._checkpoints, LlamaUtils.toUint48(block.timestamp), LlamaUtils.toUint16(delayPeriodPct), LlamaUtils.toUint16(castingPeriodPct), LlamaUtils.toUint16(submissionPeriodPct));
+    function push(History storage self, uint16 delayPeriodPct, uint16 castingPeriodPct) internal {
+        _insert(self._checkpoints, LlamaUtils.toUint48(block.timestamp), LlamaUtils.toUint16(delayPeriodPct), LlamaUtils.toUint16(castingPeriodPct));
     }
 
     /**
      * @dev Returns the period in the most recent checkpoint, or zero if there are no checkpoints.
      */
-    function latest(History storage self) internal view returns (uint16, uint16, uint16) {
+    function latest(History storage self) internal view returns (uint16, uint16) {
         uint256 pos = self._checkpoints.length;
-        if (pos == 0) return (0, 0, 0);
+        if (pos == 0) return (0, 0);
         Checkpoint memory ckpt = _unsafeAccess(self._checkpoints, pos - 1);
-        return (ckpt.delayPeriodPct, ckpt.castingPeriodPct, ckpt.submissionPeriodPct);
+        return (ckpt.delayPeriodPct, ckpt.castingPeriodPct);
     }
 
     /**
@@ -91,16 +90,15 @@ library PeriodPctCheckpoints {
             bool exists,
             uint48 timestamp,
             uint16 delayPeriodPct,
-            uint16 castingPeriodPct,
-            uint16 submissionPeriodPct
+            uint16 castingPeriodPct
         )
     {
         uint256 pos = self._checkpoints.length;
         if (pos == 0) {
-            return (false, 0, 0, 0, 0);
+            return (false, 0, 0, 0);
         } else {
             Checkpoint memory ckpt = _unsafeAccess(self._checkpoints, pos - 1);
-            return (true, ckpt.timestamp, ckpt.delayPeriodPct, ckpt.castingPeriodPct, ckpt.submissionPeriodPct);
+            return (true, ckpt.timestamp, ckpt.delayPeriodPct, ckpt.castingPeriodPct);
         }
     }
 
@@ -112,15 +110,14 @@ library PeriodPctCheckpoints {
     }
 
     /**
-     * @dev Pushes a (`timestamp`, `delayPeriodPct`, `castingPeriodPct`, `submissionPeriodPct`) group into an ordered list of checkpoints, either by inserting a new
+     * @dev Pushes a (`timestamp`, `delayPeriodPct`, and `castingPeriodPct`) group into an ordered list of checkpoints, either by inserting a new
      * checkpoint, or by updating the last one.
      */
     function _insert(
         Checkpoint[] storage self,
         uint48 timestamp,
         uint16 delayPeriodPct,
-        uint16 castingPeriodPct,
-        uint16 submissionPeriodPct
+        uint16 castingPeriodPct
     ) private {
         uint256 pos = self.length;
 
@@ -136,12 +133,11 @@ library PeriodPctCheckpoints {
                 Checkpoint storage ckpt = _unsafeAccess(self, pos - 1);
                 ckpt.delayPeriodPct = delayPeriodPct;
                 ckpt.castingPeriodPct = castingPeriodPct;
-                ckpt.submissionPeriodPct = submissionPeriodPct;
             } else {
-                self.push(Checkpoint({timestamp: timestamp, delayPeriodPct: delayPeriodPct, castingPeriodPct: castingPeriodPct, submissionPeriodPct: submissionPeriodPct}));
+                self.push(Checkpoint({timestamp: timestamp, delayPeriodPct: delayPeriodPct, castingPeriodPct: castingPeriodPct}));
             }
         } else {
-            self.push(Checkpoint({timestamp: timestamp, delayPeriodPct: delayPeriodPct, castingPeriodPct: castingPeriodPct, submissionPeriodPct: submissionPeriodPct}));
+            self.push(Checkpoint({timestamp: timestamp, delayPeriodPct: delayPeriodPct, castingPeriodPct: castingPeriodPct}));
         }
     }
 

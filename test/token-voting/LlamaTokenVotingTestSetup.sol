@@ -76,8 +76,7 @@ contract LlamaTokenVotingTestSetup is LlamaPeripheryTestSetup, DeployLlamaTokenV
       voteQuorumPct: ERC20_VOTE_QUORUM_PCT,
       vetoQuorumPct: ERC20_VETO_QUORUM_PCT,
       delayPeriodPct: uint16(ONE_QUARTER_IN_BPS),
-      castingPeriodPct: uint16(TWO_QUARTERS_IN_BPS),
-      submissionPeriodPct: uint16(ONE_QUARTER_IN_BPS)
+      castingPeriodPct: uint16(TWO_QUARTERS_IN_BPS)
     });
 
     //Deploy

@@ -39,7 +39,7 @@ contract LlamaTokenGovernorCastingTest is LlamaTokenVotingTestSetup, LlamaCoreSi
   );
   event VetoCast(uint256 id, address indexed tokenholder, uint8 indexed support, uint256 weight, string reason);
   event QuorumPctSet(uint16 voteQuorumPct, uint16 vetoQuorumPct);
-  event PeriodPctSet(uint16 delayPeriodPct, uint16 castingPeriodPct, uint16 submissionPeriodPct);
+  event PeriodPctSet(uint16 delayPeriodPct, uint16 castingPeriodPct);
 
   ActionInfo actionInfo;
   uint256 actionCreationTime;
@@ -803,7 +803,7 @@ contract SubmitDisapprovals is LlamaTokenGovernorCastingTest {
       (action.minExecutionTime - QUEUING_PERIOD) + ((QUEUING_PERIOD * ONE_QUARTER_IN_BPS) / ONE_HUNDRED_IN_BPS);
     castingPeriodEndTime = delayPeriodEndTime + ((QUEUING_PERIOD * TWO_QUARTERS_IN_BPS) / ONE_HUNDRED_IN_BPS);
     vm.warp(castingPeriodEndTime + 1);
-    vm.expectRevert(abi.encodeWithSelector(LlamaTokenGovernor.InsufficientVotes.selector, 0, 1));
+    vm.expectRevert(abi.encodeWithSelector(LlamaTokenGovernor.InsufficientVetoes.selector, 0, 1));
     llamaERC721TokenGovernor.submitDisapproval(_actionInfo);
   }
 
@@ -1002,45 +1002,31 @@ contract SetPeriodPct is LlamaTokenGovernorCastingTest {
     vm.assume(notLlamaExecutor != address(EXECUTOR));
     vm.expectRevert(LlamaTokenGovernor.OnlyLlamaExecutor.selector);
     vm.prank(notLlamaExecutor);
-    llamaERC721TokenGovernor.setPeriodPct(
-      uint16(ONE_QUARTER_IN_BPS), uint16(TWO_QUARTERS_IN_BPS), uint16(ONE_QUARTER_IN_BPS)
-    );
+    llamaERC721TokenGovernor.setPeriodPct(uint16(ONE_QUARTER_IN_BPS), uint16(TWO_QUARTERS_IN_BPS));
   }
 
   function test_RevertsIf_InvalidPeriodPct() public {
     vm.startPrank(address(EXECUTOR));
     vm.expectRevert(
       abi.encodeWithSelector(
-        LlamaTokenGovernor.InvalidPeriodPcts.selector,
-        uint16(ONE_QUARTER_IN_BPS),
-        uint16(TWO_QUARTERS_IN_BPS),
-        uint16(ONE_QUARTER_IN_BPS) + 1
+        LlamaTokenGovernor.InvalidPeriodPcts.selector, uint16(ONE_QUARTER_IN_BPS), uint16(THREE_QUARTERS_IN_BPS)
       )
     );
-    llamaERC721TokenGovernor.setPeriodPct(
-      uint16(ONE_QUARTER_IN_BPS), uint16(TWO_QUARTERS_IN_BPS), uint16(ONE_QUARTER_IN_BPS) + 1
-    );
+    llamaERC721TokenGovernor.setPeriodPct(uint16(ONE_QUARTER_IN_BPS), uint16(THREE_QUARTERS_IN_BPS));
     vm.expectRevert(
       abi.encodeWithSelector(
-        LlamaTokenGovernor.InvalidPeriodPcts.selector,
-        uint16(ONE_QUARTER_IN_BPS),
-        uint16(TWO_QUARTERS_IN_BPS),
-        uint16(ONE_QUARTER_IN_BPS) - 1
+        LlamaTokenGovernor.InvalidPeriodPcts.selector, uint16(ONE_QUARTER_IN_BPS), uint16(THREE_QUARTERS_IN_BPS) + 1
       )
     );
-    llamaERC721TokenGovernor.setPeriodPct(
-      uint16(ONE_QUARTER_IN_BPS), uint16(TWO_QUARTERS_IN_BPS), uint16(ONE_QUARTER_IN_BPS) - 1
-    );
+    llamaERC721TokenGovernor.setPeriodPct(uint16(ONE_QUARTER_IN_BPS), uint16(THREE_QUARTERS_IN_BPS) + 1);
     vm.stopPrank();
   }
 
   function test_SetsPeriodPctCorrectly() public {
     vm.expectEmit();
-    emit PeriodPctSet(uint16(ONE_QUARTER_IN_BPS), uint16(TWO_QUARTERS_IN_BPS), uint16(ONE_QUARTER_IN_BPS));
+    emit PeriodPctSet(uint16(ONE_QUARTER_IN_BPS), uint16(TWO_QUARTERS_IN_BPS));
     vm.prank(address(EXECUTOR));
-    llamaERC721TokenGovernor.setPeriodPct(
-      uint16(ONE_QUARTER_IN_BPS), uint16(TWO_QUARTERS_IN_BPS), uint16(ONE_QUARTER_IN_BPS)
-    );
+    llamaERC721TokenGovernor.setPeriodPct(uint16(ONE_QUARTER_IN_BPS), uint16(TWO_QUARTERS_IN_BPS));
   }
 }
 

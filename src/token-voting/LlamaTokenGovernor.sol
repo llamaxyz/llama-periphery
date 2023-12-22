@@ -60,7 +60,10 @@ contract LlamaTokenGovernor is Initializable {
   /// @dev Thrown when a user tries to create an action but does not have enough tokens.
   error InsufficientBalance(uint256 balance);
 
-  /// @dev Thrown when a user tries to submit an approval but there are not enough votes.
+  /// @dev Thrown when a user tries to submit a disapproval but there are not enough for vetoes.
+  error InsufficientVetoes(uint256 vetoes, uint256 threshold);
+
+  /// @dev Thrown when a user tries to submit an approval but there are not enough for votes.
   error InsufficientVotes(uint256 votes, uint256 threshold);
 
   /// @dev The action is not in the expected state.
@@ -78,8 +81,8 @@ contract LlamaTokenGovernor is Initializable {
   /// @dev Thrown when an invalid `llamaCore` address is passed to the constructor.
   error InvalidLlamaCoreAddress();
 
-  /// @dev Thrown when an invalid `castingPeriodPct` and `submissionPeriodPct` are set.
-  error InvalidPeriodPcts(uint16 delayPeriodPct, uint16 castingPeriodPct, uint16 submissionPeriodPct);
+  /// @dev Thrown when an invalid `delayPeriodPct` and `castingPeriodPct` are set.
+  error InvalidPeriodPcts(uint16 delayPeriodPct, uint16 castingPeriodPct);
 
   /// @dev This token caster contract does not have the defined role at action creation time.
   error InvalidPolicyholder();
@@ -147,8 +150,8 @@ contract LlamaTokenGovernor is Initializable {
     uint256 weightAbstain
   );
 
-  /// @dev Emitted when the casting and submission period ratio is set.
-  event PeriodPctSet(uint16 delayPeriodPct, uint16 castingPeriodPct, uint16 submissionPeriodPct);
+  /// @dev Emitted when the delay and casting period percentages are set.
+  event PeriodPctSet(uint16 delayPeriodPct, uint16 castingPeriodPct);
 
   /// @dev Emitted when the voting quorum and/or vetoing quorum is set.
   event QuorumPctSet(uint16 voteQuorumPct, uint16 vetoQuorumPct);
@@ -253,7 +256,7 @@ contract LlamaTokenGovernor is Initializable {
     tokenAdapter = _tokenAdapter;
     _setActionThreshold(_creationThreshold);
     _setQuorumPct(casterConfig.voteQuorumPct, casterConfig.vetoQuorumPct);
-    _setPeriodPct(casterConfig.delayPeriodPct, casterConfig.castingPeriodPct, casterConfig.submissionPeriodPct);
+    _setPeriodPct(casterConfig.delayPeriodPct, casterConfig.castingPeriodPct);
   }
 
   // ===========================================
@@ -462,7 +465,7 @@ contract LlamaTokenGovernor is Initializable {
     // Scoping to prevent stack too deep errors.
     {
       // Checks to ensure it's the submission period.
-      (uint16 delayPeriodPct, uint16 castingPeriodPct,) =
+      (uint16 delayPeriodPct, uint16 castingPeriodPct) =
         periodPctsCheckpoint.getAtProbablyRecentTimestamp(checkpointTime);
       uint256 approvalPeriod = actionInfo.strategy.approvalPeriod();
       unchecked {
@@ -470,7 +473,8 @@ contract LlamaTokenGovernor is Initializable {
         castingPeriodEndTime = delayPeriodEndTime + ((approvalPeriod * castingPeriodPct) / ONE_HUNDRED_IN_BPS);
       }
       if (block.timestamp <= castingPeriodEndTime) revert CastingPeriodNotOver();
-      // Doing (action.creationTime + approvalPeriod) vs (castingPeriodEndTime + ((approvalPeriod * submissionPeriodPct)
+      // Doing (action.creationTime + approvalPeriod) vs
+      // (castingPeriodEndTime + ((approvalPeriod * (ONE_HUNDRED_IN_BPS - delayPeriodPct - castingPeriodPct))
       // / ONE_HUNDRED_IN_BPS)) to prevent any off-by-one errors due to precision loss.
       // Llama approval period is inclusive of approval end time.
       if (block.timestamp > action.creationTime + approvalPeriod) revert SubmissionPeriodOver();
@@ -507,7 +511,7 @@ contract LlamaTokenGovernor is Initializable {
     // Scoping to prevent stack too deep errors.
     {
       // Checks to ensure it's the submission period.
-      (uint16 delayPeriodPct, uint16 castingPeriodPct,) =
+      (uint16 delayPeriodPct, uint16 castingPeriodPct) =
         periodPctsCheckpoint.getAtProbablyRecentTimestamp(checkpointTime);
       uint256 queuingPeriod = actionInfo.strategy.queuingPeriod();
       unchecked {
@@ -515,8 +519,10 @@ contract LlamaTokenGovernor is Initializable {
           (action.minExecutionTime - queuingPeriod) + ((queuingPeriod * delayPeriodPct) / ONE_HUNDRED_IN_BPS);
         castingPeriodEndTime = delayPeriodEndTime + ((queuingPeriod * castingPeriodPct) / ONE_HUNDRED_IN_BPS);
       }
-      // Doing (castingPeriodEndTime) vs (action.minExecutionTime - ((queuingPeriod * submissionPeriodPct) /
-      // ONE_HUNDRED_IN_BPS)) to prevent any off-by-one errors due to precision loss.
+      // Using castingPeriodEndTime vs
+      // (action.minExecutionTime - ((queuingPeriod *
+      // (ONE_HUNDRED_IN_BPS - delayPeriodPct - castingPeriodPct)) / (ONE_HUNDRED_IN_BPS))
+      // to prevent any off-by-one errors due to precision loss.
       if (block.timestamp <= castingPeriodEndTime) revert CastingPeriodNotOver();
       // Llama disapproval period is exclusive of min execution time.
       if (block.timestamp >= action.minExecutionTime) revert SubmissionPeriodOver();
@@ -530,7 +536,7 @@ contract LlamaTokenGovernor is Initializable {
     uint128 vetoesAbstain = castData.vetoesAbstain;
     (, uint16 vetoQuorumPct) = quorumCheckpoints.getAtProbablyRecentTimestamp(checkpointTime);
     uint256 threshold = FixedPointMathLib.mulDivUp(totalSupply, vetoQuorumPct, ONE_HUNDRED_IN_BPS);
-    if (vetoesFor < threshold) revert InsufficientVotes(vetoesFor, threshold);
+    if (vetoesFor < threshold) revert InsufficientVetoes(vetoesFor, threshold);
     if (vetoesFor <= vetoesAgainst) revert ForDoesNotSurpassAgainst(vetoesFor, vetoesAgainst);
 
     uint8 governorRole = _determineGovernorRole(actionInfo.strategy, false);
@@ -547,22 +553,19 @@ contract LlamaTokenGovernor is Initializable {
     _setActionThreshold(_creationThreshold);
   }
 
-  /// @notice Sets the voting quorum and vetoing quorum.
-  /// @param _voteQuorumPct The minimum % of votes required to submit an approval to `LlamaCore`.
-  /// @param _vetoQuorumPct The minimum % of vetoes required to submit a disapproval to `LlamaCore`.
+  /// @notice Sets the vote quorum and veto quorum for submitting a (dis)approval to `LlamaCore`.
+  /// @param _voteQuorumPct The minimum % of total supply that must be casted as `For` votes.
+  /// @param _vetoQuorumPct The minimum % of total supply that must be casted as `For` vetoes.
   function setQuorumPct(uint16 _voteQuorumPct, uint16 _vetoQuorumPct) external onlyLlama {
     _setQuorumPct(_voteQuorumPct, _vetoQuorumPct);
   }
 
-  /// @notice Sets the delay period, casting period and submission period.
-  /// @param _delayPeriodPct The % of the total period that must pass before voting can begin.
-  /// @param _castingPeriodPct The % of the total period that voting can occur.
-  /// @param _submissionPeriodPct The % of the total period withing which the (dis)approval must be submitted.
-  function setPeriodPct(uint16 _delayPeriodPct, uint16 _castingPeriodPct, uint16 _submissionPeriodPct)
-    external
-    onlyLlama
-  {
-    _setPeriodPct(_delayPeriodPct, _castingPeriodPct, _submissionPeriodPct);
+  /// @notice Sets the delay period and casting period.
+  /// @dev The submission period is inherently equal to `ONE_HUNDRED_IN_BPS - delayPeriodPct - castingPeriodPct`
+  /// @param _delayPeriodPct The % of the total approval or queuing period used as a delay.
+  /// @param _castingPeriodPct The % of the total approval or queuing period used to cast votes or vetoes.
+  function setPeriodPct(uint16 _delayPeriodPct, uint16 _castingPeriodPct) external onlyLlama {
+    _setPeriodPct(_delayPeriodPct, _castingPeriodPct);
   }
 
   // -------- User Nonce Management --------
@@ -615,13 +618,13 @@ contract LlamaTokenGovernor is Initializable {
     return QuorumCheckpoints.History(checkpoints);
   }
 
-  /// @notice Returns the current delay, casting and submission period ratio.
-  function getPeriodPcts() external view returns (uint16, uint16, uint16) {
+  /// @notice Returns the current delay and casting periods.
+  function getPeriodPcts() external view returns (uint16, uint16) {
     return periodPctsCheckpoint.latest();
   }
 
-  /// @notice Returns the delay, casting and submission period ratio at a given timestamp.
-  function getPastPeriodPcts(uint256 timestamp) external view returns (uint16, uint16, uint16) {
+  /// @notice Returns the delay and casting periods at a given timestamp.
+  function getPastPeriodPcts(uint256 timestamp) external view returns (uint16, uint16) {
     return periodPctsCheckpoint.getAtProbablyRecentTimestamp(timestamp);
   }
 
@@ -703,7 +706,7 @@ contract LlamaTokenGovernor is Initializable {
     // Scoping to prevent stack too deep errors.
     {
       // Checks to ensure it's the casting period.
-      (uint16 delayPeriodPct, uint16 castingPeriodPct,) =
+      (uint16 delayPeriodPct, uint16 castingPeriodPct) =
         periodPctsCheckpoint.getAtProbablyRecentTimestamp(checkpointTime);
       uint256 approvalPeriod = actionInfo.strategy.approvalPeriod();
       unchecked {
@@ -745,7 +748,7 @@ contract LlamaTokenGovernor is Initializable {
     // Scoping to prevent stack too deep errors.
     {
       // Checks to ensure it's the casting period.
-      (uint16 delayPeriodPct, uint16 castingPeriodPct,) =
+      (uint16 delayPeriodPct, uint16 castingPeriodPct) =
         periodPctsCheckpoint.getAtProbablyRecentTimestamp(checkpointTime);
       uint256 queuingPeriod = actionInfo.strategy.queuingPeriod();
       unchecked {
@@ -826,13 +829,13 @@ contract LlamaTokenGovernor is Initializable {
     emit QuorumPctSet(_voteQuorumPct, _vetoQuorumPct);
   }
 
-  /// @dev Sets the delay, casting and submission period ratio.
-  function _setPeriodPct(uint16 _delayPeriodPct, uint16 _castingPeriodPct, uint16 _submissionPeriodPct) internal {
-    if (_delayPeriodPct + _castingPeriodPct + _submissionPeriodPct != ONE_HUNDRED_IN_BPS) {
-      revert InvalidPeriodPcts(_delayPeriodPct, _castingPeriodPct, _submissionPeriodPct);
+  /// @dev Sets the delay and casting period percentages.
+  function _setPeriodPct(uint16 _delayPeriodPct, uint16 _castingPeriodPct) internal {
+    if (_delayPeriodPct + _castingPeriodPct >= ONE_HUNDRED_IN_BPS) {
+      revert InvalidPeriodPcts(_delayPeriodPct, _castingPeriodPct);
     }
-    periodPctsCheckpoint.push(_delayPeriodPct, _castingPeriodPct, _submissionPeriodPct);
-    emit PeriodPctSet(_delayPeriodPct, _castingPeriodPct, _submissionPeriodPct);
+    periodPctsCheckpoint.push(_delayPeriodPct, _castingPeriodPct);
+    emit PeriodPctSet(_delayPeriodPct, _castingPeriodPct);
   }
 
   // -------- User Nonce Management Internal Functions --------
