@@ -28,9 +28,6 @@ contract LlamaTokenAdapterVotesTimestamp is ILlamaTokenAdapter, Initializable {
   /// @dev The clock was incorrectly modified.
   error ERC6372InconsistentClock();
 
-  /// @dev The token is invalid.
-  error InvalidToken();
-
   // =================================================
   // ======== Constants and Storage Variables ========
   // =================================================
