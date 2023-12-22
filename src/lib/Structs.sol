@@ -90,9 +90,8 @@ struct LlamaTokenVotingConfig {
 
 /// @dev Quorum and period data for token voting caster contracts.
 struct CasterConfig {
-  uint16 voteQuorumPct;
-  uint16 vetoQuorumPct;
-  uint16 delayPeriodPct;
-  uint16 castingPeriodPct;
-  uint16 submissionPeriodPct;
+  uint16 voteQuorumPct; // The minimum % of total supply that must be casted as `For` votes.
+  uint16 vetoQuorumPct; // The minimum % of total supply that must be casted as `For` vetoes.
+  uint16 delayPeriodPct; // The % of the total approval or queuing period used as a delay.
+  uint16 castingPeriodPct; // The % of the total approval or queuing period used to cast votes or vetoes
 }

@@ -26,8 +26,7 @@ contract DeployLlamaTokenVotingModule is Script {
       abi.decode(jsonInput.parseRaw(".casterConfig.voteQuorumPct"), (uint16)),
       abi.decode(jsonInput.parseRaw(".casterConfig.vetoQuorumPct"), (uint16)),
       abi.decode(jsonInput.parseRaw(".casterConfig.delayPeriodPct"), (uint16)),
-      abi.decode(jsonInput.parseRaw(".casterConfig.castingPeriodPct"), (uint16)),
-      abi.decode(jsonInput.parseRaw(".casterConfig.submissionPeriodPct"), (uint16))
+      abi.decode(jsonInput.parseRaw(".casterConfig.castingPeriodPct"), (uint16))
     );
 
     LlamaTokenVotingConfig memory config = LlamaTokenVotingConfig(
