@@ -841,7 +841,8 @@ contract LlamaTokenGovernor is Initializable {
     emit QuorumPctSet(_voteQuorumPct, _vetoQuorumPct);
   }
 
-  /// @dev Sets the delay and casting period percentages.
+  /// @dev Sets the delay and casting period percentages. The submission period is implicitly equal to
+  /// `ONE_HUNDRED_IN_BPS - _delayPeriodPct - _castingPeriodPct`
   function _setPeriodPct(uint16 _delayPeriodPct, uint16 _castingPeriodPct) internal {
     if (_delayPeriodPct + _castingPeriodPct >= ONE_HUNDRED_IN_BPS) {
       revert InvalidPeriodPcts(_delayPeriodPct, _castingPeriodPct);
