@@ -52,6 +52,8 @@ contract LlamaTokenAdapterVotesTimestamp is ILlamaTokenAdapter, Initializable {
   }
 
   /// @inheritdoc ILlamaTokenAdapter
+  /// @dev There is no token validation for this adapter, as it is assumed to be a trusted input. If the address input
+  /// is not a valid token, this adapter will not work properly, and will likely revert making calls to the token.
   function initialize(bytes memory config) external initializer returns (bool) {
     Config memory adapterConfig = abi.decode(config, (Config));
     token = adapterConfig.token;
