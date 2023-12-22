@@ -564,7 +564,7 @@ contract LlamaTokenGovernor is Initializable {
   }
 
   /// @notice Sets the delay period and casting period.
-  /// @dev The submission period is inherently equal to `ONE_HUNDRED_IN_BPS - delayPeriodPct - castingPeriodPct`
+  /// @dev The submission period is implicitly equal to `ONE_HUNDRED_IN_BPS - delayPeriodPct - castingPeriodPct`
   /// @param _delayPeriodPct The % of the total approval or queuing period used as a delay.
   /// @param _castingPeriodPct The % of the total approval or queuing period used to cast votes or vetoes.
   function setPeriodPct(uint16 _delayPeriodPct, uint16 _castingPeriodPct) external onlyLlama {
