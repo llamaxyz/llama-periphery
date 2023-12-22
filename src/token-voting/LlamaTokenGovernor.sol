@@ -476,9 +476,7 @@ contract LlamaTokenGovernor is Initializable {
         castingPeriodEndTime = delayPeriodEndTime + ((approvalPeriod * castingPeriodPct) / ONE_HUNDRED_IN_BPS);
       }
       if (block.timestamp <= castingPeriodEndTime) revert CastingPeriodNotOver();
-      // Doing (action.creationTime + approvalPeriod) vs
-      // (castingPeriodEndTime + ((approvalPeriod * (ONE_HUNDRED_IN_BPS - delayPeriodPct - castingPeriodPct))
-      // / ONE_HUNDRED_IN_BPS)) to prevent any off-by-one errors due to precision loss.
+      // submissionPeriod is implicitly calculated as (approvalPeriod - delayPeriod - castingPeriod).
       // Llama approval period is inclusive of approval end time.
       if (block.timestamp > action.creationTime + approvalPeriod) revert SubmissionPeriodOver();
     }
