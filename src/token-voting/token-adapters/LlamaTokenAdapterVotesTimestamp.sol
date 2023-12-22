@@ -54,8 +54,6 @@ contract LlamaTokenAdapterVotesTimestamp is ILlamaTokenAdapter, Initializable {
   /// @inheritdoc ILlamaTokenAdapter
   function initialize(bytes memory config) external initializer returns (bool) {
     Config memory adapterConfig = abi.decode(config, (Config));
-    // This check certifies the token address is valid and that the token's total supply is less than 2^128.
-    if (IVotes(adapterConfig.token).getPastTotalSupply(block.timestamp - 1) > type(uint128).max) revert InvalidToken();
     token = adapterConfig.token;
     CLOCK_MODE = "mode=timestamp";
 
