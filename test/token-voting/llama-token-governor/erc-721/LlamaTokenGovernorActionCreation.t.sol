@@ -55,6 +55,15 @@ contract Constructor is LlamaERC721TokenGovernorActionCreationTest {
   }
 }
 
+contract Initialize is LlamaERC721TokenGovernorActionCreationTest {
+  function test_RevertIf_InitializeAlreadyInitializedContract() public {
+    vm.expectRevert(Initializable.InvalidInitialization.selector);
+    llamaERC721TokenGovernor.initialize(
+      CORE, ILlamaTokenAdapter(address(0)), ERC721_CREATION_THRESHOLD, defaultCasterConfig
+    );
+  }
+}
+
 contract CreateAction is LlamaERC721TokenGovernorActionCreationTest {
   bytes data = abi.encodeCall(mockProtocol.pause, (true));
 

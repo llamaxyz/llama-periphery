@@ -55,6 +55,15 @@ contract Constructor is LlamaTokenGovernorActionCreation {
   }
 }
 
+contract Initialize is LlamaTokenGovernorActionCreation {
+  function test_RevertIf_InitializeAlreadyInitializedContract() public {
+    vm.expectRevert(Initializable.InvalidInitialization.selector);
+    llamaERC20TokenGovernor.initialize(
+      CORE, ILlamaTokenAdapter(address(0)), ERC20_CREATION_THRESHOLD, defaultCasterConfig
+    );
+  }
+}
+
 contract CreateAction is LlamaTokenGovernorActionCreation {
   bytes data = abi.encodeCall(mockProtocol.pause, (true));
 

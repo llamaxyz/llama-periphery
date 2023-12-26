@@ -128,6 +128,15 @@ contract Constructor is LlamaTokenGovernorCastingTest {
   }
 }
 
+contract Initialize is LlamaTokenGovernorCastingTest {
+  function test_RevertIf_InitializeAlreadyInitializedContract() public {
+    vm.expectRevert(Initializable.InvalidInitialization.selector);
+    llamaERC721TokenGovernor.initialize(
+      CORE, ILlamaTokenAdapter(address(0)), ERC721_CREATION_THRESHOLD, defaultCasterConfig
+    );
+  }
+}
+
 contract CastVote is LlamaTokenGovernorCastingTest {
   function setUp() public virtual override {
     LlamaTokenGovernorCastingTest.setUp();
