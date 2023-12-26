@@ -3,10 +3,13 @@ pragma solidity ^0.8.23;
 
 import {Test, console2} from "forge-std/Test.sol";
 
+import {Initializable} from "@openzeppelin/proxy/utils/Initializable.sol";
+
 import {LlamaTokenVotingTestSetup} from "test/token-voting/LlamaTokenVotingTestSetup.sol";
 import {LlamaCoreSigUtils} from "test/utils/LlamaCoreSigUtils.sol";
 
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
+import {ILlamaTokenAdapter} from "src/token-voting/interfaces/ILlamaTokenAdapter.sol";
 import {ActionState} from "src/lib/Enums.sol";
 import {Action, ActionInfo} from "src/lib/Structs.sol";
 import {LlamaTokenGovernor} from "src/token-voting/LlamaTokenGovernor.sol";
@@ -43,45 +46,14 @@ contract LlamaERC721TokenGovernorActionCreationTest is LlamaTokenVotingTestSetup
   }
 }
 
-// contract Constructor is LlamaERC721TokenGovernorActionCreationTest {
-//   function test_RevertIf_InvalidLlamaCore() public {
-//     // With invalid LlamaCore instance, LlamaTokenGovernor.InvalidLlamaCoreAddress is unreachable
-//     vm.expectRevert();
-//     new LlamaTokenGovernor(erc721VotesToken, ILlamaCore(makeAddr("invalid-llama-core")),
-// uint256(0));
-//   }
-
-//   function test_RevertIf_InvalidTokenAddress() public {
-//     vm.expectRevert(); // will EvmError: Revert vecause totalSupply fn does not exist
-//     new LlamaTokenGovernor(ERC20Votes(makeAddr("invalid-erc721VotesToken")), CORE, uint256(0));
-//   }
-
-//   function test_RevertIf_CreationThresholdExceedsTotalSupply() public {
-//     erc721VotesToken.mint(tokenHolder1, 1_000_000e18); // we use erc721VotesToken because IVotesToken is an interface
-//     // without the `mint` function
-
-//     vm.warp(block.timestamp + 1);
-
-//     vm.expectRevert(LlamaTokenGovernor.InvalidCreationThreshold.selector);
-//     new LlamaTokenGovernor(erc721VotesToken, CORE, 17_000_000_000_000_000_000_000_000);
-//   }
-
-//   function test_ProperlySetsConstructorArguments() public {
-//     uint256 threshold = 500_000e18;
-//     erc721VotesToken.mint(tokenHolder1, 1_000_000e18); // we use erc721VotesToken because IVotesToken is an interface
-//     // without the `mint` function
-
-//     vm.warp(block.timestamp + 1);
-
-//     LlamaTokenGovernor llamaERC721TokenGovernor = new
-// LlamaTokenGovernor(erc721VotesToken,
-// CORE,
-// threshold);
-//     assertEq(address(llamaERC721TokenGovernor.TOKEN()), address(erc721VotesToken));
-//     assertEq(address(llamaERC721TokenGovernor.LLAMA_CORE()), address(CORE));
-//     assertEq(llamaERC721TokenGovernor.creationThreshold(), threshold);
-//   }
-// }
+contract Constructor is LlamaERC721TokenGovernorActionCreationTest {
+  function test_RevertIf_InitializeImplementationContract() public {
+    vm.expectRevert(Initializable.InvalidInitialization.selector);
+    llamaTokenGovernorLogic.initialize(
+      CORE, ILlamaTokenAdapter(address(0)), ERC721_CREATION_THRESHOLD, defaultCasterConfig
+    );
+  }
+}
 
 contract CreateAction is LlamaERC721TokenGovernorActionCreationTest {
   bytes data = abi.encodeCall(mockProtocol.pause, (true));
