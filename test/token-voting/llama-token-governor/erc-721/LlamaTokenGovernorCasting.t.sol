@@ -4,6 +4,7 @@ pragma solidity ^0.8.23;
 import {Test, console2} from "forge-std/Test.sol";
 
 import {Clones} from "@openzeppelin/proxy/Clones.sol";
+import {Initializable} from "@openzeppelin/proxy/utils/Initializable.sol";
 
 import {LlamaTokenVotingTestSetup} from "test/token-voting/LlamaTokenVotingTestSetup.sol";
 import {LlamaCoreSigUtils} from "test/utils/LlamaCoreSigUtils.sol";
@@ -115,6 +116,24 @@ contract LlamaTokenGovernorCastingTest is LlamaTokenVotingTestSetup, LlamaCoreSi
 
     tokenAdapter = ILlamaTokenAdapter(Clones.cloneDeterministic(address(llamaTokenAdapterTimestampLogic), salt));
     tokenAdapter.initialize(adapterConfig);
+  }
+}
+
+contract Constructor is LlamaTokenGovernorCastingTest {
+  function test_RevertIf_InitializeImplementationContract() public {
+    vm.expectRevert(Initializable.InvalidInitialization.selector);
+    llamaTokenGovernorLogic.initialize(
+      CORE, ILlamaTokenAdapter(address(0)), ERC721_CREATION_THRESHOLD, defaultCasterConfig
+    );
+  }
+}
+
+contract Initialize is LlamaTokenGovernorCastingTest {
+  function test_RevertIf_InitializeAlreadyInitializedContract() public {
+    vm.expectRevert(Initializable.InvalidInitialization.selector);
+    llamaERC721TokenGovernor.initialize(
+      CORE, ILlamaTokenAdapter(address(0)), ERC721_CREATION_THRESHOLD, defaultCasterConfig
+    );
   }
 }
 

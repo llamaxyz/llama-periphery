@@ -3,10 +3,13 @@ pragma solidity ^0.8.23;
 
 import {Test, console2} from "forge-std/Test.sol";
 
+import {Initializable} from "@openzeppelin/proxy/utils/Initializable.sol";
+
 import {LlamaTokenVotingTestSetup} from "test/token-voting/LlamaTokenVotingTestSetup.sol";
 import {LlamaCoreSigUtils} from "test/utils/LlamaCoreSigUtils.sol";
 
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
+import {ILlamaTokenAdapter} from "src/token-voting/interfaces/ILlamaTokenAdapter.sol";
 import {ActionState} from "src/lib/Enums.sol";
 import {Action, ActionInfo} from "src/lib/Structs.sol";
 import {LlamaTokenGovernor} from "src/token-voting/LlamaTokenGovernor.sol";
@@ -43,44 +46,23 @@ contract LlamaTokenGovernorActionCreation is LlamaTokenVotingTestSetup, LlamaCor
   }
 }
 
-// contract Constructor is LlamaTokenGovernorActionCreation {
-//   function test_RevertIf_InvalidLlamaCore() public {
-//     // With invalid LlamaCore instance, LlamaTokenGovernor.InvalidLlamaCoreAddress is unreachable
-//     vm.expectRevert();
-//     new LlamaTokenGovernor(erc20VotesToken, ILlamaCore(makeAddr("invalid-llama-core")), uint256(0));
-//   }
+contract Constructor is LlamaTokenGovernorActionCreation {
+  function test_RevertIf_InitializeImplementationContract() public {
+    vm.expectRevert(Initializable.InvalidInitialization.selector);
+    llamaTokenGovernorLogic.initialize(
+      CORE, ILlamaTokenAdapter(address(0)), ERC20_CREATION_THRESHOLD, defaultCasterConfig
+    );
+  }
+}
 
-//   function test_RevertIf_InvalidTokenAddress() public {
-//     vm.expectRevert(); // will EvmError: Revert vecause totalSupply fn does not exist
-//     new LlamaTokenGovernor(ERC20Votes(makeAddr("invalid-erc20VotesToken")), CORE, uint256(0));
-//   }
-
-//   function test_RevertIf_CreationThresholdExceedsTotalSupply() public {
-//     erc20VotesToken.mint(tokenHolder1, 1_000_000e18); // we use erc20VotesToken because IVotesToken is an interface
-//     // without the `mint` function
-
-//     vm.warp(block.timestamp + 1);
-
-//     vm.expectRevert(LlamaTokenGovernor.InvalidCreationThreshold.selector);
-//     new LlamaTokenGovernor(erc20VotesToken, CORE, 17_000_000_000_000_000_000_000_000);
-//   }
-
-//   function test_ProperlySetsConstructorArguments() public {
-//     uint256 threshold = 500_000e18;
-//     erc20VotesToken.mint(tokenHolder1, 1_000_000e18); // we use erc20VotesToken because IVotesToken is an interface
-//     // without the `mint` function
-
-//     vm.warp(block.timestamp + 1);
-
-//     LlamaTokenGovernor llamaERC20TokenGovernor = new
-// LlamaTokenGovernor(erc20VotesToken,
-// CORE,
-// threshold);
-//     assertEq(address(llamaERC20TokenGovernor.TOKEN()), address(erc20VotesToken));
-//     assertEq(address(llamaERC20TokenGovernor.LLAMA_CORE()), address(CORE));
-//     assertEq(llamaERC20TokenGovernor.creationThreshold(), threshold);
-//   }
-// }
+contract Initialize is LlamaTokenGovernorActionCreation {
+  function test_RevertIf_InitializeAlreadyInitializedContract() public {
+    vm.expectRevert(Initializable.InvalidInitialization.selector);
+    llamaERC20TokenGovernor.initialize(
+      CORE, ILlamaTokenAdapter(address(0)), ERC20_CREATION_THRESHOLD, defaultCasterConfig
+    );
+  }
+}
 
 contract CreateAction is LlamaTokenGovernorActionCreation {
   bytes data = abi.encodeCall(mockProtocol.pause, (true));
