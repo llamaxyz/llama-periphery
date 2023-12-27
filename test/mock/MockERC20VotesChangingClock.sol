@@ -8,7 +8,7 @@ import {Time} from "lib/openzeppelin-contracts/contracts/utils/types/Time.sol";
 import {Nonces} from "lib/openzeppelin-contracts/contracts/utils/Nonces.sol";
 
 contract MockERC20VotesChangingClock is ERC20, ERC20Permit, ERC20Votes {
-  bool useBlockNumber;
+  bool public useBlockNumber;
 
   constructor() ERC20("MyToken", "MTK") ERC20Permit("MyToken") {}
 
@@ -26,8 +26,8 @@ contract MockERC20VotesChangingClock is ERC20, ERC20Permit, ERC20Votes {
     return useBlockNumber ? Time.blockNumber() : Time.timestamp();
   }
 
-  function setUseBlockNumber(bool useBlockNumber) public {
-    useBlockNumber = useBlockNumber;
+  function setUseBlockNumber(bool _useBlockNumber) public {
+    useBlockNumber = _useBlockNumber;
   }
 
   // The following functions are overrides required by Solidity.
