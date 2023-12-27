@@ -90,7 +90,7 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     ActionInfo memory actionInfo = _setPermissionCreateApproveAndQueueAction(data);
 
     bytes32 salt = keccak256(abi.encodePacked(address(EXECUTOR), address(CORE), adapterConfig, uint256(0)));
-  
+
     vm.expectRevert(); //LlamaTokenAdapterVotesTimestamp.ERC6372InconsistentClock.selector
     CORE.executeAction(actionInfo);
 
