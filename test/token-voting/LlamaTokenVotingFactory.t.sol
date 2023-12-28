@@ -6,7 +6,6 @@ import {Test, console2} from "forge-std/Test.sol";
 import {Clones} from "@openzeppelin/proxy/Clones.sol";
 
 import {MockERC20VotesChangingClock} from "test/mock/MockERC20VotesChangingClock.sol";
-import {MockERC721VotesChangingClock} from "test/mock/MockERC721VotesChangingClock.sol";
 import {LlamaTokenVotingTestSetup} from "test/token-voting/LlamaTokenVotingTestSetup.sol";
 
 import {ActionInfo, LlamaTokenVotingConfig} from "src/lib/Structs.sol";
