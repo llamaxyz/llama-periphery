@@ -88,14 +88,43 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     bytes memory data = abi.encodeWithSelector(LlamaTokenVotingFactory.deploy.selector, config);
     ActionInfo memory actionInfo = _setPermissionCreateApproveAndQueueAction(data);
 
-    bytes32 salt = keccak256(abi.encodePacked(address(EXECUTOR), address(CORE), adapterConfig, uint256(0)));
-
     vm.expectRevert(); //LlamaTokenAdapterVotesTimestamp.ERC6372InconsistentClock.selector
     CORE.executeAction(actionInfo);
 
     token.setUseBlockNumber(false);
 
     // will succeed now that clock is timestamp
+    CORE.executeAction(actionInfo);
+  }
+
+
+  function test_RevertIf_TokenAdapterLogicIsAddressZero() public {
+    bytes memory adapterConfig = abi.encode(LlamaTokenAdapterVotesTimestamp.Config(address(0)));
+    LlamaTokenVotingConfig memory config = LlamaTokenVotingConfig(
+      CORE, llamaTokenAdapterTimestampLogic, adapterConfig, 0, ERC20_CREATION_THRESHOLD, defaultCasterConfig
+    );
+
+    // Set up action to call `deploy` with the ERC20 token.
+    bytes memory data = abi.encodeWithSelector(LlamaTokenVotingFactory.deploy.selector, config);
+    ActionInfo memory actionInfo = _setPermissionCreateApproveAndQueueAction(data);
+
+    // Execute call to `deploy`.
+    vm.expectRevert(); //LlamaTokenVotingFactory.InvalidTokenAdapterConfig.selector
+    CORE.executeAction(actionInfo);
+  }
+
+  function test_RevertIf_ClocksReturnZero() public {
+    bytes memory adapterConfig = abi.encode(LlamaTokenAdapterVotesTimestamp.Config(address(erc20VotesToken)));
+    LlamaTokenVotingConfig memory config = LlamaTokenVotingConfig(
+      CORE, ILlamaTokenAdapter(address(0)), adapterConfig, 0, ERC20_CREATION_THRESHOLD, defaultCasterConfig
+    );
+
+    // Set up action to call `deploy` with the ERC20 token.
+    bytes memory data = abi.encodeWithSelector(LlamaTokenVotingFactory.deploy.selector, config);
+    ActionInfo memory actionInfo = _setPermissionCreateApproveAndQueueAction(data);
+
+    // Execute call to `deploy`.
+    vm.expectRevert(); //LlamaTokenVotingFactory.InvalidTokenAdapterConfig.selector
     CORE.executeAction(actionInfo);
   }
 
