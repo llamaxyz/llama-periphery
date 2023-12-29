@@ -97,7 +97,6 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     CORE.executeAction(actionInfo);
   }
 
-
   function test_RevertIf_TokenAdapterLogicIsAddressZero() public {
     bytes memory adapterConfig = abi.encode(LlamaTokenAdapterVotesTimestamp.Config(address(0)));
     LlamaTokenVotingConfig memory config = LlamaTokenVotingConfig(

@@ -1147,7 +1147,7 @@ contract GetQuorums is LlamaTokenGovernorCasting {
     vm.prank(address(EXECUTOR));
     llamaERC20TokenGovernor.setQuorumPct(0, 0);
     vm.warp(block.timestamp + 1);
-    for(uint i = 1; i < iterations; i++) {
+    for (uint256 i = 1; i < iterations; i++) {
       vm.prank(address(EXECUTOR));
       llamaERC20TokenGovernor.setQuorumPct(uint16(i), uint16(i));
       vm.warp(block.timestamp + 1);
@@ -1155,13 +1155,13 @@ contract GetQuorums is LlamaTokenGovernorCasting {
       uint16 vetoQuorum;
       (voteQuorum, vetoQuorum) = llamaERC20TokenGovernor.getPastQuorum(block.timestamp - 1);
       assertEq(voteQuorum, uint16(i - 1));
-      assertEq(vetoQuorum,  uint16(i - 1));
+      assertEq(vetoQuorum, uint16(i - 1));
     }
   }
 
   function test_GetQuorumCheckpoints(uint8 iterations) public {
     vm.warp(block.timestamp + 1);
-    for(uint i = 0; i < iterations; i++) {
+    for (uint256 i = 0; i < iterations; i++) {
       vm.prank(address(EXECUTOR));
       llamaERC20TokenGovernor.setQuorumPct(uint16(i + 1), uint16(i + 1));
       vm.warp(block.timestamp + 1);
@@ -1186,7 +1186,7 @@ contract GetQuorums is LlamaTokenGovernorCasting {
     vm.assume(start < end);
     vm.assume(end <= uint256(iterations) + 1);
     vm.warp(block.timestamp + 1);
-    for(uint i = 0; i < iterations; i++) {
+    for (uint256 i = 0; i < iterations; i++) {
       vm.prank(address(EXECUTOR));
       llamaERC20TokenGovernor.setQuorumPct(uint16(i + 1), uint16(i + 1));
       vm.warp(block.timestamp + 1);
@@ -1202,7 +1202,7 @@ contract GetPeriodPcts is LlamaTokenGovernorCasting {
     vm.prank(address(EXECUTOR));
     llamaERC20TokenGovernor.setPeriodPct(0, 0);
     vm.warp(block.timestamp + 1);
-    for(uint i = 1; i < iterations; i++) {
+    for (uint256 i = 1; i < iterations; i++) {
       vm.prank(address(EXECUTOR));
       llamaERC20TokenGovernor.setPeriodPct(uint16(i), uint16(i));
       vm.warp(block.timestamp + 1);
@@ -1210,13 +1210,13 @@ contract GetPeriodPcts is LlamaTokenGovernorCasting {
       uint16 queuingPeriodPct;
       (approvalPeriodPct, queuingPeriodPct) = llamaERC20TokenGovernor.getPastPeriodPcts(block.timestamp - 1);
       assertEq(approvalPeriodPct, uint16(i));
-      assertEq(queuingPeriodPct,  uint16(i));
+      assertEq(queuingPeriodPct, uint16(i));
     }
   }
 
   function test_GetPeriodPctCheckpoints(uint8 iterations) public {
     vm.warp(block.timestamp + 1);
-    for(uint i = 0; i < iterations; i++) {
+    for (uint256 i = 0; i < iterations; i++) {
       vm.prank(address(EXECUTOR));
       llamaERC20TokenGovernor.setPeriodPct(uint16(i + 1), uint16(i + 1));
       vm.warp(block.timestamp + 1);
@@ -1241,7 +1241,7 @@ contract GetPeriodPcts is LlamaTokenGovernorCasting {
     vm.assume(start < end);
     vm.assume(end <= uint256(iterations));
     vm.warp(block.timestamp + 1);
-    for(uint i = 0; i < iterations; i++) {
+    for (uint256 i = 0; i < iterations; i++) {
       vm.prank(address(EXECUTOR));
       llamaERC20TokenGovernor.setPeriodPct(uint16(i + 1), uint16(i + 1));
       vm.warp(block.timestamp + 1);
