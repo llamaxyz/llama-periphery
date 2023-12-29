@@ -1170,8 +1170,8 @@ contract GetQuorums is LlamaTokenGovernorCasting {
       uint16 voteQuorum;
       uint16 vetoQuorum;
       (voteQuorum, vetoQuorum) = llamaERC20TokenGovernor.getPastQuorum(block.timestamp - 1);
-        assertEq(voteQuorum, uint16(i));
-        assertEq(vetoQuorum, uint16(i));
+      assertEq(voteQuorum, uint16(i));
+      assertEq(vetoQuorum, uint16(i));
     }
   }
 
