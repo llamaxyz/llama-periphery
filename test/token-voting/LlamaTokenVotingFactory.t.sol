@@ -176,12 +176,16 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     CORE.executeAction(actionInfo);
 
     assertEq(address(llamaERC20TokenAdapter.token()), address(erc20VotesToken));
+    assertEq(LlamaTokenAdapterVotesTimestamp(address(llamaERC20TokenAdapter)).CLOCK_MODE(), "mode=timestamp");
     assertEq(address(llamaERC20TokenGovernor.llamaCore()), address(CORE));
-    (uint16 voteQuorumPct, uint16 vetoQuorumPct) = llamaERC20TokenGovernor.getQuorum();
-    assertEq(ERC20_VOTE_QUORUM_PCT, voteQuorumPct);
-    assertEq(ERC20_VETO_QUORUM_PCT, vetoQuorumPct);
+    assertEq(address(llamaERC20TokenGovernor.tokenAdapter()), address(llamaERC20TokenAdapter));
     assertEq(llamaERC20TokenGovernor.creationThreshold(), ERC20_CREATION_THRESHOLD);
-    assertEq(address(llamaERC20TokenAdapter.token()), address(erc20VotesToken));
+    (uint16 voteQuorumPct, uint16 vetoQuorumPct) = llamaERC20TokenGovernor.getQuorum();
+    assertEq(voteQuorumPct, ERC20_VOTE_QUORUM_PCT);
+    assertEq(vetoQuorumPct, ERC20_VETO_QUORUM_PCT);
+    (uint16 delayPeriodPct, uint16 castingPeriodPct) = llamaERC20TokenGovernor.getPeriodPcts();
+    assertEq(delayPeriodPct, uint16(ONE_QUARTER_IN_BPS));
+    assertEq(castingPeriodPct, uint16(TWO_QUARTERS_IN_BPS));
   }
 
   function test_CanDeployERC721TokenVotingModule() public {
@@ -233,12 +237,16 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     CORE.executeAction(actionInfo);
 
     assertEq(address(llamaERC721TokenAdapter.token()), address(erc721VotesToken));
+    assertEq(LlamaTokenAdapterVotesTimestamp(address(llamaERC721TokenAdapter)).CLOCK_MODE(), "mode=timestamp");
     assertEq(address(llamaERC721TokenGovernor.llamaCore()), address(CORE));
-    (uint16 voteQuorumPct, uint16 vetoQuorumPct) = llamaERC721TokenGovernor.getQuorum();
-    assertEq(ERC721_VOTE_QUORUM_PCT, voteQuorumPct);
-    assertEq(ERC721_VETO_QUORUM_PCT, vetoQuorumPct);
+    assertEq(address(llamaERC721TokenGovernor.tokenAdapter()), address(llamaERC721TokenAdapter));
     assertEq(llamaERC721TokenGovernor.creationThreshold(), ERC721_CREATION_THRESHOLD);
-    assertEq(address(llamaERC721TokenAdapter.token()), address(erc721VotesToken));
+    (uint16 voteQuorumPct, uint16 vetoQuorumPct) = llamaERC721TokenGovernor.getQuorum();
+    assertEq(voteQuorumPct, ERC721_VOTE_QUORUM_PCT);
+    assertEq(vetoQuorumPct, ERC721_VETO_QUORUM_PCT);
+    (uint16 delayPeriodPct, uint16 castingPeriodPct) = llamaERC721TokenGovernor.getPeriodPcts();
+    assertEq(delayPeriodPct, uint16(ONE_QUARTER_IN_BPS));
+    assertEq(castingPeriodPct, uint16(TWO_QUARTERS_IN_BPS));
   }
 
   function test_CanBeDeployedByAnyone(address randomCaller) public {
@@ -289,12 +297,16 @@ contract DeployTokenVotingModule is LlamaTokenVotingFactoryTest {
     tokenVotingFactory.deploy(config);
 
     assertEq(address(llamaERC20TokenAdapter.token()), address(erc20VotesToken));
+    assertEq(LlamaTokenAdapterVotesTimestamp(address(llamaERC20TokenAdapter)).CLOCK_MODE(), "mode=timestamp");
     assertEq(address(llamaERC20TokenGovernor.llamaCore()), address(CORE));
-    (uint16 voteQuorumPct, uint16 vetoQuorumPct) = llamaERC20TokenGovernor.getQuorum();
-    assertEq(ERC20_VOTE_QUORUM_PCT, voteQuorumPct);
-    assertEq(ERC20_VETO_QUORUM_PCT, vetoQuorumPct);
+    assertEq(address(llamaERC20TokenGovernor.tokenAdapter()), address(llamaERC20TokenAdapter));
     assertEq(llamaERC20TokenGovernor.creationThreshold(), ERC20_CREATION_THRESHOLD);
-    assertEq(address(llamaERC20TokenAdapter.token()), address(erc20VotesToken));
+    (uint16 voteQuorumPct, uint16 vetoQuorumPct) = llamaERC20TokenGovernor.getQuorum();
+    assertEq(voteQuorumPct, ERC20_VOTE_QUORUM_PCT);
+    assertEq(vetoQuorumPct, ERC20_VETO_QUORUM_PCT);
+    (uint16 delayPeriodPct, uint16 castingPeriodPct) = llamaERC20TokenGovernor.getPeriodPcts();
+    assertEq(delayPeriodPct, uint16(ONE_QUARTER_IN_BPS));
+    assertEq(castingPeriodPct, uint16(TWO_QUARTERS_IN_BPS));
   }
 
   function test_CanBeDeployedMoreThanOnceBySameDeployer() public {

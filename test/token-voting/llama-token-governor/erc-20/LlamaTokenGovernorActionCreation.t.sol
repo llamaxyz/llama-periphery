@@ -3,10 +3,13 @@ pragma solidity ^0.8.23;
 
 import {Test, console2} from "forge-std/Test.sol";
 
+import {Initializable} from "@openzeppelin/proxy/utils/Initializable.sol";
+
 import {LlamaTokenVotingTestSetup} from "test/token-voting/LlamaTokenVotingTestSetup.sol";
 import {LlamaCoreSigUtils} from "test/utils/LlamaCoreSigUtils.sol";
 
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
+import {ILlamaTokenAdapter} from "src/token-voting/interfaces/ILlamaTokenAdapter.sol";
 import {ActionState} from "src/lib/Enums.sol";
 import {Action, ActionInfo} from "src/lib/Structs.sol";
 import {LlamaTokenGovernor} from "src/token-voting/LlamaTokenGovernor.sol";
@@ -39,6 +42,24 @@ contract LlamaTokenGovernorActionCreation is LlamaTokenVotingTestSetup, LlamaCor
         chainId: block.chainid,
         verifyingContract: address(llamaERC20TokenGovernor)
       })
+    );
+  }
+}
+
+contract Constructor is LlamaTokenGovernorActionCreation {
+  function test_RevertIf_InitializeImplementationContract() public {
+    vm.expectRevert(Initializable.InvalidInitialization.selector);
+    llamaTokenGovernorLogic.initialize(
+      CORE, ILlamaTokenAdapter(address(0)), ERC20_CREATION_THRESHOLD, defaultCasterConfig
+    );
+  }
+}
+
+contract Initialize is LlamaTokenGovernorActionCreation {
+  function test_RevertIf_InitializeAlreadyInitializedContract() public {
+    vm.expectRevert(Initializable.InvalidInitialization.selector);
+    llamaERC20TokenGovernor.initialize(
+      CORE, ILlamaTokenAdapter(address(0)), ERC20_CREATION_THRESHOLD, defaultCasterConfig
     );
   }
 }
