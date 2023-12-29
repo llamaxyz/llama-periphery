@@ -1163,9 +1163,6 @@ contract CastData is LlamaTokenGovernorCasting {
 contract GetQuorums is LlamaTokenGovernorCasting {
   function test_GetPastQuorum(uint8 iterations) public {
     vm.assume(iterations > 0);
-    vm.prank(address(EXECUTOR));
-    llamaERC20TokenGovernor.setQuorumPct(0, 0);
-    vm.warp(block.timestamp + 1);
     for (uint256 i = 1; i < iterations; i++) {
       vm.prank(address(EXECUTOR));
       llamaERC20TokenGovernor.setQuorumPct(uint16(i), uint16(i));
@@ -1173,13 +1170,12 @@ contract GetQuorums is LlamaTokenGovernorCasting {
       uint16 voteQuorum;
       uint16 vetoQuorum;
       (voteQuorum, vetoQuorum) = llamaERC20TokenGovernor.getPastQuorum(block.timestamp - 1);
-      assertEq(voteQuorum, uint16(i - 1));
-      assertEq(vetoQuorum, uint16(i - 1));
+        assertEq(voteQuorum, uint16(i));
+        assertEq(vetoQuorum, uint16(i));
     }
   }
 
   function test_GetQuorumCheckpoints(uint8 iterations) public {
-    vm.warp(block.timestamp + 1);
     for (uint256 i = 0; i < iterations; i++) {
       vm.prank(address(EXECUTOR));
       llamaERC20TokenGovernor.setQuorumPct(uint16(i + 1), uint16(i + 1));
@@ -1204,7 +1200,6 @@ contract GetQuorums is LlamaTokenGovernorCasting {
   function test_getQuorumCheckpointsWithIndexes(uint8 iterations, uint256 start, uint256 end) public {
     vm.assume(start < end);
     vm.assume(end <= uint256(iterations) + 1);
-    vm.warp(block.timestamp + 1);
     for (uint256 i = 0; i < iterations; i++) {
       vm.prank(address(EXECUTOR));
       llamaERC20TokenGovernor.setQuorumPct(uint16(i + 1), uint16(i + 1));
@@ -1234,7 +1229,6 @@ contract GetPeriodPcts is LlamaTokenGovernorCasting {
   }
 
   function test_GetPeriodPctCheckpoints(uint8 iterations) public {
-    vm.warp(block.timestamp + 1);
     for (uint256 i = 0; i < iterations; i++) {
       vm.prank(address(EXECUTOR));
       llamaERC20TokenGovernor.setPeriodPct(uint16(i + 1), uint16(i + 1));
@@ -1259,7 +1253,6 @@ contract GetPeriodPcts is LlamaTokenGovernorCasting {
   function test_getPeriodPctCheckpointsWithIndexes(uint8 iterations, uint256 start, uint256 end) public {
     vm.assume(start < end);
     vm.assume(end <= uint256(iterations));
-    vm.warp(block.timestamp + 1);
     for (uint256 i = 0; i < iterations; i++) {
       vm.prank(address(EXECUTOR));
       llamaERC20TokenGovernor.setPeriodPct(uint16(i + 1), uint16(i + 1));
