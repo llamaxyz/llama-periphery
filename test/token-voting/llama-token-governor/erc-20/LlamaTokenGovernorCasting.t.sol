@@ -1176,9 +1176,22 @@ contract GetQuorums is LlamaTokenGovernorCasting {
     llamaERC20TokenGovernor.getQuorumCheckpoints(start, end);
   }
 
-  function test_RevertIf_EndIsGTLength(uint256 start, uint256 end) public {
+  function test_RevertIf_EndIsGTLength(uint256 end) public {
     vm.assume(end > 2);
     vm.expectRevert(LlamaTokenGovernor.InvalidIndices.selector);
     llamaERC20TokenGovernor.getQuorumCheckpoints(0, end);
+  }
+
+  function test_getQuorumCheckpointsWithIndexes(uint8 iterations, uint256 start, uint256 end) public {
+    vm.assume(start < end);
+    vm.assume(end <= uint256(iterations) + 1);
+    vm.warp(block.timestamp + 1);
+    for(uint i = 0; i < iterations; i++) {
+      vm.prank(address(EXECUTOR));
+      llamaERC20TokenGovernor.setQuorumPct(uint16(i + 1), uint16(i + 1));
+      vm.warp(block.timestamp + 1);
+    }
+    QuorumCheckpoints.History memory checkpoints = llamaERC20TokenGovernor.getQuorumCheckpoints(start, end);
+    assertEq(checkpoints._checkpoints.length, end - start);
   }
 }
