@@ -15,6 +15,8 @@ import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
 import {ILlamaPolicy} from "src/interfaces/ILlamaPolicy.sol";
 import {ILlamaRelativeStrategyBase} from "src/interfaces/ILlamaRelativeStrategyBase.sol";
 import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
+import {PeriodPctCheckpoints} from "src/lib/PeriodPctCheckpoints.sol";
+import {QuorumCheckpoints} from "src/lib/QuorumCheckpoints.sol";
 import {LlamaTokenAdapterVotesTimestamp} from "src/token-voting/token-adapters/LlamaTokenAdapterVotesTimestamp.sol";
 import {ILlamaTokenAdapter} from "src/token-voting/interfaces/ILlamaTokenAdapter.sol";
 import {LlamaTokenGovernor} from "src/token-voting/LlamaTokenGovernor.sol";
@@ -1155,5 +1157,108 @@ contract CastData is LlamaTokenGovernorCasting {
     assertTrue(llamaERC20TokenGovernor.hasTokenHolderCast(actionInfo.id, tokenHolder2, false));
     assertTrue(llamaERC20TokenGovernor.hasTokenHolderCast(actionInfo.id, tokenHolder3, false));
     assertFalse(llamaERC20TokenGovernor.hasTokenHolderCast(actionInfo.id, notTokenHolder, false));
+  }
+}
+
+contract GetQuorums is LlamaTokenGovernorCasting {
+  function test_GetPastQuorum(uint8 iterations) public {
+    vm.assume(iterations > 0);
+    for (uint256 i = 1; i < iterations; i++) {
+      vm.prank(address(EXECUTOR));
+      llamaERC20TokenGovernor.setQuorumPct(uint16(i), uint16(i));
+      vm.warp(block.timestamp + 1);
+      uint16 voteQuorum;
+      uint16 vetoQuorum;
+      (voteQuorum, vetoQuorum) = llamaERC20TokenGovernor.getPastQuorum(block.timestamp - 1);
+      assertEq(voteQuorum, uint16(i));
+      assertEq(vetoQuorum, uint16(i));
+    }
+  }
+
+  function test_GetQuorumCheckpoints(uint8 iterations) public {
+    for (uint256 i = 0; i < iterations; i++) {
+      vm.prank(address(EXECUTOR));
+      llamaERC20TokenGovernor.setQuorumPct(uint16(i + 1), uint16(i + 1));
+      vm.warp(block.timestamp + 1);
+      QuorumCheckpoints.History memory checkpoints = llamaERC20TokenGovernor.getQuorumCheckpoints();
+      assertEq(checkpoints._checkpoints.length, i + 2);
+    }
+  }
+
+  function test_RevertIf_StartIsGTEnd(uint256 start, uint256 end) public {
+    vm.assume(start > end);
+    vm.expectRevert(LlamaTokenGovernor.InvalidIndices.selector);
+    llamaERC20TokenGovernor.getQuorumCheckpoints(start, end);
+  }
+
+  function test_RevertIf_EndIsGTLength(uint256 end) public {
+    vm.assume(end > 2);
+    vm.expectRevert(LlamaTokenGovernor.InvalidIndices.selector);
+    llamaERC20TokenGovernor.getQuorumCheckpoints(0, end);
+  }
+
+  function test_getQuorumCheckpointsWithIndexes(uint8 iterations, uint256 start, uint256 end) public {
+    vm.assume(start < end);
+    vm.assume(end <= uint256(iterations) + 1);
+    for (uint256 i = 0; i < iterations; i++) {
+      vm.prank(address(EXECUTOR));
+      llamaERC20TokenGovernor.setQuorumPct(uint16(i + 1), uint16(i + 1));
+      vm.warp(block.timestamp + 1);
+    }
+    QuorumCheckpoints.History memory checkpoints = llamaERC20TokenGovernor.getQuorumCheckpoints(start, end);
+    assertEq(checkpoints._checkpoints.length, end - start);
+  }
+}
+
+contract GetPeriodPcts is LlamaTokenGovernorCasting {
+  function test_GetPastPeriodPcts(uint8 iterations) public {
+    vm.assume(iterations > 0);
+    vm.prank(address(EXECUTOR));
+    llamaERC20TokenGovernor.setPeriodPct(0, 0);
+    vm.warp(block.timestamp + 1);
+    for (uint256 i = 1; i < iterations; i++) {
+      vm.prank(address(EXECUTOR));
+      llamaERC20TokenGovernor.setPeriodPct(uint16(i), uint16(i));
+      vm.warp(block.timestamp + 1);
+      uint16 approvalPeriodPct;
+      uint16 queuingPeriodPct;
+      (approvalPeriodPct, queuingPeriodPct) = llamaERC20TokenGovernor.getPastPeriodPcts(block.timestamp - 1);
+      assertEq(approvalPeriodPct, uint16(i));
+      assertEq(queuingPeriodPct, uint16(i));
+    }
+  }
+
+  function test_GetPeriodPctCheckpoints(uint8 iterations) public {
+    for (uint256 i = 0; i < iterations; i++) {
+      vm.prank(address(EXECUTOR));
+      llamaERC20TokenGovernor.setPeriodPct(uint16(i + 1), uint16(i + 1));
+      vm.warp(block.timestamp + 1);
+      PeriodPctCheckpoints.History memory checkpoints = llamaERC20TokenGovernor.getPeriodPctCheckpoints();
+      assertEq(checkpoints._checkpoints.length, i + 2);
+    }
+  }
+
+  function test_RevertIf_StartIsGTEnd(uint256 start, uint256 end) public {
+    vm.assume(start > end);
+    vm.expectRevert(LlamaTokenGovernor.InvalidIndices.selector);
+    llamaERC20TokenGovernor.getPeriodPctCheckpoints(start, end);
+  }
+
+  function test_RevertIf_EndIsGTLength(uint256 end) public {
+    vm.assume(end > 2);
+    vm.expectRevert(LlamaTokenGovernor.InvalidIndices.selector);
+    llamaERC20TokenGovernor.getPeriodPctCheckpoints(0, end);
+  }
+
+  function test_getPeriodPctCheckpointsWithIndexes(uint8 iterations, uint256 start, uint256 end) public {
+    vm.assume(start < end);
+    vm.assume(end <= uint256(iterations));
+    for (uint256 i = 0; i < iterations; i++) {
+      vm.prank(address(EXECUTOR));
+      llamaERC20TokenGovernor.setPeriodPct(uint16(i + 1), uint16(i + 1));
+      vm.warp(block.timestamp + 1);
+    }
+    PeriodPctCheckpoints.History memory checkpoints = llamaERC20TokenGovernor.getPeriodPctCheckpoints(start, end);
+    assertEq(checkpoints._checkpoints.length, end - start);
   }
 }

@@ -465,3 +465,32 @@ contract SetActionThreshold is LlamaTokenGovernorActionCreation {
     llamaERC20TokenGovernor.setActionThreshold(ERC20_CREATION_THRESHOLD);
   }
 }
+
+contract setActionThreshold is LlamaTokenGovernorActionCreation {
+  function test_RevertIf_CreationThresholdExceedsTotalSupply(uint256 threshold) public {
+    vm.assume(threshold > erc20VotesToken.getPastTotalSupply(block.timestamp - 1));
+
+    vm.expectRevert(LlamaTokenGovernor.InvalidCreationThreshold.selector);
+    vm.prank(address(EXECUTOR));
+    llamaERC20TokenGovernor.setActionThreshold(threshold);
+  }
+
+  function test_RevertIf_CalledByNotLlamaExecutor(address notLlamaExecutor) public {
+    vm.assume(notLlamaExecutor != address(EXECUTOR));
+
+    vm.expectRevert(LlamaTokenGovernor.OnlyLlamaExecutor.selector);
+    vm.prank(notLlamaExecutor);
+    llamaERC20TokenGovernor.setActionThreshold(ERC20_CREATION_THRESHOLD);
+  }
+
+  function test_ProperlySetsCreationThreshold() public {
+    assertEq(llamaERC20TokenGovernor.creationThreshold(), ERC20_CREATION_THRESHOLD);
+
+    vm.expectEmit();
+    emit ActionThresholdSet(ERC20_CREATION_THRESHOLD - 1);
+    vm.prank(address(EXECUTOR));
+    llamaERC20TokenGovernor.setActionThreshold(ERC20_CREATION_THRESHOLD - 1);
+
+    assertEq(llamaERC20TokenGovernor.creationThreshold(), ERC20_CREATION_THRESHOLD - 1);
+  }
+}
