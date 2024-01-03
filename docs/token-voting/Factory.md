@@ -19,10 +19,10 @@ The CasterConfig struct is structured like this:
 
 ```solidity
   struct CasterConfig {
-    uint16 voteQuorumPct; // The minimum % of total supply that      _   must be casted as `For` votes.
-    uint16 vetoQuorumPct; // The minimum % of total supply that       _   must be casted as `For` vetoes.
-    uint16 delayPeriodPct; // The % of the total approval or        _   queuing period used as a delay.
-    uint16 castingPeriodPct; // The % of the total approval or      _   queuing period used to cast votes or vetoes
+    uint16 voteQuorumPct; // Minimum % of total supply for 'For' votes.
+    uint16 vetoQuorumPct; // Minimum % of total supply for 'For' vetoes.
+    uint16 delayPeriodPct; // % of total approval/queuing period for delay.
+    uint16 castingPeriodPct; // % of total approval/queuing period for casting.
   }
 ```
 
@@ -38,7 +38,7 @@ To cast the adapter config to bytes, follow this example:
 
 ```bytes memory adapterConfig = abi.encode(LlamaTokenAdapterVotesTimestamp.Config(tokenAddress));```
 
-The Config struct may change with future token adapter contracts, which is why we don’t reference it's type directly in the deploy function.
+The Config struct may change with future token adapter contracts, which is why we don’t reference its type directly in the deploy function.
 
 Learn more about token adapters [here](/docs/token-voting/TokenAdapters.md)
 
