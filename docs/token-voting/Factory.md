@@ -49,4 +49,4 @@ After deploying your token voting module, you will need to create a role and iss
 
 Finally, you will need to create some strategies that utilize the Caster as the approval or disapproval role so that the token holders can actually vote on certain actions.
 
-Optionally, you can issue permissions to the governor contract if you wish for policyholders to be able to create certain actions on your llama instance.
+Optionally, you can issue permissions to the governor contract if you wish for policyholders to be able to create certain actions on your Llama instance.
