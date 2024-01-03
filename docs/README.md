@@ -16,4 +16,4 @@ This repository contains supporting modules for operating Llama instances. Modul
 
 ## Modules
 
-- [Token Voting](/docs/token-voting/README.md)
+- [Token Voting](https://github.com/llamaxyz/llama-periphery/tree/main/docs/token-voting/README.md): smart contract policies that allow voting token holders to create actions enforced by delegated token thresholds or collectively approve or disapprove an action through token voting.
