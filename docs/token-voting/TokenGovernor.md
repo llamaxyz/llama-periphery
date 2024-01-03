@@ -79,6 +79,6 @@ To create an action, a user must call the `createAction` function which has the 
 
 Note that if the Governor itself does not have the permission to create the action on the instance's `LlamaCore`, `createAction` will fail.
   
-The action creation process is the same as the core Llama system, but instead of creating actions based on the user's policy and permissions the governor's validatation check is based on if they hold enough tokens.
+The action creation process is the same as the core Llama system, but instead of creating actions based on the user's policy and permissions the Governor's validation check is based on if they hold enough tokens.
 
 If you are not familiar with the canonical Llama action creation process, our the main [Llama docs](https://github.com/llamaxyz/llama/tree/main/docs) will help.
