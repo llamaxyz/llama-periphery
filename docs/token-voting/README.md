@@ -2,7 +2,7 @@
 
 The Llama Token Voting Module allows distributed communities of ERC20 or ERC721 token holders to interact with a Llama instance.
 
-The UX of token voting through llama is nearly identical to traditional token voting by design to make it as intuitive for users to participate.
+The UX of token voting through Llama is nearly identical to traditional token voting by design to make it as intuitive for users to participate.
 
 There are two main components to the token voting module:
 
