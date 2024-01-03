@@ -1,6 +1,6 @@
 # Llama Token Governor
 
-The token governor is the contract that enables token holders to cast votes and create actions.
+The Token Governor is the contract that enables token holders to cast votes and create actions.
 
 Llama Token Voting works by issuing a Llama policy to the `LlamaTokenGovernor` contract, which can hold roles and policies that enable the contract to cast approvals/disapprovals and create actions. The governor contract exposes this policyholder functionality via public functions to token holders.
 
