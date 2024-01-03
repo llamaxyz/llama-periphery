@@ -14,7 +14,7 @@ Before voting begins, there is a delay period. The delay period allows token hol
 
 ### Casting Votes
 
-Token holders can cast their votes during the voting period on actions created within the Llama governance system if the governor holds the approval or force approval role for the action's strategy. The process of casting a vote involves indicating support or opposition to a particular action. The contract provides the `castVote` function, which requires the following parameters:
+Token holders can cast their votes during the voting period on actions created within the Llama governance system if the Governor holds the approval or force approval role for the action's strategy. The process of casting a vote involves indicating support or opposition to a particular action. The contract provides the `castVote` function, which requires the following parameters:
 
 ```solidity
     uint8 role,
