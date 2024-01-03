@@ -2,7 +2,7 @@
 
 The token governor is the contract that enables token holders to cast votes and create actions.
 
-Llama Token Voting works by issuing a Llam policy to the `LlamaTokenGovernor` contract, which can hold roles and policies that enable the contract to cast approvals/disapprovals and create actions. The governor contract exposes this policyholder functionality via public functions to token holders.
+Llama Token Voting works by issuing a Llama policy to the `LlamaTokenGovernor` contract, which can hold roles and policies that enable the contract to cast approvals/disapprovals and create actions. The governor contract exposes this policyholder functionality via public functions to token holders.
 
 ## Casting Votes/Vetos
 
@@ -10,11 +10,11 @@ The Llama Token Governor contract allows token holders to participate in the gov
 
 ### Delay Period
 
-Before voting begins, there is a delay period. The delay period allows token holders to delegate before the end of the delay period, and generally allows users to move tokens around or obtain tokens before a vote they want to participate in. After the delay period, the voting period begins automatically and tokenholders can begin to cast votes. Tokens obtained or delegated after the delay period has ended are not eligible to cast. If a token holder had tokens delegated at the end of the delay period and transfers them afterwards, they are still able to cast becuase these values are checkpointed.
+Before voting begins, there is a delay period. The delay period allows token holders to delegate before the end of the delay period, and generally allows users to move tokens around or obtain tokens before a vote they want to participate in. After the delay period, the voting period begins automatically and tokenholders can begin to cast votes. Tokens obtained or delegated after the delay period has ended are not eligible to cast. If a token holder had tokens delegated at the end of the delay period and transfers them afterwards, they are still able to cast because these values are checkpointed.
 
 ### Casting Votes
 
-Token holders can cast their votes during the voting period on actions created within the Llama governance system if the governor holds the approval or force approval role for the action's strategy. The process of casting a vote involves indicating support or opposition to a particular action. The contract provides the castVote function, which requires the following parameters:
+Token holders can cast their votes during the voting period on actions created within the Llama governance system if the governor holds the approval or force approval role for the action's strategy. The process of casting a vote involves indicating support or opposition to a particular action. The contract provides the `castVote` function, which requires the following parameters:
 
 ```solidity
     uint8 role,
@@ -37,7 +37,7 @@ The function returns the weight of the cast, representing the influence of the t
 
 In addition to casting votes, token holders also have the ability to cast vetoes.
 
-The castVeto function is similar to castVote and requires the same parameters. The parameters have the same meaning as in the castVote function. The support parameter, in this context, indicates the token holder's stance on vetoing the action.
+The `castVeto` function is similar to castVote and requires the same parameters. The parameters have the same meaning as in the castVote function. The support parameter, in this context, indicates the token holder's stance on vetoing the action.
 
 ### Reaching Quorum and Approval
 
@@ -59,7 +59,7 @@ Token holders of a given governance token can create actions on the llama instan
 
 The `creationThreshold` is the number of tokens required to create an action. It is variable and therefore it can be updated.
 
-To create an action, a user must call the createAction function which has the following fields:
+To create an action, a user must call the `createAction` function which has the following fields:
 
 ```solidity
     uint8 role,
