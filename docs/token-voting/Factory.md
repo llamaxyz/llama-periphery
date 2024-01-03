@@ -1,6 +1,6 @@
 # Llama Token Voting Factory
 
-The LlamaTokenVotingFactory contract is a key component in the Llama governance ecosystem, enabling the deployment of token voting modules. This factory contract streamlines the process of setting up a new LlamaTokenGovernor, which is essential for enabeling communities of token holders to participate in governance through Llama.
+The LlamaTokenVotingFactory contract is a key component in the Llama governance system, enabling the deployment of token voting modules. This factory contract streamlines the process of setting up a new LlamaTokenGovernor, which is essential for token holders to participate in governance through Llama.
 
 ## Deployment
 
