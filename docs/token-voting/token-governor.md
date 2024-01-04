@@ -2,7 +2,20 @@
 
 The Token Governor is the contract that enables token holders to cast votes and create actions.
 
-Llama Token Voting works by issuing a Llama policy to the `LlamaTokenGovernor` contract, which can hold roles and policies that enable the contract to cast approvals/disapprovals and create actions. The Governor contract exposes this policyholder functionality via public functions to token holders.
+Llama Token Voting works by issuing a Llama policy to the `LlamaTokenGovernor` contract, which can hold roles and permissions that enable the contract to cast approvals/disapprovals and create actions. The Governor contract exposes this policyholder functionality via public functions to token holders.
+
+## Voting Periods
+
+There are three distinct periods during a voting cycle:
+  - The delay period
+  - The voting/vetoing period
+  - The submission period
+
+The token voting process begins with a delay period. This period is calculated by multiplying the `delayPeriodPct` by the action's approval or disapproval period. The purpose of the delay period is to provide token holders a window to delegate their tokens before voting balances are crystallized for the duration of the token vote.
+
+The voting period is when token holders vote/veto a pending action. It is calculated as the product of the `votingPeriodPct` and the action's approval or disapproval period. It automatically begins at the end of the delay period.
+
+Finally, the submission period is when the result is submitted to the instance's `LlamaCore` contract if consensus is reached. It is calculated by subtract the `delayPeriodPct` and `votingPeriodPct` from `ONE_HUNDRED_IN_BPS`. It automatically begins at the end of the voting period.
 
 ## Casting Votes/Vetos
 

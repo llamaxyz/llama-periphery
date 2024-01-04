@@ -1,11 +1,9 @@
 # Llama Token Voting
 
-The Llama Token Voting Module allows distributed communities of ERC20 or ERC721 token holders to interact with a Llama instance.
+Token voting modules are extensions to Llama instances. They allow token holders to create actions and collectively cast approvals or disapprovals on Llama actions. The LlamaTokenGovernor contract follows establishing token voting framework best practices and is designed to integrate directly with instances.
 
-The UX of token voting through Llama is nearly identical to traditional token voting by design to make it as intuitive for users to participate.
+The token voting module consists of two components:
 
-There are two main components to the token voting module:
+- [Token Governor](/docs/token-voting/TokenGovernor.md)
 
-- [Token Governor](/docs/token-voting/TokenGovernor.md) - Allows token holders to cast votes and create actions.
-
-- [Token Voting Factory](/docs/token-voting/Factory.md) - Allows Llama instances to deploy their own token voting module.
+- [Token Voting Factory](/docs/token-voting/Factory.md)
