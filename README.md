@@ -74,7 +74,16 @@ Run the following command to generate smart contract reference documentation fro
 ```sh
 $ forge doc -o reference/ -b -s
 ```
-## Bug bounty program
+
+## Security
+
+### Audit
+
+We received an audit from Spearbit. You can find the link to the report below:
+
+- [Llama Token Governor Spearbit Audit](https://github.com/llamaxyz/llama/blob/main/audits/Llama-Token-Governor-Spearbit-Audit.pdf)
+
+### Bug bounty program
 
 This repository is subject to the Llama bug bounty program. Details can be found [here](https://github.com/llamaxyz/llama/blob/main/README.md#bug-bounty-program).
 
