@@ -1,6 +1,6 @@
 # Llama Token Governor
 
-The Token Governor is the contract that enables token holders to cast votes and create actions.
+The Token Governor is the contract that enables token holders to create actions and cast votes and vetoes.
 
 Llama Token Voting works by issuing a Llama policy to the `LlamaTokenGovernor` contract, which can hold roles and permissions that enable the contract to cast approvals/disapprovals and create actions. The Governor contract exposes this policyholder functionality via public functions to token holders.
 
@@ -54,9 +54,9 @@ The `castVeto` function is similar to castVote and requires the same parameters.
 
 ### Reaching Quorum and Approval
 
-Quorum is calculated purely on the amount of For votes. Abstain votes do not count towards the quorum.
+Quorum is calculated purely on the amount of `For` votes. `Abstain` votes do not count towards the quorum.
 
-Approval is reached when the quorum is met, and the For votes surpass the Against votes.
+Approval is reached when the quorum is met, and the For votes surpass the `Against` votes.
 
 ### Submitting Results
 
@@ -64,7 +64,7 @@ Once the voting period is over, the result can be submitted.
 
 If the action has not passed, no action needs to be taken.
 
-If the action has passed, anyone now can call the `submitApproval` or `submitDisapproval` function depending on if the action is being voted or vetod. The submit functions must be called before the end of the submission period, otherwise it expires.
+If the action has passed, anyone now can call the `submitApproval` or `submitDisapproval` function depending on if the action is being voted or vetoed. The submit functions must be called before the end of the submission period, otherwise it expires.
 
 ## Creating Actions
 

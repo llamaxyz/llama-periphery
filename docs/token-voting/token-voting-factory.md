@@ -1,12 +1,12 @@
 # Llama Token Voting Factory
 
-The `LlamaTokenVotingFactory` contract enables the deployment of token voting modules. This factory contract manages the process of setting up a new LlamaTokenGovernor, which is essential for token holders to participate in governance through Llama.
+The `LlamaTokenVotingFactory` contract enables the deployment of token voting modules. This factory contract deploys a new `LlamaTokenGovernor` and `LlamaTokenAdapter`. These two contracts comprise a token voting module which is how holders of a specified token can participate in Llama governance.
 
 ## Deployment
 
 To Deploy a `LlamaTokenVotingFactory` through the llama token voting module factory, a `LlamaTokenVotingConfig` struct is passed to the deploy method on the factory contract. 
 
-At deploy time, you have to pass in a token adapter logic contract and config.
+At deploy time, a token adapter logic contract and config are passed to the factory's deploy function.
 
 ### Token Adapters
 
