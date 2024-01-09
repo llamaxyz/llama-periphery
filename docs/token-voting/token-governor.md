@@ -24,7 +24,9 @@ The `LlamaTokenGovernor` contract allows token holders to participate in the gov
 
 ### Delay Period
 
-Before voting begins, there is a delay period. The delay period allows token holders to delegate before the end of the delay period, and allows users to move tokens around or obtain tokens before a vote they want to participate in. After the delay period, the casting period begins automatically and token holders can begin to cast votes. Tokens obtained or delegated after the delay period has ended are not eligible to cast. If a token holder had tokens delegated at the end of the delay period and transfers them afterwards, they are still able to cast because these values are checkpointed.
+The Llama Token Voting process begins with a delay period. This period is calculated by multiplying the `delayPeriodPct` by the action's approval or disapproval period. The purpose of the delay period is to provide token holders a window to delegate their tokens before voting balances are crystallized for the duration of the token vote.
+
+This checkpoint occurs at the conclusion of the delay period, so any token transfers or delegation updates after the checkpoint will have no affect on this action's token voting process.
 
 ### Casting Votes
 
