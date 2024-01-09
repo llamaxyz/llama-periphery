@@ -1,17 +1,18 @@
 # Llama Token Governor
 
-The Token Governor is the contract that enables token holders to create actions and cast votes and vetoes.
+`LlamaTokenGovernor` is the contract that enables token holders to create actions and cast votes and vetoes.
 
 Llama Token Voting works by issuing a Llama policy to the `LlamaTokenGovernor` contract, which can hold roles and permissions that enable the contract to cast approvals/disapprovals and create actions. The Governor contract exposes this policyholder functionality via public functions to token holders.
 
 ## Voting Periods
 
 There are three distinct periods during a voting cycle:
-  - The delay period
-  - The voting/vetoing period
-  - The submission period
 
-The token voting process begins with a delay period. This period is calculated by multiplying the `delayPeriodPct` by the action's approval or disapproval period. The purpose of the delay period is to provide token holders a window to delegate their tokens before voting balances are crystallized for the duration of the token vote.
+- The delay period
+- The voting/vetoing period
+- The submission period
+
+Llama Token Voting process begins with a delay period. This period is calculated by multiplying the `delayPeriodPct` by the action's approval or disapproval period. The purpose of the delay period is to provide token holders a window to delegate their tokens before voting balances are crystallized for the duration of the vote.
 
 The voting period is when token holders vote/veto a pending action. It is calculated as the product of the `votingPeriodPct` and the action's approval or disapproval period. It automatically begins at the end of the delay period.
 
@@ -19,11 +20,11 @@ Finally, the submission period is when the result is submitted to the instance's
 
 ## Casting Votes/Vetos
 
-The Llama Token Governor contract allows token holders to participate in the governance process by casting votes or vetoes on actions. This functionality is crucial for the decentralized decision-making process, ensuring that the actions reflect the collective will of the token holders.
+The `LlamaTokenGovernor` contract allows token holders to participate in the governance process by casting votes or vetoes on actions. This functionality is crucial for the decentralized decision-making process, ensuring that the actions reflect the collective will of the token holders.
 
 ### Delay Period
 
-Before voting begins, there is a delay period. The delay period allows token holders to delegate before the end of the delay period, and generally allows users to move tokens around or obtain tokens before a vote they want to participate in. After the delay period, the voting period begins automatically and tokenholders can begin to cast votes. Tokens obtained or delegated after the delay period has ended are not eligible to cast. If a token holder had tokens delegated at the end of the delay period and transfers them afterwards, they are still able to cast because these values are checkpointed.
+Before voting begins, there is a delay period. The delay period allows token holders to delegate before the end of the delay period, and generally allows users to move tokens around or obtain tokens before a vote they want to participate in. After the delay period, the voting period begins automatically and token holders can begin to cast votes. Tokens obtained or delegated after the delay period has ended are not eligible to cast. If a token holder had tokens delegated at the end of the delay period and transfers them afterwards, they are still able to cast because these values are checkpointed.
 
 ### Casting Votes
 
@@ -36,7 +37,7 @@ Token holders can cast their votes during the voting period on actions created w
     string reason
 ```
 
-- Role: This parameter specifies the role of the token holder in the governance process. It is used to determine the permission ID of the Token Governor.
+- Role: This parameter specifies the role of the token holder in the governance process. It is used to determine the permission ID of the `LlamaTokenGovernor`.
 - ActionInfo: This struct contains all the necessary information about the action on which the vote is being cast, including the action ID, creator, strategy, target, value, and data.
 - Support: Indicates the token holder's stance on the action. The values can be:
   - 0 for Against
@@ -83,7 +84,7 @@ To create an action, a user must call the `createAction` function which has the 
     string description
 ```
 
-- Role: The role that will be used to determine the permission ID of the Token Governor.
+- Role: The role that will be used to determine the permission ID of the `LlamaTokenGovernor`.
 - Strategy: The strategy contract that will determine how the action is executed.
 - Target: The contract called when the action is executed.
 - Value: The value in wei to be sent when the action is executed.
