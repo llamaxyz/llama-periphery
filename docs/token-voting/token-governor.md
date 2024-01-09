@@ -69,7 +69,7 @@ If the action has passed, anyone now can call the `submitApproval` or `submitDis
 
 ## Creating Actions
 
-Token holders of a given governance token can create actions on the Llama instance if they have a sufficient token balance.
+Token holders can create actions on the Llama instance if they have a sufficient token balance.
 
 The `creationThreshold` is the number of tokens required to create an action. It is variable and therefore it can be updated.
 
