@@ -22,6 +22,6 @@ Currently only timestamp based tokens are supported, but we can extend functiona
 
 A dedicated role and policy with the corresponding role to the `LlamaTokenVotingGovernor` contract.
 
-If you want token holders to approve or disapprove actions, you will need to create some strategies that utilize the Caster as the approval or disapproval role so that the token holders can actually vote on certain actions.
+In order for token holders to approve or disapprove actions, Strategies have to utilize the `LlamaTokenVotingGovernor` as the approval or disapproval role so token holders can vote on certain actions.
 
-Addisionally, you can issue permissions to the governor contract if you wish for policyholders to be able to create certain actions on your Llama instance.
+Additionally, Permissions can be issued to the governor contract so that policyholders can create certain actions on your Llama instance.
