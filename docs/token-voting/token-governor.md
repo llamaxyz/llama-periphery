@@ -24,7 +24,7 @@ The `LlamaTokenGovernor` contract allows token holders to participate in the gov
 
 ### Delay Period
 
-Before voting begins, there is a delay period. The delay period allows token holders to delegate before the end of the delay period, and generally allows users to move tokens around or obtain tokens before a vote they want to participate in. After the delay period, the casting period begins automatically and token holders can begin to cast votes. Tokens obtained or delegated after the delay period has ended are not eligible to cast. If a token holder had tokens delegated at the end of the delay period and transfers them afterwards, they are still able to cast because these values are checkpointed.
+Before voting begins, there is a delay period. The delay period allows token holders to delegate before the end of the delay period, and allows users to move tokens around or obtain tokens before a vote they want to participate in. After the delay period, the casting period begins automatically and token holders can begin to cast votes. Tokens obtained or delegated after the delay period has ended are not eligible to cast. If a token holder had tokens delegated at the end of the delay period and transfers them afterwards, they are still able to cast because these values are checkpointed.
 
 ### Casting Votes
 
@@ -55,7 +55,7 @@ The `castVeto` function is similar to castVote and requires the same parameters.
 
 ### Reaching Quorum and Approval
 
-Quorum is calculated purely on the amount of `For` votes. `Abstain` votes do not count towards the quorum.
+Quorum is calculated using the amount of `For` votes. `Abstain` votes do not count towards the quorum.
 
 Approval is reached when the quorum is met, and the For votes surpass the `Against` votes.
 
