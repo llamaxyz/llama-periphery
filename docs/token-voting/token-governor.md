@@ -57,7 +57,7 @@ The `castVeto` function is similar to castVote and requires the same parameters.
 
 Quorum is calculated using the amount of `For` votes. `Abstain` votes do not count towards the quorum.
 
-Approval is reached when the quorum is met, and the For votes surpass the `Against` votes.
+Approval is reached when the quorum is met, and the `For` votes surpass the `Against` votes.
 
 ### Submitting Results
 
