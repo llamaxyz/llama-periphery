@@ -14,6 +14,6 @@ The `deploy` function also uses the provided token adapter logic contract and to
 
 Once a token voting module has been deployed, an existing Llama instance can create a policy with a dedicated role and assign it to the token governor's address.
 
-This role can be granted permissions, so token delegates can create actions if their balance meets the creation threshold.
+This role can be granted permissions, so token holders can create actions if their voting balance meets the creation threshold.
 
-This role can also be used by strategies to grant token delegates the ability to collectively approve and disapprove actions.
+This role can also be used by strategies to grant token holders the ability to collectively approve and disapprove actions.
