@@ -5,9 +5,9 @@
 The Llama token voting module consists of a pair of smart contracts: a `LlamaTokenGovernor` and a token adapter.
 It is deployed by the dedicated [token voting module factory](https://github.com/llamaxyz/llama/blob/main/docs/token-voting/token-voting-factory.md).
 
-Each token voting module is associated with a Llama instance and a governance token that is used to get the historical total supply and account voting balances.
+Each token voting module is associated with a Llama instance and a governance token that is used to get past total supply and account voting balances.
 The `LlamaTokenGovernor` contract uses the token adapter to standardize interactions with the governance token.
-This is required to conduct a token voting process that can't be easily manipulated.
+Retrieving the token's past total supply and voting balances are required to conduct a voting process that can't be easily manipulated.
 
 The token governor contract integrates directly with an associated Llama instance.
 The instance creates a dedicated "Token Governor" role and assigns it to the deployed token governor contract.
