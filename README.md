@@ -56,16 +56,27 @@ The comments in that file explain what each variable is for and when they're nee
 - `just deploy` - deploy and verify payload on mainnet
 - Run `just -l` or see the [`justfile`](https://github.com/llamaxyz/llama-periphery/blob/main/justfile) for other commands such as dry runs.
 
-## Testnet deployment
+## Deployments
 
-| Name                                             | Sepolia                                                                                                                       |
-| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
-|_Factory_|
-| LlamaTokenVotingFactory                          | [0x6A97643633eafEEC00b7Ec4CE84269203645aaBC](https://sepolia.etherscan.io/address/0x6A97643633eafEEC00b7Ec4CE84269203645aaBC) |
-|_Governor_|
-| LlamaTokenGovernor (logic contract)              | [0x0A01C701013E6d6F1c1759457324303Bf25CC7E3](https://sepolia.etherscan.io/address/0x0A01C701013E6d6F1c1759457324303Bf25CC7E3) |
-|_Token Adapters_|
-| LlamaTokenAdapterVotesTimestamp (logic contract) | [0x8CCe1b824EfF3A7966348528B6951A84eC0541A5](https://sepolia.etherscan.io/address/0x8CCe1b824EfF3A7966348528B6951A84eC0541A5) |     
+| Name                                             | Ethereum                                                                                                              | Optimism                                                                                                                         | Arbitrum                                                                                                             | Base                                                                                                                  | Polygon                                                                                                                  |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| _Factory_|
+| LlamaTokenVotingFactory                          | [0xFBE17545dffD75A92A5A72926AE581478973FE65](https://etherscan.io/address/0xFBE17545dffD75A92A5A72926AE581478973FE65) | [0xFBE17545dffD75A92A5A72926AE581478973FE65](https://optimistic.etherscan.io/address/0xFBE17545dffD75A92A5A72926AE581478973FE65) | [0xFBE17545dffD75A92A5A72926AE581478973FE65](https://arbiscan.io/address/0xFBE17545dffD75A92A5A72926AE581478973FE65) | [0xFBE17545dffD75A92A5A72926AE581478973FE65](https://basescan.org/address/0xFBE17545dffD75A92A5A72926AE581478973FE65) | [0xFBE17545dffD75A92A5A72926AE581478973FE65](https://polygonscan.com/address/0xFBE17545dffD75A92A5A72926AE581478973FE65) |
+| _Governor_|
+| LlamaTokenGovernor (logic contract)              | [0x3f3DAB3ab8cEc2FBd06767c2A5F66Cb6BFF21A4A](https://etherscan.io/address/0x3f3DAB3ab8cEc2FBd06767c2A5F66Cb6BFF21A4A) | [0x3f3DAB3ab8cEc2FBd06767c2A5F66Cb6BFF21A4A](https://optimistic.etherscan.io/address/0x3f3DAB3ab8cEc2FBd06767c2A5F66Cb6BFF21A4A) | [0x3f3DAB3ab8cEc2FBd06767c2A5F66Cb6BFF21A4A](https://arbiscan.io/address/0x3f3DAB3ab8cEc2FBd06767c2A5F66Cb6BFF21A4A) | [0x3f3DAB3ab8cEc2FBd06767c2A5F66Cb6BFF21A4A](https://basescan.org/address/0x3f3DAB3ab8cEc2FBd06767c2A5F66Cb6BFF21A4A) | [0x3f3DAB3ab8cEc2FBd06767c2A5F66Cb6BFF21A4A](https://polygonscan.com/address/0x3f3DAB3ab8cEc2FBd06767c2A5F66Cb6BFF21A4A) |
+| _Token Adapters_|
+| LlamaTokenAdapterVotesTimestamp (logic contract) | [0x088C268cb00226D6A9b29e5488905Aa94D2f0239](https://etherscan.io/address/0x088C268cb00226D6A9b29e5488905Aa94D2f0239) | [0x088C268cb00226D6A9b29e5488905Aa94D2f0239](https://optimistic.etherscan.io/address/0x088C268cb00226D6A9b29e5488905Aa94D2f0239) | [0x088C268cb00226D6A9b29e5488905Aa94D2f0239](https://arbiscan.io/address/0x088C268cb00226D6A9b29e5488905Aa94D2f0239) | [0x088C268cb00226D6A9b29e5488905Aa94D2f0239](https://basescan.org/address/0x088C268cb00226D6A9b29e5488905Aa94D2f0239) | [0x088C268cb00226D6A9b29e5488905Aa94D2f0239](https://polygonscan.com/address/0x088C268cb00226D6A9b29e5488905Aa94D2f0239) |
+
+## Testnet deployments
+
+| Name                                             | Sepolia                                                                                                                       | Goerli                                                                                                                       | Optimism Goerli                                                                                                                       | Base Goerli                                                                                                                  |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| _Factory_|
+| LlamaTokenVotingFactory                          | [0xFBE17545dffD75A92A5A72926AE581478973FE65](https://sepolia.etherscan.io/address/0xFBE17545dffD75A92A5A72926AE581478973FE65) | [0xFBE17545dffD75A92A5A72926AE581478973FE65](https://goerli.etherscan.io/address/0xFBE17545dffD75A92A5A72926AE581478973FE65) | [0xFBE17545dffD75A92A5A72926AE581478973FE65](https://goerli-optimism.etherscan.io/address/0xFBE17545dffD75A92A5A72926AE581478973FE65) | [0xFBE17545dffD75A92A5A72926AE581478973FE65](https://goerli.basescan.org/address/0xFBE17545dffD75A92A5A72926AE581478973FE65) |
+| _Governor_|
+| LlamaTokenGovernor (logic contract)              | [0x3f3DAB3ab8cEc2FBd06767c2A5F66Cb6BFF21A4A](https://sepolia.etherscan.io/address/0x3f3DAB3ab8cEc2FBd06767c2A5F66Cb6BFF21A4A) | [0x3f3DAB3ab8cEc2FBd06767c2A5F66Cb6BFF21A4A](https://goerli.etherscan.io/address/0x3f3DAB3ab8cEc2FBd06767c2A5F66Cb6BFF21A4A) | [0x3f3DAB3ab8cEc2FBd06767c2A5F66Cb6BFF21A4A](https://goerli-optimism.etherscan.io/address/0x3f3DAB3ab8cEc2FBd06767c2A5F66Cb6BFF21A4A) | [0x3f3DAB3ab8cEc2FBd06767c2A5F66Cb6BFF21A4A](https://goerli.basescan.org/address/0x3f3DAB3ab8cEc2FBd06767c2A5F66Cb6BFF21A4A) |
+| _Token Adapters_|
+| LlamaTokenAdapterVotesTimestamp (logic contract) | [0x088C268cb00226D6A9b29e5488905Aa94D2f0239](https://sepolia.etherscan.io/address/0x088C268cb00226D6A9b29e5488905Aa94D2f0239) | [0x088C268cb00226D6A9b29e5488905Aa94D2f0239](https://goerli.etherscan.io/address/0x088C268cb00226D6A9b29e5488905Aa94D2f0239) | [0x088C268cb00226D6A9b29e5488905Aa94D2f0239](https://goerli-optimism.etherscan.io/address/0x088C268cb00226D6A9b29e5488905Aa94D2f0239) | [0x088C268cb00226D6A9b29e5488905Aa94D2f0239](https://goerli.basescan.org/address/0x088C268cb00226D6A9b29e5488905Aa94D2f0239) |
 
 ## Smart contract reference
 
@@ -74,7 +85,16 @@ Run the following command to generate smart contract reference documentation fro
 ```sh
 $ forge doc -o reference/ -b -s
 ```
-## Bug bounty program
+
+## Security
+
+### Audit
+
+We received an audit from Spearbit. You can find the link to the report below:
+
+- [Llama Token Governor Spearbit Audit](https://github.com/llamaxyz/llama/blob/main/audits/Llama-Token-Governor-Spearbit-Audit.pdf)
+
+### Bug bounty program
 
 This repository is subject to the [Llama bug bounty program](https://github.com/llamaxyz/llama/blob/main/README.md#bug-bounty-program).
 

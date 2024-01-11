@@ -1,5 +1,6 @@
 [profile.default]
   bytecode_hash = 'none'
+  evm_version = 'paris'
   ffi = true
   fs_permissions = [{ access = "read", path = "./script/input" }]
   invariant = { fail_on_revert = true }
@@ -8,6 +9,7 @@
   via_ir = false
 
 [profile.ci]
+  evm_version = 'paris'
   fuzz = { runs = 5000 }
   invariant = { runs = 1000, depth = 100 }
   optimizer = true
