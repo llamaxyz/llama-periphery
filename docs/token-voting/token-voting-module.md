@@ -26,12 +26,12 @@ The `creationThreshold` is the number of tokens required to create an action. Th
 To create an action, a delegate must call the `createAction` function on the token governor which has the following fields:
 
 ```solidity
-    uint8 role,
-    ILlamaStrategy strategy,
-    address target,
-    uint256 value,
-    bytes data,
-    string description
+uint8 role,
+ILlamaStrategy strategy,
+address target,
+uint256 value,
+bytes data,
+string description
 ```
 
 - **Role:** A role assigned to the token governor that will be used to create the action.
@@ -79,10 +79,10 @@ This same logic applies for casting vetoes. The only difference is that this pro
 The `castVote` and `castVeto` functions require the following parameters:
 
 ```solidity
-    uint8 role,
-    ActionInfo actionInfo,
-    uint8 support,
-    string reason
+uint8 role,
+ActionInfo actionInfo,
+uint8 support,
+string reason
 ```
 
 - **Role:** This parameter specifies the role of the token governor.
