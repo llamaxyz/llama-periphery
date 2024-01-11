@@ -4,13 +4,19 @@
 
 The Llama token voting module includes a `LlamaTokenGovernor` and `LlamaTokenAdapter` pair that is deployed by the [token voting factory](https://github.com/llamaxyz/llama/blob/main/docs/token-voting/token-voting-factory.md).
 
-The associated Llama instance can create a dedicated "Token Governor" role and assign it to the deployed token governor contract, so token holders can create actions and collectively cast approvals or disapprovals.
+The associated Llama instance can create a dedicated "Token Governor" role and assign it to the deployed token governor contract.
+This role can be granted permissions, so delegates can create actions on the associated Llama instance.
+This role can also be used in strategies, so delegates can collectively approve and disapprove actions on the associated Llama instance.
+
+Each token voting module is associated with a Llama instance and a governance token that is used to get the historical total supply and account voting balances.
+The module can only create, approve, and disapprove actions on the associated Llama instance.
+Llama instances can assign policies to multiple token voting modules to design strategies that require approval by delegates of multiple tokens.
 
 ## Creating Actions
 
-Token holders can create actions on the associated Llama instance if they have a sufficient token balance.
+Governance token delegates can create actions on the associated Llama instance if they have a sufficient voting balance.
 
-The `creationThreshold` is the number of tokens required to create an action. This value can be updated.
+The `creationThreshold` is the number of tokens required to create an action. This value can be updated by the instance.
 
 To create an action, a user must call the `createAction` function on the token governor which has the following fields:
 
@@ -23,7 +29,7 @@ To create an action, a user must call the `createAction` function on the token g
     string description
 ```
 
-- **Role:** The role that will be used to determine the permission ID of the `LlamaTokenGovernor`.
+- **Role:** A role assigned to the token governor that will be used to create the action.
 - **Strategy:** The strategy contract that will determine how the action is executed.
 - **Target:** The contract called when the action is executed.
 - **Value:** The value in wei to be sent when the action is executed.
