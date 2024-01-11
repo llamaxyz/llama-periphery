@@ -2,15 +2,20 @@
 
 ![Llama Token Voting Module Overview](https://github.com/llamaxyz/llama/blob/main/diagrams/llama-token-voting-module-overview.png)
 
-The Llama token voting module includes a `LlamaTokenGovernor` and `LlamaTokenAdapter` pair that is deployed by the [token voting factory](https://github.com/llamaxyz/llama/blob/main/docs/token-voting/token-voting-factory.md).
-
-The associated Llama instance can create a dedicated "Token Governor" role and assign it to the deployed token governor contract.
-This role can be granted permissions, so delegates can create actions on the associated Llama instance.
-This role can also be used in strategies, so delegates can collectively approve and disapprove actions on the associated Llama instance.
+The Llama token voting module consists of a pair of smart contracts: a `LlamaTokenGovernor` and a token adapter.
+It is deployed by the dedicated [token voting module factory](https://github.com/llamaxyz/llama/blob/main/docs/token-voting/token-voting-factory.md).
 
 Each token voting module is associated with a Llama instance and a governance token that is used to get the historical total supply and account voting balances.
+The `LlamaTokenGovernor` contract uses the token adapter to get the governance token's past total supply and account voting balances.
+This is required to conduct a token voting process that can't be easily manipulated.
+
+The token governor contract integrates directly with an associated Llama instance.
+The instance creates a dedicated "Token Governor" role and assigns it to the deployed token governor contract.
+This role can be granted permissions, so delegates can create actions on the instance.
+This role can also be used in strategies, so delegates can collectively approve and disapprove actions on the instance.
+
 The module can only create, approve, and disapprove actions on the associated Llama instance.
-Llama instances can assign policies to multiple token voting modules to design strategies that require approval by delegates of multiple tokens.
+Llama instances can assign policies to multiple token voting modules to implement advanced multi-token strategies.
 
 ## Creating Actions
 
@@ -18,7 +23,7 @@ Governance token delegates can create actions on the associated Llama instance i
 
 The `creationThreshold` is the number of tokens required to create an action. This value can be updated by the instance.
 
-To create an action, a user must call the `createAction` function on the token governor which has the following fields:
+To create an action, a delegate must call the `createAction` function on the token governor which has the following fields:
 
 ```solidity
     uint8 role,
@@ -43,7 +48,7 @@ Visit the [actions section](https://github.com/llamaxyz/llama/blob/main/docs/act
 ## Approving and Disapproving Actions
 
 The token governor allows delegates to collectively cast approvals and disapprovals for its instance's actions through votes and vetoes.
-Votes and vetoes are nearly identical concepts. Votes are how token delegates build support to collectively approve an action and vetoes are how delegates built support to collectively disapprove an action.
+Votes and vetoes are nearly identical concepts. Votes are how token delegates build support to collectively approve an action and vetoes are how delegates build support to collectively disapprove an action.
 
 If the token governor has the approval role or force approval role for an action, during that action's approval period delegates can cast votes to determine if the token governor should cast an approval.
 
@@ -59,7 +64,7 @@ There are three distinct periods during a voting and vetoing cycle:
 - The casting period
 - The submission period
 
-The process begins with a delay period. This period is calculated by multiplying the `delayPeriodPct` by the action's approval or queueing period. The purpose of this delay period is to provide delegates with a window to delegate their tokens before voting balances are checkpointed for the duration of the vote.
+The process begins with a delay period. This period is calculated by multiplying the `delayPeriodPct` by the action's approval or queueing period. The purpose of this delay period is to provide token holders time to delegate their tokens before voting balances are checkpointed for the duration of the vote.
 
 The casting period is when delegates vote or veto to build support for approving or disapproving an action. The period length is calculated by multiplying the `votingPeriodPct` and the action's approval or queueing period. It begins at the end of the delay period.
 
@@ -67,7 +72,9 @@ The submission period is when the approval or disapproval can be submitted to th
 
 ### Casting Votes and Vetoes
 
-During the casting period, token voters can cast a `For`, `Against`, or `Abstain` vote or veto. At the conclusion of the period, the approval or disapproval can be submitted if the total number of `For` votes is greater than `Against` votes and the number of `For` votes as a fraction of the token's total supply is greater than or equal to the quorum percentage.
+During the casting period, token voters can cast a `For`, `Against`, or `Abstain` vote. At the conclusion of the period, the approval or disapproval can be submitted if the total number of `For` votes is greater than `Against` votes and the number of `For` votes as a fraction of the token's total supply is greater than or equal to the quorum percentage.
+
+This same logic applies for casting vetoes. The only difference is that this process occurs during the queuing period of the action and results in casting a disapproval.
 
 The `castVote` and `castVeto` functions require the following parameters:
 
@@ -92,7 +99,7 @@ The function returns the weight of the cast, representing the influence of the t
 
 Quorum is calculated using the amount of `For` votes. `Abstain` votes do not count towards the quorum.
 
-The vote or veto has passed when the quorum is met, and the `For` votes surpass the `Against` votes.
+The vote or veto has passed when the quorum is met, and the `For` votes are greater than the `Against` votes.
 
 ### Submitting Results
 
@@ -100,7 +107,7 @@ Once the casting period is over, the result can be submitted if the vote or veto
 
 If the vote or veto has not passed, no action needs to be taken.
 
-If the vote or veto has passed, anyone can now call the public `submitApproval` function for a vote and the `submitDisapproval` function for a veto. The submit functions must be called before the end of the submission period, otherwise it expires.
+If the vote or veto has passed, anyone can call the public `submitApproval` function for a vote and the `submitDisapproval` function for a veto. The submit functions must be called before the end of the submission period, otherwise they expire.
 
 ## Token Adapter
 
