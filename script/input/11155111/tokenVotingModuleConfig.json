@@ -1,9 +1,9 @@
 {
   "comment": "This is an example token voting module deployment on Sepolia.",
-  "factory": "0x6A97643633eafEEC00b7Ec4CE84269203645aaBC",
-  "llamaCore": "0xc68046794327490F953EA15522367FFBA0b64f86",
-  "tokenAdapterLogic": "0x8CCe1b824EfF3A7966348528B6951A84eC0541A5",
-  "tokenAddress": "0xf44d44a54440F22e5DC5adb7efA3233645f04007",
+  "factory": "0xFBE17545dffD75A92A5A72926AE581478973FE65",
+  "llamaCore": "0x0000000000000000000000000000000000000000",
+  "tokenAdapterLogic": "0x088C268cb00226D6A9b29e5488905Aa94D2f0239",
+  "tokenAddress": "0x0000000000000000000000000000000000000000",
   "nonce": 0,
   "creationThreshold": 10000e18,
   "casterConfig": {
