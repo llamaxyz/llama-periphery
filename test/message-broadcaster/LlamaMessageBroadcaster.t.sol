@@ -31,4 +31,10 @@ contract BroadcastMessage is LlamaMessageBroadcasterTest {
     vm.prank(address(EXECUTOR));
     llamaMessageBroadcaster.broadcastMessage(message);
   }
+
+  function test_RevertIf_CallerIsNotExecutor() public {
+    string memory message = "Hello World!";
+    vm.expectRevert();
+    llamaMessageBroadcaster.broadcastMessage(message);
+  }
 }
