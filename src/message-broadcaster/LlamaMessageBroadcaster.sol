@@ -11,6 +11,8 @@ contract LlamaMessageBroadcaster {
   /// @dev Emitted when a message is broadcast by a Llama instance.
   event MessageBroadcasted(ILlamaExecutor indexed llamaExecutor, string message);
 
+  /// @notice Broadcasts a message from a Llama instance.
+  /// @param message Message to be broadcasted.
   function broadcastMessage(string calldata message) external {
     ILlamaExecutor llamaExecutor = ILlamaExecutor(msg.sender);
     // Duck testing to check if the caller is a Llama instance.
