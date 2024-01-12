@@ -53,8 +53,6 @@ contract BroadcastMessage is LlamaMessageBroadcasterTest {
     ActionInfo memory actionInfo =
       ActionInfo(actionId, coreTeam1, CORE_TEAM_ROLE, STRATEGY, address(llamaMessageBroadcaster), 0, data);
 
-    vm.warp(block.timestamp + 1);
-
     // Approval and auto-queue process.
     vm.prank(coreTeam2);
     CORE.castApproval(CORE_TEAM_ROLE, actionInfo, "");
