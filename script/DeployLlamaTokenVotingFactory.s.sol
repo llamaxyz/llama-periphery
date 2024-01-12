@@ -4,6 +4,7 @@ pragma solidity 0.8.23;
 import {Script} from "forge-std/Script.sol";
 
 import {DeployUtils} from "script/DeployUtils.sol";
+import {LlamaMessageBroadcaster} from "src/message-broadcaster/LlamaMessageBroadcaster.sol";
 import {LlamaTokenGovernor} from "src/token-voting/LlamaTokenGovernor.sol";
 import {LlamaTokenVotingFactory} from "src/token-voting/LlamaTokenVotingFactory.sol";
 import {LlamaTokenAdapterVotesTimestamp} from "src/token-voting/token-adapters/LlamaTokenAdapterVotesTimestamp.sol";
@@ -15,6 +16,9 @@ contract DeployLlamaTokenVotingFactory is Script {
 
   // Factory contracts.
   LlamaTokenVotingFactory tokenVotingFactory;
+
+  // Llama Message Broadcaster.
+  LlamaMessageBroadcaster llamaMessageBroadcaster;
 
   function run() public {
     DeployUtils.print(
@@ -34,5 +38,9 @@ contract DeployLlamaTokenVotingFactory is Script {
     DeployUtils.print(
       string.concat("  LlamaTokenAdapterVotesTimestamp: ", vm.toString(address(llamaTokenAdapterTimestampLogic)))
     );
+
+    vm.broadcast();
+    llamaMessageBroadcaster = new LlamaMessageBroadcaster();
+    DeployUtils.print(string.concat("  LlamaMessageBroadcaster: ", vm.toString(address(llamaMessageBroadcaster))));
   }
 }
