@@ -78,6 +78,9 @@ contract LlamaSigUtils {
 
   /// @notice Sets the EIP-712 domain separator.
   function setDomainHash(EIP712Domain memory eip712Domain) internal {
+    console2.log("Domain Type Hash");
+    console2.logBytes32(EIP712_DOMAIN_TYPEHASH);
+
     DOMAIN_SEPARATOR = keccak256(
       abi.encode(
         EIP712_DOMAIN_TYPEHASH,
@@ -93,6 +96,9 @@ contract LlamaSigUtils {
 
   /// @notice Returns the hash of CreateAction.
   function getCreateActionHash(CreateAction memory createAction) internal pure returns (bytes32) {
+    console2.log("Create Action Type Hash");
+    console2.logBytes32(CREATE_ACTION_TYPEHASH);
+
     return keccak256(
       abi.encode(
         CREATE_ACTION_TYPEHASH,
