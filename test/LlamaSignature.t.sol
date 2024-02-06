@@ -99,7 +99,7 @@ contract CreateActionBySig is LlamaSignatureTest {
 
     vm.expectEmit();
     emit ActionCreated(
-      365, dummyPolicyholder, testRole, ILlamaStrategy(testStrategy), testTarget, testValue, testData, testDescription
+      364, dummyPolicyholder, testRole, ILlamaStrategy(testStrategy), testTarget, testValue, testData, testDescription
     );
 
     createActionBySig(v, r, s);
