@@ -2,6 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {ActionInfo} from "src/lib/Structs.sol";
+import {Test, console2} from "forge-std/Test.sol";
 
 contract LlamaSigUtils {
   struct EIP712Domain {
@@ -86,6 +87,8 @@ contract LlamaSigUtils {
         eip712Domain.verifyingContract
       )
     );
+    console2.log("DOMAIN_SEPARATOR");
+    console2.logBytes32(DOMAIN_SEPARATOR);
   }
 
   /// @notice Returns the hash of CreateAction.

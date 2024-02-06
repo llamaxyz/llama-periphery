@@ -75,7 +75,15 @@ contract CreateActionBySig is LlamaSignatureTest {
       nonce: testNonce
     });
     bytes32 digest = getCreateActionTypedDataHash(createAction);
+    console2.log("Digest");
+    console2.logBytes32(digest);
     (v, r, s) = vm.sign(privateKey, digest);
+    console2.log("v");
+    console2.logUint(v);
+    console2.log("r");
+    console2.logBytes32(r);
+    console2.log("s");
+    console2.logBytes32(s);
   }
 
   function createActionBySig(uint8 v, bytes32 r, bytes32 s) internal returns (uint256 actionId) {
