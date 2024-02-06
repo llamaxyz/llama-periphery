@@ -87,7 +87,7 @@ contract LlamaSigUtils {
         eip712Domain.verifyingContract
       )
     );
-    console2.log("DOMAIN_SEPARATOR");
+    console2.log("Domain Hash");
     console2.logBytes32(DOMAIN_SEPARATOR);
   }
 
@@ -111,7 +111,10 @@ contract LlamaSigUtils {
   /// @notice Returns the hash of the fully encoded EIP-712 message for the CreateAction domain, which can be used to
   /// recover the signer.
   function getCreateActionTypedDataHash(CreateAction memory createAction) internal view returns (bytes32) {
-    return keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, getCreateActionHash(createAction)));
+    bytes32 hash = getCreateActionHash(createAction);
+    console2.log("Create Action Hash");
+    console2.logBytes32(hash);
+    return keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, hash));
   }
 
   /// @notice Returns the hash of CancelAction.
