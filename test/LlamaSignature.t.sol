@@ -7,12 +7,9 @@ import {Vm} from "forge-std/Vm.sol";
 
 import {LlamaSigUtils} from "test/utils/LlamaSigUtils.sol";
 
-import {ILlamaAccount} from "src/interfaces/ILlamaAccount.sol";
 import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
-import {ILlamaRelativeStrategyBase} from "src/interfaces/ILlamaRelativeStrategyBase.sol";
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
 import {ILlamaExecutor} from "src/interfaces/ILlamaExecutor.sol";
-import {ILlamaLens} from "src/interfaces/ILlamaLens.sol";
 import {ILlamaPolicy} from "src/interfaces/ILlamaPolicy.sol";
 
 contract LlamaSignatureTest is Test, LlamaSigUtils {
@@ -29,14 +26,20 @@ contract LlamaSignatureTest is Test, LlamaSigUtils {
   function setUp() public virtual {
     vm.createSelectFork(SEPOLIA_RPC_URL, 5_233_667);
   }
-
-  function mineBlock() internal {
-    vm.roll(block.number + 1);
-    vm.warp(block.timestamp + 1);
-  }
 }
 
 contract CreateActionBySig is LlamaSignatureTest {
+  event ActionCreated(
+    uint256 id,
+    address indexed creator,
+    uint8 role,
+    ILlamaStrategy indexed strategy,
+    address indexed target,
+    uint256 value,
+    bytes data,
+    string description
+  );
+
   uint8 testRole = 0;
   address testStrategy = 0xaeb1f51ed335116F2Ef311f8c6FeA6B7aFE2B047;
   address testTarget = 0xA8BF95A14b3dE7bB20d39CBBDa5B25c524Dd402A;
@@ -60,11 +63,7 @@ contract CreateActionBySig is LlamaSignatureTest {
     );
   }
 
-  function createOffchainSignature(uint256 privateKey, string memory description)
-    internal
-    view
-    returns (uint8 v, bytes32 r, bytes32 s)
-  {
+  function createOffchainSignature(uint256 privateKey) internal view returns (uint8 v, bytes32 r, bytes32 s) {
     LlamaSigUtils.CreateAction memory createAction = LlamaSigUtils.CreateAction({
       policyholder: dummyPolicyholder,
       role: testRole,
@@ -92,5 +91,17 @@ contract CreateActionBySig is LlamaSignatureTest {
       r,
       s
     );
+  }
+
+  function test_Signature() public {
+    uint256 dummyPolicyholderPrivateKey = vm.envUint("POLICYHOLDER_PRIVATE_KEY");
+    (uint8 v, bytes32 r, bytes32 s) = createOffchainSignature(dummyPolicyholderPrivateKey);
+
+    vm.expectEmit();
+    emit ActionCreated(
+      365, dummyPolicyholder, testRole, ILlamaStrategy(testStrategy), testTarget, testValue, testData, testDescription
+    );
+
+    createActionBySig(v, r, s);
   }
 }
