@@ -22,7 +22,7 @@ run-deploy-voting-module-script flags: (run-script 'DeployLlamaTokenVotingModule
 
 dry-run-deploy: (run-script 'DeployLlamaTokenVotingFactory')
 
-deploy: (run-script 'DeployLlamaTokenVotingFactory' '--broadcast --verify --build-info --build-info-path build_info')
+deploy: (run-script 'DeployLlamaTokenVotingFactory' '--broadcast --verify --slow --build-info --build-info-path build_info')
 
 dry-run-deploy-voting-module: (run-deploy-voting-module-script '')
 
