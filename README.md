@@ -69,14 +69,14 @@ The comments in that file explain what each variable is for and when they're nee
 
 ## Testnet deployments
 
-| Name                                             | Sepolia                                                                                                                       | Holesky                                                                                                                       |
-| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Name                                             | Sepolia                                                                                                                       | Holesky                                                                                                                       | Base Sepolia                                                                                                                  |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | _Factory_|
-| LlamaTokenVotingFactory                          | [0xFBE17545dffD75A92A5A72926AE581478973FE65](https://sepolia.etherscan.io/address/0xFBE17545dffD75A92A5A72926AE581478973FE65) | [0xFBE17545dffD75A92A5A72926AE581478973FE65](https://holesky.etherscan.io/address/0xFBE17545dffD75A92A5A72926AE581478973FE65) |
+| LlamaTokenVotingFactory                          | [0xFBE17545dffD75A92A5A72926AE581478973FE65](https://sepolia.etherscan.io/address/0xFBE17545dffD75A92A5A72926AE581478973FE65) | [0xFBE17545dffD75A92A5A72926AE581478973FE65](https://holesky.etherscan.io/address/0xFBE17545dffD75A92A5A72926AE581478973FE65) | [0xFBE17545dffD75A92A5A72926AE581478973FE65](https://sepolia.basescan.org/address/0xFBE17545dffD75A92A5A72926AE581478973FE65) |
 | _Governor_|
-| LlamaTokenGovernor (logic contract)              | [0x3f3DAB3ab8cEc2FBd06767c2A5F66Cb6BFF21A4A](https://sepolia.etherscan.io/address/0x3f3DAB3ab8cEc2FBd06767c2A5F66Cb6BFF21A4A) | [0x3f3DAB3ab8cEc2FBd06767c2A5F66Cb6BFF21A4A](https://holesky.etherscan.io/address/0x3f3DAB3ab8cEc2FBd06767c2A5F66Cb6BFF21A4A) |
+| LlamaTokenGovernor (logic contract)              | [0x3f3DAB3ab8cEc2FBd06767c2A5F66Cb6BFF21A4A](https://sepolia.etherscan.io/address/0x3f3DAB3ab8cEc2FBd06767c2A5F66Cb6BFF21A4A) | [0x3f3DAB3ab8cEc2FBd06767c2A5F66Cb6BFF21A4A](https://holesky.etherscan.io/address/0x3f3DAB3ab8cEc2FBd06767c2A5F66Cb6BFF21A4A) | [0x3f3DAB3ab8cEc2FBd06767c2A5F66Cb6BFF21A4A](https://sepolia.basescan.org/address/0x3f3DAB3ab8cEc2FBd06767c2A5F66Cb6BFF21A4A) |
 | _Token Adapters_|
-| LlamaTokenAdapterVotesTimestamp (logic contract) | [0x088C268cb00226D6A9b29e5488905Aa94D2f0239](https://sepolia.etherscan.io/address/0x088C268cb00226D6A9b29e5488905Aa94D2f0239) | [0x088C268cb00226D6A9b29e5488905Aa94D2f0239](https://holesky.etherscan.io/address/0x088C268cb00226D6A9b29e5488905Aa94D2f0239) |
+| LlamaTokenAdapterVotesTimestamp (logic contract) | [0x088C268cb00226D6A9b29e5488905Aa94D2f0239](https://sepolia.etherscan.io/address/0x088C268cb00226D6A9b29e5488905Aa94D2f0239) | [0x088C268cb00226D6A9b29e5488905Aa94D2f0239](https://holesky.etherscan.io/address/0x088C268cb00226D6A9b29e5488905Aa94D2f0239) | [0x088C268cb00226D6A9b29e5488905Aa94D2f0239](https://sepolia.basescan.org/address/0x088C268cb00226D6A9b29e5488905Aa94D2f0239) |
 
 ## Smart contract reference
 
