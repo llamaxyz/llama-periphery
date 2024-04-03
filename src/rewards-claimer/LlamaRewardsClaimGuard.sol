@@ -6,8 +6,7 @@ import {ActionInfo} from "src/lib/Structs.sol";
 
 /// @title Llama Rewards Claim Guard
 /// @author Llama (devsdosomething@llama.xyz)
-/// @notice A guard that only allows the `RewardsClaimer` contract to be delegate-called from a Llama account's execute
-/// function.
+/// @notice A guard that only allows the `RewardsClaimer.claimAllRewards` to be delegate-called
 /// @dev This guard should be used to protect the `execute` function in the `LlamaAccount` contract
 contract LlamaRewardsClaimGuard is ILlamaActionGuard {
   /// @dev Thrown if the call is not authorized.
