@@ -7,7 +7,7 @@ import {LlamaRewardsClaimAccountExtension} from "src/rewards-claimer/LlamaReward
 
 /// @title Llama Rewards Claim Guard
 /// @author Llama (devsdosomething@llama.xyz)
-/// @notice A guard that only allows the `RewardsClaimer.claimRewards` to be delegate-called
+/// @notice A guard that only allows the `LlamaRewardsClaimAccountExtension.claimRewards` to be delegate-called
 /// @dev This guard should be used to protect the `execute` function in the `LlamaAccount` contract
 contract LlamaRewardsClaimGuard is ILlamaActionGuard {
   /// @dev Thrown if the call is not authorized.

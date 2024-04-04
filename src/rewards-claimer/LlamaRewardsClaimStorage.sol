@@ -5,7 +5,7 @@ import {LlamaUtils} from "src/lib/LlamaUtils.sol";
 
 /// @title Llama Rewards Claim Storage
 /// @author Llama (devsdosomething@llama.xyz)
-/// @notice The storage contract for the LlamaRewardsClaimAccountExtension contract.
+/// @notice The storage contract for the `LlamaRewardsClaimAccountExtension` contract.
 /// @dev This is a separate storage contract to prevent storage collisions with the Llama account.
 contract LlamaRewardsClaimStorage {
   /// @dev Struct to hold authorized target-selectors.
