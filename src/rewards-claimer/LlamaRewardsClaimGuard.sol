@@ -3,6 +3,7 @@ pragma solidity ^0.8.23;
 
 import {ILlamaActionGuard} from "src/interfaces/ILlamaActionGuard.sol";
 import {ActionInfo} from "src/lib/Structs.sol";
+import {LlamaRewardsClaimAccountExtension} from "src/rewards-claimer/LlamaRewardsClaimAccountExtension.sol";
 
 /// @title Llama Rewards Claim Guard
 /// @author Llama (devsdosomething@llama.xyz)
@@ -12,11 +13,11 @@ contract LlamaRewardsClaimGuard is ILlamaActionGuard {
   /// @dev Thrown if the call is not authorized.
   error UnauthorizedCall(address target, bytes4 selector, bool withDelegatecall);
 
-  /// @notice The address of the `RewardsClaimer` contract.
-  address public immutable REWARDS_CLAIMER;
+  /// @notice The address of the `RewardsClaimer` account extension.
+  LlamaRewardsClaimAccountExtension public immutable REWARDS_CLAIMER;
 
   /// @dev Initializes the Llama rewards claim guard.
-  constructor(address rewardsClaimer) {
+  constructor(LlamaRewardsClaimAccountExtension rewardsClaimer) {
     REWARDS_CLAIMER = rewardsClaimer;
   }
 
@@ -27,8 +28,11 @@ contract LlamaRewardsClaimGuard is ILlamaActionGuard {
       abi.decode(actionInfo.data[4:], (address, bool, uint256, bytes));
     bytes4 selector = bytes4(data);
 
-    // Check if the target is the rewards claimer and the call type is a delegatecall.
-    if (target != REWARDS_CLAIMER || !withDelegatecall) revert UnauthorizedCall(target, selector, withDelegatecall);
+    // Check if the target is the rewards claimer, selector is `claimRewards` and the call type is a delegatecall.
+    if (
+      target != address(REWARDS_CLAIMER) || selector != LlamaRewardsClaimAccountExtension.claimRewards.selector
+        || !withDelegatecall
+    ) revert UnauthorizedCall(target, selector, withDelegatecall);
   }
 
   /// @inheritdoc ILlamaActionGuard
