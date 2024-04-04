@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
+import {LlamaBaseAccountExtension} from "src/common/LlamaBaseAccountExtension.sol";
 import {LlamaUtils} from "src/lib/LlamaUtils.sol";
 import {LlamaRewardsClaimStorage} from "src/rewards-claimer/LlamaRewardsClaimStorage.sol";
 
@@ -8,7 +9,7 @@ import {LlamaRewardsClaimStorage} from "src/rewards-claimer/LlamaRewardsClaimSto
 /// @author Llama (devsdosomething@llama.xyz)
 /// @notice An account extension that claims rewards on behalf of the Llama account.
 /// @dev This contract should be delegate-called from a Llama account.
-contract LlamaRewardsClaimAccountExtension {
+contract LlamaRewardsClaimAccountExtension is LlamaBaseAccountExtension {
   /// @dev Struct to hold target data.
   struct TargetData {
     address target; // The target contract.
@@ -35,7 +36,7 @@ contract LlamaRewardsClaimAccountExtension {
   /// @notice Claims rewards from the target contracts.
   /// @param targetData The target data to claim rewards from.
   /// @return returnData The return data from the target calls.
-  function claimRewards(TargetData[] memory targetData) external returns (bytes[] memory returnData) {
+  function claimRewards(TargetData[] memory targetData) external onlyDelegateCall returns (bytes[] memory returnData) {
     uint256 length = targetData.length;
     returnData = new bytes[](length);
     for (uint256 i = 0; i < length; LlamaUtils.uncheckedIncrement(i)) {
