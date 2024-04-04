@@ -6,18 +6,18 @@ import {ActionInfo} from "src/lib/Structs.sol";
 
 /// @title Llama Rewards Claim Guard
 /// @author Llama (devsdosomething@llama.xyz)
-/// @notice A guard that only allows the `RewardsClaimer.claimAllRewards` to be delegate-called
+/// @notice A guard that only allows the `RewardsClaimer.claimRewards` to be delegate-called
 /// @dev This guard should be used to protect the `execute` function in the `LlamaAccount` contract
 contract LlamaRewardsClaimGuard is ILlamaActionGuard {
   /// @dev Thrown if the call is not authorized.
   error UnauthorizedCall(address target, bytes4 selector, bool withDelegatecall);
 
   /// @notice The address of the `RewardsClaimer` contract.
-  address public rewardsClaimer;
+  address public immutable REWARDS_CLAIMER;
 
   /// @dev Initializes the Llama rewards claim guard.
-  constructor(address _rewardsClaimer) {
-    rewardsClaimer = _rewardsClaimer;
+  constructor(address rewardsClaimer) {
+    REWARDS_CLAIMER = rewardsClaimer;
   }
 
   /// @inheritdoc ILlamaActionGuard
@@ -28,7 +28,7 @@ contract LlamaRewardsClaimGuard is ILlamaActionGuard {
     bytes4 selector = bytes4(data);
 
     // Check if the target is the rewards claimer and the call type is a delegatecall.
-    if (target != rewardsClaimer || !withDelegatecall) revert UnauthorizedCall(target, selector, withDelegatecall);
+    if (target != REWARDS_CLAIMER || !withDelegatecall) revert UnauthorizedCall(target, selector, withDelegatecall);
   }
 
   /// @inheritdoc ILlamaActionGuard
