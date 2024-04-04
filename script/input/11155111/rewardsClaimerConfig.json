@@ -1,0 +1,12 @@
+{
+  "comment": "This is an example rewards claimer deployment on Sepolia.",
+  "llamaExecutor": "0x0000000000000000000000000000000000000000",
+  "initialTargetSelectorAuthorizations": [
+    {
+      "comment": "Target::Selector",
+      "isAuthorized": false,
+      "selector": "0x00000000",
+      "target": "0x0000000000000000000000000000000000000000"
+    }
+  ]
+}

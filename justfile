@@ -28,8 +28,10 @@ dry-run-deploy-voting-module: (run-deploy-voting-module-script '')
 
 deploy-voting-module: (run-deploy-voting-module-script '--broadcast --verify')
 
-dry-run-deploy-rewards-claimer: (run-script 'DeployLlamaRewardsClaimer')
+run-deploy-rewards-claimer-script flags: (run-script 'DeployLlamaRewardsClaimer' flags '--sig "run(string)"' '"rewardsClaimerConfig.json"')
 
-deploy-rewards-claimer: (run-script 'DeployLlamaRewardsClaimer' '--broadcast --verify --slow')
+dry-run-deploy-rewards-claimer: (run-deploy-rewards-claimer-script '')
+
+deploy-rewards-claimer: (run-deploy-rewards-claimer-script '--broadcast --verify --slow')
 
 verify: (run-script 'DeployLlamaTokenVotingFactory' '--verify --resume')
