@@ -43,7 +43,7 @@ contract LlamaRewardsClaimStorage {
   /// @dev Sets the authorized target-selectors.
   function _setAuthorizedTargetSelectors(TargetSelectorAuthorization[] memory data) internal {
     uint256 length = data.length;
-    for (uint256 i = 0; i < length; LlamaUtils.uncheckedIncrement(i)) {
+    for (uint256 i = 0; i < length; i++) {
       authorizedTargetSelectors[data[i].target][data[i].selector] = data[i].isAuthorized;
       emit TargetSelectorAuthorized(data[i].target, data[i].selector, data[i].isAuthorized);
     }
