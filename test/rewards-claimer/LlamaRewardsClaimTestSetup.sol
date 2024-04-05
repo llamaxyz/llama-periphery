@@ -12,7 +12,7 @@ contract LlamaRewardsClaimTestSetup is LlamaPeripheryTestSetup, DeployLlamaRewar
   function setUp() public virtual override {
     LlamaPeripheryTestSetup.setUp();
 
-    // Deploy the Llama Token Voting factory and logic contracts.
+    // Deploy the Llama rewards claim contracts.
     DeployLlamaRewardsClaimer.run("mockRewardsClaimerConfig.json");
   }
 }
