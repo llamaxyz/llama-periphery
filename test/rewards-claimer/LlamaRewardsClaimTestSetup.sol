@@ -12,6 +12,8 @@ import {MockRewardsContract} from "test/mock/MockRewardsContract.sol";
 
 import {DeployLlamaRewardsClaimer} from "script/DeployLlamaRewardsClaimer.s.sol";
 
+import {LlamaRewardsClaimStorage} from "src/rewards-claimer/LlamaRewardsClaimStorage.sol";
+
 contract LlamaRewardsClaimTestSetup is LlamaPeripheryTestSetup, DeployLlamaRewardsClaimer {
   IERC20 public constant USDC = IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
 
@@ -42,5 +44,40 @@ contract LlamaRewardsClaimTestSetup is LlamaPeripheryTestSetup, DeployLlamaRewar
     MockRewardsContract rewardsContract5 = new MockRewardsContract(address(ACCOUNT));
     vm.deal(address(rewardsContract5), 1 ether);
     deal(address(USDC), address(rewardsContract5), 1 ether);
+
+    // Authorize the rewards contracts to claim rewards.
+    LlamaRewardsClaimStorage.TargetSelectorAuthorization[] memory data =
+      new LlamaRewardsClaimStorage.TargetSelectorAuthorization[](10);
+    data[0] = LlamaRewardsClaimStorage.TargetSelectorAuthorization(
+      address(rewardsContract1), MockRewardsContract.withdrawETH.selector, true
+    );
+    data[1] = LlamaRewardsClaimStorage.TargetSelectorAuthorization(
+      address(rewardsContract1), MockRewardsContract.withdrawERC20.selector, true
+    );
+    data[2] = LlamaRewardsClaimStorage.TargetSelectorAuthorization(
+      address(rewardsContract2), MockRewardsContract.withdrawETH.selector, true
+    );
+    data[3] = LlamaRewardsClaimStorage.TargetSelectorAuthorization(
+      address(rewardsContract2), MockRewardsContract.withdrawERC20.selector, true
+    );
+    data[4] = LlamaRewardsClaimStorage.TargetSelectorAuthorization(
+      address(rewardsContract3), MockRewardsContract.withdrawETH.selector, true
+    );
+    data[5] = LlamaRewardsClaimStorage.TargetSelectorAuthorization(
+      address(rewardsContract3), MockRewardsContract.withdrawERC20.selector, true
+    );
+    data[6] = LlamaRewardsClaimStorage.TargetSelectorAuthorization(
+      address(rewardsContract4), MockRewardsContract.withdrawETH.selector, true
+    );
+    data[7] = LlamaRewardsClaimStorage.TargetSelectorAuthorization(
+      address(rewardsContract4), MockRewardsContract.withdrawERC20.selector, true
+    );
+    data[8] = LlamaRewardsClaimStorage.TargetSelectorAuthorization(
+      address(rewardsContract5), MockRewardsContract.withdrawETH.selector, true
+    );
+    data[9] = LlamaRewardsClaimStorage.TargetSelectorAuthorization(
+      address(rewardsContract5), MockRewardsContract.withdrawERC20.selector, true
+    );
+    rewardsClaimStorage.setAuthorizedTargetSelectors(data);
   }
 }
