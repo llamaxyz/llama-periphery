@@ -45,6 +45,7 @@ contract LlamaRewardsClaimTestSetup is LlamaPeripheryTestSetup, DeployLlamaRewar
     vm.deal(address(rewardsContract5), 1 ether);
     deal(address(USDC), address(rewardsContract5), 1 ether);
 
+    vm.startPrank(address(EXECUTOR));
     // Authorize the rewards contracts to claim rewards.
     LlamaRewardsClaimStorage.TargetSelectorAuthorization[] memory data =
       new LlamaRewardsClaimStorage.TargetSelectorAuthorization[](10);
@@ -84,5 +85,6 @@ contract LlamaRewardsClaimTestSetup is LlamaPeripheryTestSetup, DeployLlamaRewar
     CORE.setGuard(
       address(ACCOUNT), bytes4(keccak256("execute(address,bool,uint256,bytes)")), address(rewardsClaimGuard)
     );
+    vm.stopPrank();
   }
 }
