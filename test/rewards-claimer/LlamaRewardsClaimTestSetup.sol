@@ -79,5 +79,10 @@ contract LlamaRewardsClaimTestSetup is LlamaPeripheryTestSetup, DeployLlamaRewar
       address(rewardsContract5), MockRewardsContract.withdrawERC20.selector, true
     );
     rewardsClaimStorage.setAuthorizedTargetSelectors(data);
+
+    // Set the Llama rewards claim guard.
+    CORE.setGuard(
+      address(ACCOUNT), bytes4(keccak256("execute(address,bool,uint256,bytes)")), address(rewardsClaimGuard)
+    );
   }
 }
