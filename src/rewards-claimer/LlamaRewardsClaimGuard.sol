@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity 0.8.23;
 
 import {ILlamaActionGuard} from "src/interfaces/ILlamaActionGuard.sol";
 import {ActionInfo} from "src/lib/Structs.sol";
