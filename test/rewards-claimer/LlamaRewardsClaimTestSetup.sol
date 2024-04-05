@@ -15,8 +15,4 @@ contract LlamaRewardsClaimTestSetup is LlamaPeripheryTestSetup, DeployLlamaRewar
     // Deploy the Llama Token Voting factory and logic contracts.
     DeployLlamaRewardsClaimer.run("mockRewardsClaimerConfig.json");
   }
-
-  // =========================
-  // ======== Helpers ========
-  // =========================
 }
