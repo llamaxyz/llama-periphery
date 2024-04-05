@@ -1,0 +1,11 @@
+{
+  "comment": "This is a rewards claimer deployment for Forge tests.",
+  "llamaExecutor": "0xdAf00E9786cABB195a8a1Cf102730863aE94Dd75",
+  "initialTargetSelectorAuthorizations": [
+    {
+      "comment": "DeadBeef.withdraw()",
+      "selector": "0x3ccfd60b",
+      "target": "0x00000000000000000000000000000000deadbeef"
+    }
+  ]
+}
