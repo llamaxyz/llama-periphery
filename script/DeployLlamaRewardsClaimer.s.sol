@@ -15,7 +15,6 @@ contract DeployLlamaRewardsClaimer is Script {
   struct TargetSelectorAuthorizationInputs {
     // Attributes need to be in alphabetical order so JSON decodes properly.
     string comment;
-    bool isAuthorized;
     bytes selector;
     address target;
   }
@@ -63,7 +62,7 @@ contract DeployLlamaRewardsClaimer is Script {
     for (uint256 i = 0; i < rawConfigs.length; i++) {
       configs[i].target = rawConfigs[i].target;
       configs[i].selector = bytes4(rawConfigs[i].selector);
-      configs[i].isAuthorized = rawConfigs[i].isAuthorized;
+      configs[i].isAuthorized = true;
     }
 
     return configs;

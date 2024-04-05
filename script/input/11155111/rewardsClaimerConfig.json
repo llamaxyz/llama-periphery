@@ -4,7 +4,6 @@
   "initialTargetSelectorAuthorizations": [
     {
       "comment": "Target::Selector",
-      "isAuthorized": false,
       "selector": "0x00000000",
       "target": "0x0000000000000000000000000000000000000000"
     }
