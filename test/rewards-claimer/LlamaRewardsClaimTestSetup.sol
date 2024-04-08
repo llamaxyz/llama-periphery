@@ -12,10 +12,22 @@ import {MockRewardsContract} from "test/mock/MockRewardsContract.sol";
 
 import {DeployLlamaRewardsClaimer} from "script/DeployLlamaRewardsClaimer.s.sol";
 
+import {ILlamaAccount} from "src/interfaces/ILlamaAccount.sol";
+import {ILlamaPolicy} from "src/interfaces/ILlamaPolicy.sol";
+import {ActionInfo} from "src/lib/Structs.sol";
+import {LlamaRewardsClaimAccountExtension} from "src/rewards-claimer/LlamaRewardsClaimAccountExtension.sol";
 import {LlamaRewardsClaimStorage} from "src/rewards-claimer/LlamaRewardsClaimStorage.sol";
 
 contract LlamaRewardsClaimTestSetup is LlamaPeripheryTestSetup, DeployLlamaRewardsClaimer {
+  // Sample ERC20 token
   IERC20 public constant USDC = IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
+
+  // Mock rewards contracts
+  MockRewardsContract rewardsContract1;
+  MockRewardsContract rewardsContract2;
+  MockRewardsContract rewardsContract3;
+  MockRewardsContract rewardsContract4;
+  MockRewardsContract rewardsContract5;
 
   function setUp() public virtual override {
     LlamaPeripheryTestSetup.setUp();
@@ -25,23 +37,23 @@ contract LlamaRewardsClaimTestSetup is LlamaPeripheryTestSetup, DeployLlamaRewar
 
     // Deploy the mock rewards contracts and set LlamaAccount as the reward claimer.
     // Deal ETH and UNI to the rewards contracts.
-    MockRewardsContract rewardsContract1 = new MockRewardsContract(address(ACCOUNT));
+    rewardsContract1 = new MockRewardsContract(address(ACCOUNT));
     vm.deal(address(rewardsContract1), 1 ether);
     deal(address(USDC), address(rewardsContract1), 1 ether);
 
-    MockRewardsContract rewardsContract2 = new MockRewardsContract(address(ACCOUNT));
+    rewardsContract2 = new MockRewardsContract(address(ACCOUNT));
     vm.deal(address(rewardsContract2), 1 ether);
     deal(address(USDC), address(rewardsContract2), 1 ether);
 
-    MockRewardsContract rewardsContract3 = new MockRewardsContract(address(ACCOUNT));
+    rewardsContract3 = new MockRewardsContract(address(ACCOUNT));
     vm.deal(address(rewardsContract3), 1 ether);
     deal(address(USDC), address(rewardsContract3), 1 ether);
 
-    MockRewardsContract rewardsContract4 = new MockRewardsContract(address(ACCOUNT));
+    rewardsContract4 = new MockRewardsContract(address(ACCOUNT));
     vm.deal(address(rewardsContract4), 1 ether);
     deal(address(USDC), address(rewardsContract4), 1 ether);
 
-    MockRewardsContract rewardsContract5 = new MockRewardsContract(address(ACCOUNT));
+    rewardsContract5 = new MockRewardsContract(address(ACCOUNT));
     vm.deal(address(rewardsContract5), 1 ether);
     deal(address(USDC), address(rewardsContract5), 1 ether);
 
@@ -82,9 +94,61 @@ contract LlamaRewardsClaimTestSetup is LlamaPeripheryTestSetup, DeployLlamaRewar
     rewardsClaimStorage.setAuthorizedTargetSelectors(data);
 
     // Set the Llama rewards claim guard.
-    CORE.setGuard(
-      address(ACCOUNT), bytes4(keccak256("execute(address,bool,uint256,bytes)")), address(rewardsClaimGuard)
+    CORE.setGuard(address(ACCOUNT), ILlamaAccount.execute.selector, address(rewardsClaimGuard));
+
+    // Assign LlamaAccount.execute permission to Core Team role.
+    POLICY.setRolePermission(
+      CORE_TEAM_ROLE,
+      ILlamaPolicy.PermissionData(address(ACCOUNT), ILlamaAccount.execute.selector, address(STRATEGY)),
+      true
     );
     vm.stopPrank();
+  }
+
+  // =========================
+  // ======== Helpers ========
+  // =========================
+
+  function _createActionClaimRewards() public returns (ActionInfo memory actionInfo) {
+    LlamaRewardsClaimAccountExtension.TargetData[] memory targetData =
+      new LlamaRewardsClaimAccountExtension.TargetData[](10);
+    targetData[0] = LlamaRewardsClaimAccountExtension.TargetData(
+      address(rewardsContract1), 0, abi.encodeCall(MockRewardsContract.withdrawETH, ())
+    );
+    targetData[1] = LlamaRewardsClaimAccountExtension.TargetData(
+      address(rewardsContract1), 0, abi.encodeCall(MockRewardsContract.withdrawERC20, (USDC))
+    );
+    targetData[2] = LlamaRewardsClaimAccountExtension.TargetData(
+      address(rewardsContract2), 0, abi.encodeCall(MockRewardsContract.withdrawETH, ())
+    );
+    targetData[3] = LlamaRewardsClaimAccountExtension.TargetData(
+      address(rewardsContract2), 0, abi.encodeCall(MockRewardsContract.withdrawERC20, (USDC))
+    );
+    targetData[4] = LlamaRewardsClaimAccountExtension.TargetData(
+      address(rewardsContract3), 0, abi.encodeCall(MockRewardsContract.withdrawETH, ())
+    );
+    targetData[5] = LlamaRewardsClaimAccountExtension.TargetData(
+      address(rewardsContract3), 0, abi.encodeCall(MockRewardsContract.withdrawERC20, (USDC))
+    );
+    targetData[6] = LlamaRewardsClaimAccountExtension.TargetData(
+      address(rewardsContract4), 0, abi.encodeCall(MockRewardsContract.withdrawETH, ())
+    );
+    targetData[7] = LlamaRewardsClaimAccountExtension.TargetData(
+      address(rewardsContract4), 0, abi.encodeCall(MockRewardsContract.withdrawERC20, (USDC))
+    );
+    targetData[8] = LlamaRewardsClaimAccountExtension.TargetData(
+      address(rewardsContract5), 0, abi.encodeCall(MockRewardsContract.withdrawETH, ())
+    );
+    targetData[9] = LlamaRewardsClaimAccountExtension.TargetData(
+      address(rewardsContract5), 0, abi.encodeCall(MockRewardsContract.withdrawERC20, (USDC))
+    );
+
+    bytes memory accountExtensionData = abi.encodeCall(LlamaRewardsClaimAccountExtension.claimRewards, (targetData));
+    bytes memory data =
+      abi.encodeCall(ILlamaAccount.execute, (address(rewardsClaimAccountExtension), true, 0, accountExtensionData));
+
+    vm.prank(coreTeam1);
+    uint256 actionId = CORE.createAction(CORE_TEAM_ROLE, STRATEGY, address(ACCOUNT), 0, data, "");
+    actionInfo = ActionInfo(actionId, coreTeam1, CORE_TEAM_ROLE, STRATEGY, address(ACCOUNT), 0, data);
   }
 }
