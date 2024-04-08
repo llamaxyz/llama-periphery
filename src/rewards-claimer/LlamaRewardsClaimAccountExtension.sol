@@ -39,7 +39,7 @@ contract LlamaRewardsClaimAccountExtension is LlamaBaseAccountExtension {
   function claimRewards(TargetData[] memory targetData) external onlyDelegateCall returns (bytes[] memory returnData) {
     uint256 length = targetData.length;
     returnData = new bytes[](length);
-    for (uint256 i = 0; i < length; LlamaUtils.uncheckedIncrement(i)) {
+    for (uint256 i = 0; i < length; i = LlamaUtils.uncheckedIncrement(i)) {
       address target = targetData[i].target;
       uint256 value = targetData[i].value;
       bytes memory callData = targetData[i].data;

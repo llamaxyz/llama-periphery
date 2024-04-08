@@ -15,6 +15,9 @@ contract MockRewardsContract {
     _;
   }
 
+  event ethWithdrawn(address indexed from, address indexed to, uint256 amount);
+  event erc20Withdrawn(IERC20 indexed token, address indexed from, address indexed to, uint256 amount);
+
   address public immutable REWARD_CLAIMER;
 
   constructor(address rewardClaimer) {
@@ -22,10 +25,12 @@ contract MockRewardsContract {
   }
 
   function withdrawETH() external payable onlyRewardClaimer {
+    emit ethWithdrawn(address(this), REWARD_CLAIMER, address(this).balance);
     Address.sendValue(payable(REWARD_CLAIMER), address(this).balance);
   }
 
   function withdrawERC20(IERC20 token) external onlyRewardClaimer {
+    emit erc20Withdrawn(token, address(this), REWARD_CLAIMER, token.balanceOf(address(this)));
     token.safeTransfer(REWARD_CLAIMER, token.balanceOf(address(this)));
   }
 }
