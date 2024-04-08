@@ -3,7 +3,6 @@ pragma solidity ^0.8.23;
 
 import {Test, console2} from "forge-std/Test.sol";
 
-import {MockRewardsContract} from "test/mock/MockRewardsContract.sol";
 import {LlamaRewardsClaimTestSetup} from "test/rewards-claimer/LlamaRewardsClaimTestSetup.sol";
 
 import {ILlamaAccount} from "src/interfaces/ILlamaAccount.sol";
