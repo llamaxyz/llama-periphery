@@ -98,4 +98,23 @@ contract ValidateActionCreation is LlamaRewardsClaimGuardTest {
     );
     CORE.createAction(CORE_TEAM_ROLE, STRATEGY, address(ACCOUNT), 0, data, "");
   }
+
+  function test_RevertIf_NotDelegateCall() public {
+    LlamaRewardsClaimAccountExtension.TargetData[] memory targetData = _setupClaimRewardsData();
+
+    bytes memory accountExtensionData = abi.encodeCall(LlamaRewardsClaimAccountExtension.claimRewards, (targetData));
+    bytes memory data =
+      abi.encodeCall(ILlamaAccount.execute, (address(rewardsClaimAccountExtension), false, 0, accountExtensionData));
+
+    vm.prank(coreTeam1);
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        LlamaRewardsClaimGuard.UnauthorizedCall.selector,
+        address(rewardsClaimAccountExtension),
+        LlamaRewardsClaimAccountExtension.claimRewards.selector,
+        false
+      )
+    );
+    CORE.createAction(CORE_TEAM_ROLE, STRATEGY, address(ACCOUNT), 0, data, "");
+  }
 }
