@@ -23,44 +23,6 @@ contract Constructor is LlamaRewardsClaimGuardTest {
 }
 
 contract ValidateActionCreation is LlamaRewardsClaimGuardTest {
-  function _setupClaimRewardsData()
-    public
-    view
-    returns (LlamaRewardsClaimAccountExtension.TargetData[] memory targetData)
-  {
-    targetData = new LlamaRewardsClaimAccountExtension.TargetData[](10);
-    targetData[0] = LlamaRewardsClaimAccountExtension.TargetData(
-      address(rewardsContract1), 0, abi.encodeCall(MockRewardsContract.withdrawETH, ())
-    );
-    targetData[1] = LlamaRewardsClaimAccountExtension.TargetData(
-      address(rewardsContract1), 0, abi.encodeCall(MockRewardsContract.withdrawERC20, (USDC))
-    );
-    targetData[2] = LlamaRewardsClaimAccountExtension.TargetData(
-      address(rewardsContract2), 0, abi.encodeCall(MockRewardsContract.withdrawETH, ())
-    );
-    targetData[3] = LlamaRewardsClaimAccountExtension.TargetData(
-      address(rewardsContract2), 0, abi.encodeCall(MockRewardsContract.withdrawERC20, (USDC))
-    );
-    targetData[4] = LlamaRewardsClaimAccountExtension.TargetData(
-      address(rewardsContract3), 0, abi.encodeCall(MockRewardsContract.withdrawETH, ())
-    );
-    targetData[5] = LlamaRewardsClaimAccountExtension.TargetData(
-      address(rewardsContract3), 0, abi.encodeCall(MockRewardsContract.withdrawERC20, (USDC))
-    );
-    targetData[6] = LlamaRewardsClaimAccountExtension.TargetData(
-      address(rewardsContract4), 0, abi.encodeCall(MockRewardsContract.withdrawETH, ())
-    );
-    targetData[7] = LlamaRewardsClaimAccountExtension.TargetData(
-      address(rewardsContract4), 0, abi.encodeCall(MockRewardsContract.withdrawERC20, (USDC))
-    );
-    targetData[8] = LlamaRewardsClaimAccountExtension.TargetData(
-      address(rewardsContract5), 0, abi.encodeCall(MockRewardsContract.withdrawETH, ())
-    );
-    targetData[9] = LlamaRewardsClaimAccountExtension.TargetData(
-      address(rewardsContract5), 0, abi.encodeCall(MockRewardsContract.withdrawERC20, (USDC))
-    );
-  }
-
   function test_PositiveFlow() public {
     LlamaRewardsClaimAccountExtension.TargetData[] memory targetData = _setupClaimRewardsData();
 

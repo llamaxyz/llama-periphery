@@ -109,9 +109,12 @@ contract LlamaRewardsClaimTestSetup is LlamaPeripheryTestSetup, DeployLlamaRewar
   // ======== Helpers ========
   // =========================
 
-  function _createActionClaimRewards() public returns (ActionInfo memory actionInfo) {
-    LlamaRewardsClaimAccountExtension.TargetData[] memory targetData =
-      new LlamaRewardsClaimAccountExtension.TargetData[](10);
+  function _setupClaimRewardsData()
+    public
+    view
+    returns (LlamaRewardsClaimAccountExtension.TargetData[] memory targetData)
+  {
+    targetData = new LlamaRewardsClaimAccountExtension.TargetData[](10);
     targetData[0] = LlamaRewardsClaimAccountExtension.TargetData(
       address(rewardsContract1), 0, abi.encodeCall(MockRewardsContract.withdrawETH, ())
     );
@@ -142,7 +145,10 @@ contract LlamaRewardsClaimTestSetup is LlamaPeripheryTestSetup, DeployLlamaRewar
     targetData[9] = LlamaRewardsClaimAccountExtension.TargetData(
       address(rewardsContract5), 0, abi.encodeCall(MockRewardsContract.withdrawERC20, (USDC))
     );
+  }
 
+  function _createActionClaimRewards() public returns (ActionInfo memory actionInfo) {
+    LlamaRewardsClaimAccountExtension.TargetData[] memory targetData = _setupClaimRewardsData();
     bytes memory accountExtensionData = abi.encodeCall(LlamaRewardsClaimAccountExtension.claimRewards, (targetData));
     bytes memory data =
       abi.encodeCall(ILlamaAccount.execute, (address(rewardsClaimAccountExtension), true, 0, accountExtensionData));
@@ -150,5 +156,8 @@ contract LlamaRewardsClaimTestSetup is LlamaPeripheryTestSetup, DeployLlamaRewar
     vm.prank(coreTeam1);
     uint256 actionId = CORE.createAction(CORE_TEAM_ROLE, STRATEGY, address(ACCOUNT), 0, data, "");
     actionInfo = ActionInfo(actionId, coreTeam1, CORE_TEAM_ROLE, STRATEGY, address(ACCOUNT), 0, data);
+
+    vm.prank(coreTeam1);
+    CORE.castApproval(CORE_TEAM_ROLE, actionInfo, "");
   }
 }
