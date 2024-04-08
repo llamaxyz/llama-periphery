@@ -61,6 +61,21 @@ contract ValidateActionCreation is LlamaRewardsClaimGuardTest {
     );
   }
 
+  function test_PositiveFlow() public {
+    LlamaRewardsClaimAccountExtension.TargetData[] memory targetData = _setupClaimRewardsData();
+
+    bytes memory accountExtensionData = abi.encodeCall(LlamaRewardsClaimAccountExtension.claimRewards, (targetData));
+    bytes memory data =
+      abi.encodeCall(ILlamaAccount.execute, (address(rewardsClaimAccountExtension), true, 0, accountExtensionData));
+
+    assertEq(CORE.actionsCount(), 12);
+
+    vm.prank(coreTeam1);
+    CORE.createAction(CORE_TEAM_ROLE, STRATEGY, address(ACCOUNT), 0, data, "");
+
+    assertEq(CORE.actionsCount(), 13);
+  }
+
   function test_RevertIf_TargetIsNotRewardsClaimer() public {
     LlamaRewardsClaimAccountExtension.TargetData[] memory targetData = _setupClaimRewardsData();
 
