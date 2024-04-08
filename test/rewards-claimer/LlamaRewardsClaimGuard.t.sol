@@ -23,7 +23,11 @@ contract Constructor is LlamaRewardsClaimGuardTest {
 }
 
 contract ValidateActionCreation is LlamaRewardsClaimGuardTest {
-  function _setupClaimRewardsData() public returns (LlamaRewardsClaimAccountExtension.TargetData[] memory targetData) {
+  function _setupClaimRewardsData()
+    public
+    view
+    returns (LlamaRewardsClaimAccountExtension.TargetData[] memory targetData)
+  {
     targetData = new LlamaRewardsClaimAccountExtension.TargetData[](10);
     targetData[0] = LlamaRewardsClaimAccountExtension.TargetData(
       address(rewardsContract1), 0, abi.encodeCall(MockRewardsContract.withdrawETH, ())
@@ -72,6 +76,24 @@ contract ValidateActionCreation is LlamaRewardsClaimGuardTest {
         dummyTarget,
         LlamaRewardsClaimAccountExtension.claimRewards.selector,
         true
+      )
+    );
+    CORE.createAction(CORE_TEAM_ROLE, STRATEGY, address(ACCOUNT), 0, data, "");
+  }
+
+  function test_RevertIf_SelectorIsNotClaimRewards() public {
+    LlamaRewardsClaimAccountExtension.TargetData[] memory targetData = _setupClaimRewardsData();
+
+    bytes4 dummySelector = bytes4(0);
+
+    bytes memory accountExtensionData = abi.encodeWithSelector(dummySelector, targetData);
+    bytes memory data =
+      abi.encodeCall(ILlamaAccount.execute, (address(rewardsClaimAccountExtension), true, 0, accountExtensionData));
+
+    vm.prank(coreTeam1);
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        LlamaRewardsClaimGuard.UnauthorizedCall.selector, address(rewardsClaimAccountExtension), dummySelector, true
       )
     );
     CORE.createAction(CORE_TEAM_ROLE, STRATEGY, address(ACCOUNT), 0, data, "");
