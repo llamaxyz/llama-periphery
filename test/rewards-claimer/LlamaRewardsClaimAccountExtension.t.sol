@@ -14,6 +14,7 @@ import {ActionInfo} from "src/lib/Structs.sol";
 import {LlamaRewardsClaimAccountExtension} from "src/rewards-claimer/LlamaRewardsClaimAccountExtension.sol";
 import {LlamaRewardsClaimGuard} from "src/rewards-claimer/LlamaRewardsClaimGuard.sol";
 import {LlamaRewardsClaimStorage} from "src/rewards-claimer/LlamaRewardsClaimStorage.sol";
+import {LlamaBaseAccountExtension} from "src/common/LlamaBaseAccountExtension.sol";
 
 contract LlamaRewardsClaimAccountExtensionTest is LlamaRewardsClaimTestSetup {
   event ethWithdrawn(address indexed from, address indexed to, uint256 amount);
@@ -132,5 +133,11 @@ contract ClaimRewards is LlamaRewardsClaimAccountExtensionTest {
     );
     vm.expectRevert(expectedErr);
     CORE.executeAction(actionInfo);
+  }
+
+  function test_RevertIf_NotDelegateCalled() public {
+    LlamaRewardsClaimAccountExtension.TargetData[] memory targetData = _setupClaimRewardsData();
+    vm.expectRevert(LlamaBaseAccountExtension.OnlyDelegateCall.selector);
+    rewardsClaimAccountExtension.claimRewards(targetData);
   }
 }
