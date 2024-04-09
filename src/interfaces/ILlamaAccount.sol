@@ -5,6 +5,10 @@ pragma solidity ^0.8.23;
 /// @author Llama (devsdosomething@llama.xyz)
 /// @notice This is the interface for Llama accounts which can be used to hold assets for a Llama instance.
 interface ILlamaAccount {
+  /// @dev External call failed.
+  /// @param result Data returned by the called function.
+  error FailedExecution(bytes result);
+
   // -------- For Inspection --------
 
   /// @notice Returns the address of the Llama instance's executor.

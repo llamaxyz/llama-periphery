@@ -29,6 +29,10 @@ interface ILlamaCore {
   /// @param current The current state of the action.
   error InvalidActionState(ActionState current);
 
+  /// @dev Action execution failed.
+  /// @param reason Data returned by the function called by the action.
+  error FailedActionExecution(bytes reason);
+
   function actionGuard(address target, bytes4 selector) external view returns (address guard);
 
   function actionsCount() external view returns (uint256);

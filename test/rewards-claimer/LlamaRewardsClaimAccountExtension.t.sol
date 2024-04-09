@@ -9,9 +9,11 @@ import {MockRewardsContract} from "test/mock/MockRewardsContract.sol";
 import {LlamaRewardsClaimTestSetup} from "test/rewards-claimer/LlamaRewardsClaimTestSetup.sol";
 
 import {ILlamaAccount} from "src/interfaces/ILlamaAccount.sol";
+import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
 import {ActionInfo} from "src/lib/Structs.sol";
 import {LlamaRewardsClaimAccountExtension} from "src/rewards-claimer/LlamaRewardsClaimAccountExtension.sol";
 import {LlamaRewardsClaimGuard} from "src/rewards-claimer/LlamaRewardsClaimGuard.sol";
+import {LlamaRewardsClaimStorage} from "src/rewards-claimer/LlamaRewardsClaimStorage.sol";
 
 contract LlamaRewardsClaimAccountExtensionTest is LlamaRewardsClaimTestSetup {
   event ethWithdrawn(address indexed from, address indexed to, uint256 amount);
@@ -103,5 +105,32 @@ contract ClaimRewards is LlamaRewardsClaimAccountExtensionTest {
 
     assertEq(address(ACCOUNT).balance, initialLlamaAccountETHBalance + 5 ether);
     assertEq(USDC.balanceOf(address(ACCOUNT)), initialLlamaAccountUSDCBalance + 5 ether);
+  }
+
+  function test_RevertIf_NotAuthorizedTargetSelector() public {
+    ActionInfo memory actionInfo = _createAndQueueActionClaimRewards();
+
+    // Unauthorize target selector.
+    LlamaRewardsClaimStorage.TargetSelectorAuthorization[] memory data =
+      new LlamaRewardsClaimStorage.TargetSelectorAuthorization[](1);
+    data[0] = LlamaRewardsClaimStorage.TargetSelectorAuthorization(
+      address(rewardsContract1), MockRewardsContract.withdrawETH.selector, false
+    );
+    vm.prank(address(EXECUTOR));
+    rewardsClaimStorage.setAuthorizedTargetSelectors(data);
+
+    bytes memory expectedErr = abi.encodeWithSelector(
+      ILlamaCore.FailedActionExecution.selector,
+      abi.encodeWithSelector(
+        ILlamaAccount.FailedExecution.selector,
+        abi.encodeWithSelector(
+          LlamaRewardsClaimAccountExtension.UnauthorizedTargetSelector.selector,
+          address(rewardsContract1),
+          MockRewardsContract.withdrawETH.selector
+        )
+      )
+    );
+    vm.expectRevert(expectedErr);
+    CORE.executeAction(actionInfo);
   }
 }
