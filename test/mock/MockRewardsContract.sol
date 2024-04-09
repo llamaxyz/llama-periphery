@@ -24,6 +24,8 @@ contract MockRewardsContract {
     REWARD_CLAIMER = rewardClaimer;
   }
 
+  receive() external payable {}
+
   function withdrawETH() external payable onlyRewardClaimer {
     emit ethWithdrawn(address(this), REWARD_CLAIMER, address(this).balance);
     Address.sendValue(payable(REWARD_CLAIMER), address(this).balance);
