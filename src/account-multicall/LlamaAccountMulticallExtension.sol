@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
+import {LlamaAccountMulticallStorage} from "src/account-multicall/LlamaAccountMulticallStorage.sol";
 import {LlamaBaseAccountExtension} from "src/common/LlamaBaseAccountExtension.sol";
 import {LlamaUtils} from "src/lib/LlamaUtils.sol";
-import {LlamaRewardsClaimStorage} from "src/rewards-claimer/LlamaRewardsClaimStorage.sol";
 
-/// @title Llama Rewards Claim Account Extension
+/// @title Llama Account Multicall Extension
 /// @author Llama (devsdosomething@llama.xyz)
-/// @notice An account extension that claims rewards on behalf of the Llama account.
+/// @notice An account extension that can multicall on behalf of the Llama account.
 /// @dev This contract should be delegate-called from a Llama account.
-contract LlamaRewardsClaimAccountExtension is LlamaBaseAccountExtension {
+contract LlamaAccountMulticallExtension is LlamaBaseAccountExtension {
   /// @dev Struct to hold target data.
   struct TargetData {
     address target; // The target contract.
@@ -25,18 +25,18 @@ contract LlamaRewardsClaimAccountExtension is LlamaBaseAccountExtension {
   /// @dev Thrown if the target-selector is not authorized.
   error UnauthorizedTargetSelector(address target, bytes4 selector);
 
-  /// @notice The rewards claim storage contract.
-  LlamaRewardsClaimStorage public immutable REWARDS_CLAIM_STORAGE;
+  /// @notice The Llama account multicall storage contract.
+  LlamaAccountMulticallStorage public immutable ACCOUNT_MULTICALL_STORAGE;
 
-  /// @dev Initializes the Llama rewards claim account extenstion.
-  constructor(LlamaRewardsClaimStorage rewardsClaimStorage) {
-    REWARDS_CLAIM_STORAGE = rewardsClaimStorage;
+  /// @dev Initializes the Llama account multicall extenstion.
+  constructor(LlamaAccountMulticallStorage accountMulticallStorage) {
+    ACCOUNT_MULTICALL_STORAGE = accountMulticallStorage;
   }
 
-  /// @notice Claims rewards from the target contracts.
-  /// @param targetData The target data to claim rewards from.
+  /// @notice Multicalls on behalf of the Llama account.
+  /// @param targetData The target data to multicall.
   /// @return returnData The return data from the target calls.
-  function claimRewards(TargetData[] memory targetData) external onlyDelegateCall returns (bytes[] memory returnData) {
+  function multicall(TargetData[] memory targetData) external onlyDelegateCall returns (bytes[] memory returnData) {
     uint256 length = targetData.length;
     returnData = new bytes[](length);
     for (uint256 i = 0; i < length; i = LlamaUtils.uncheckedIncrement(i)) {
@@ -46,7 +46,7 @@ contract LlamaRewardsClaimAccountExtension is LlamaBaseAccountExtension {
       bytes4 selector = bytes4(callData);
 
       // Check if the target-selector is authorized.
-      if (!REWARDS_CLAIM_STORAGE.authorizedTargetSelectors(target, selector)) {
+      if (!ACCOUNT_MULTICALL_STORAGE.authorizedTargetSelectors(target, selector)) {
         revert UnauthorizedTargetSelector(target, selector);
       }
 

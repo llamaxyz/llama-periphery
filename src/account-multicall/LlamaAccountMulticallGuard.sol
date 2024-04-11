@@ -1,24 +1,24 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
+import {LlamaAccountMulticallExtension} from "src/account-multicall/LlamaAccountMulticallExtension.sol";
 import {ILlamaActionGuard} from "src/interfaces/ILlamaActionGuard.sol";
 import {ActionInfo} from "src/lib/Structs.sol";
-import {LlamaRewardsClaimAccountExtension} from "src/rewards-claimer/LlamaRewardsClaimAccountExtension.sol";
 
-/// @title Llama Rewards Claim Guard
+/// @title Llama Account Multicall Guard
 /// @author Llama (devsdosomething@llama.xyz)
-/// @notice A guard that only allows the `LlamaRewardsClaimAccountExtension.claimRewards` to be delegate-called
+/// @notice A guard that only allows the `LlamaAccountMulticallExtension.multicall` to be delegate-called
 /// @dev This guard should be used to protect the `execute` function in the `LlamaAccount` contract
-contract LlamaRewardsClaimGuard is ILlamaActionGuard {
+contract LlamaAccountMulticallGuard is ILlamaActionGuard {
   /// @dev Thrown if the call is not authorized.
   error UnauthorizedCall(address target, bytes4 selector, bool withDelegatecall);
 
-  /// @notice The address of the `RewardsClaimer` account extension.
-  LlamaRewardsClaimAccountExtension public immutable REWARDS_CLAIMER;
+  /// @notice The address of the Llama account multicall extension.
+  LlamaAccountMulticallExtension public immutable ACCOUNT_MULTICALL_EXTENSION;
 
-  /// @dev Initializes the Llama rewards claim guard.
-  constructor(LlamaRewardsClaimAccountExtension rewardsClaimer) {
-    REWARDS_CLAIMER = rewardsClaimer;
+  /// @dev Initializes the Llama account multicall guard.
+  constructor(LlamaAccountMulticallExtension accountMulticallExtension) {
+    ACCOUNT_MULTICALL_EXTENSION = accountMulticallExtension;
   }
 
   /// @inheritdoc ILlamaActionGuard
@@ -28,9 +28,10 @@ contract LlamaRewardsClaimGuard is ILlamaActionGuard {
       abi.decode(actionInfo.data[4:], (address, bool, uint256, bytes));
     bytes4 selector = bytes4(data);
 
-    // Check if the target is the rewards claimer, selector is `claimRewards` and the call type is a delegatecall.
+    // Check if the target is the Llama account multicall extension, selector is `multicall` and the call type is a
+    // delegatecall.
     if (
-      target != address(REWARDS_CLAIMER) || selector != LlamaRewardsClaimAccountExtension.claimRewards.selector
+      target != address(ACCOUNT_MULTICALL_EXTENSION) || selector != LlamaAccountMulticallExtension.multicall.selector
         || !withDelegatecall
     ) revert UnauthorizedCall(target, selector, withDelegatecall);
   }

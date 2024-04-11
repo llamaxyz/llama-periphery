@@ -3,11 +3,11 @@ pragma solidity 0.8.23;
 
 import {LlamaUtils} from "src/lib/LlamaUtils.sol";
 
-/// @title Llama Rewards Claim Storage
+/// @title Llama Account Multicall Storage
 /// @author Llama (devsdosomething@llama.xyz)
-/// @notice The storage contract for the `LlamaRewardsClaimAccountExtension` contract.
+/// @notice The storage contract for the `LlamaAccountMulticallExtension` contract.
 /// @dev This is a separate storage contract to prevent storage collisions with the Llama account.
-contract LlamaRewardsClaimStorage {
+contract LlamaAccountMulticallStorage {
   /// @dev Struct to hold authorized target-selectors.
   struct TargetSelectorAuthorization {
     address target; // The target contract.
@@ -27,7 +27,7 @@ contract LlamaRewardsClaimStorage {
   /// @notice Mapping of all authorized target-selectors.
   mapping(address target => mapping(bytes4 selector => bool isAuthorized)) public authorizedTargetSelectors;
 
-  /// @dev Initializes the Llama rewards claim storage.
+  /// @dev Initializes the Llama account multicall storage.
   constructor(address llamaExecutor, TargetSelectorAuthorization[] memory data) {
     LLAMA_EXECUTOR = llamaExecutor;
     _setAuthorizedTargetSelectors(data);

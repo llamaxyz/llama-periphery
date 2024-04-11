@@ -1,5 +1,5 @@
 {
-  "comment": "This is an example rewards claimer deployment on Sepolia.",
+  "comment": "This is an example account multicall deployment on Sepolia.",
   "llamaExecutor": "0x0000000000000000000000000000000000000000",
   "initialTargetSelectorAuthorizations": [
     {

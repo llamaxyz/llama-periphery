@@ -28,10 +28,10 @@ dry-run-deploy-voting-module: (run-deploy-voting-module-script '')
 
 deploy-voting-module: (run-deploy-voting-module-script '--broadcast --verify')
 
-run-deploy-rewards-claimer-script flags: (run-script 'DeployLlamaRewardsClaimer' flags '--sig "run(string)"' '"rewardsClaimerConfig.json"')
+run-deploy-account-multicall-script flags: (run-script 'DeployLlamaAccountMulticall' flags '--sig "run(string)"' '"accountMulticallConfig.json"')
 
-dry-run-deploy-rewards-claimer: (run-deploy-rewards-claimer-script '')
+dry-run-deploy-account-multicall: (run-deploy-account-multicall-script '')
 
-deploy-rewards-claimer: (run-deploy-rewards-claimer-script '--broadcast --verify --slow')
+deploy-account-multicall: (run-deploy-account-multicall-script '--broadcast --verify --slow')
 
 verify: (run-script 'DeployLlamaTokenVotingFactory' '--verify --resume')

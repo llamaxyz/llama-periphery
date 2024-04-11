@@ -6,37 +6,36 @@ import {Test, console2} from "forge-std/Test.sol";
 import {IERC20} from "@openzeppelin/token/ERC20/IERC20.sol";
 
 import {MockRewardsContract} from "test/mock/MockRewardsContract.sol";
-import {LlamaRewardsClaimTestSetup} from "test/rewards-claimer/LlamaRewardsClaimTestSetup.sol";
+import {LlamaAccountMulticallTestSetup} from "test/account-multicall/LlamaAccountMulticallTestSetup.sol";
 
 import {ILlamaAccount} from "src/interfaces/ILlamaAccount.sol";
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
 import {ActionInfo} from "src/lib/Structs.sol";
-import {LlamaRewardsClaimAccountExtension} from "src/rewards-claimer/LlamaRewardsClaimAccountExtension.sol";
-import {LlamaRewardsClaimGuard} from "src/rewards-claimer/LlamaRewardsClaimGuard.sol";
-import {LlamaRewardsClaimStorage} from "src/rewards-claimer/LlamaRewardsClaimStorage.sol";
+import {LlamaAccountMulticallExtension} from "src/account-multicall/LlamaAccountMulticallExtension.sol";
+import {LlamaAccountMulticallStorage} from "src/account-multicall/LlamaAccountMulticallStorage.sol";
 import {LlamaBaseAccountExtension} from "src/common/LlamaBaseAccountExtension.sol";
 
-contract LlamaRewardsClaimAccountExtensionTest is LlamaRewardsClaimTestSetup {
+contract LlamaAccountMulticallExtensionTest is LlamaAccountMulticallTestSetup {
   event ethWithdrawn(address indexed from, address indexed to, uint256 amount);
   event erc20Withdrawn(IERC20 indexed token, address indexed from, address indexed to, uint256 amount);
 
   function setUp() public override {
-    LlamaRewardsClaimTestSetup.setUp();
+    LlamaAccountMulticallTestSetup.setUp();
   }
 }
 
-contract Constructor is LlamaRewardsClaimAccountExtensionTest {
-  function test_SetsRewardsClaimStorage() public {
-    assertEq(address(rewardsClaimAccountExtension.REWARDS_CLAIM_STORAGE()), address(rewardsClaimStorage));
+contract Constructor is LlamaAccountMulticallExtensionTest {
+  function test_SetsAccountMulticallStorage() public {
+    assertEq(address(accountMulticallExtension.ACCOUNT_MULTICALL_STORAGE()), address(accountMulticallStorage));
   }
 }
 
-contract ClaimRewards is LlamaRewardsClaimAccountExtensionTest {
+contract Multicall is LlamaAccountMulticallExtensionTest {
   function _createAndQueueActionClaimRewards() public returns (ActionInfo memory actionInfo) {
-    LlamaRewardsClaimAccountExtension.TargetData[] memory targetData = _setupClaimRewardsData();
-    bytes memory accountExtensionData = abi.encodeCall(LlamaRewardsClaimAccountExtension.claimRewards, (targetData));
+    LlamaAccountMulticallExtension.TargetData[] memory targetData = _setupClaimRewardsData();
+    bytes memory accountExtensionData = abi.encodeCall(LlamaAccountMulticallExtension.multicall, (targetData));
     bytes memory data =
-      abi.encodeCall(ILlamaAccount.execute, (address(rewardsClaimAccountExtension), true, 0, accountExtensionData));
+      abi.encodeCall(ILlamaAccount.execute, (address(accountMulticallExtension), true, 0, accountExtensionData));
 
     // Create an action to claim rewards.
     vm.prank(coreTeam1);
@@ -52,7 +51,7 @@ contract ClaimRewards is LlamaRewardsClaimAccountExtensionTest {
     CORE.castApproval(CORE_TEAM_ROLE, actionInfo, "");
   }
 
-  function test_ClaimRewards() public {
+  function test_Multicall() public {
     ActionInfo memory actionInfo = _createAndQueueActionClaimRewards();
 
     assertEq(address(rewardsContract1).balance, 1 ether);
@@ -112,20 +111,20 @@ contract ClaimRewards is LlamaRewardsClaimAccountExtensionTest {
     ActionInfo memory actionInfo = _createAndQueueActionClaimRewards();
 
     // Unauthorize target selector.
-    LlamaRewardsClaimStorage.TargetSelectorAuthorization[] memory data =
-      new LlamaRewardsClaimStorage.TargetSelectorAuthorization[](1);
-    data[0] = LlamaRewardsClaimStorage.TargetSelectorAuthorization(
+    LlamaAccountMulticallStorage.TargetSelectorAuthorization[] memory data =
+      new LlamaAccountMulticallStorage.TargetSelectorAuthorization[](1);
+    data[0] = LlamaAccountMulticallStorage.TargetSelectorAuthorization(
       address(rewardsContract1), MockRewardsContract.withdrawETH.selector, false
     );
     vm.prank(address(EXECUTOR));
-    rewardsClaimStorage.setAuthorizedTargetSelectors(data);
+    accountMulticallStorage.setAuthorizedTargetSelectors(data);
 
     bytes memory expectedErr = abi.encodeWithSelector(
       ILlamaCore.FailedActionExecution.selector,
       abi.encodeWithSelector(
         ILlamaAccount.FailedExecution.selector,
         abi.encodeWithSelector(
-          LlamaRewardsClaimAccountExtension.UnauthorizedTargetSelector.selector,
+          LlamaAccountMulticallExtension.UnauthorizedTargetSelector.selector,
           address(rewardsContract1),
           MockRewardsContract.withdrawETH.selector
         )
@@ -136,8 +135,8 @@ contract ClaimRewards is LlamaRewardsClaimAccountExtensionTest {
   }
 
   function test_RevertIf_NotDelegateCalled() public {
-    LlamaRewardsClaimAccountExtension.TargetData[] memory targetData = _setupClaimRewardsData();
+    LlamaAccountMulticallExtension.TargetData[] memory targetData = _setupClaimRewardsData();
     vm.expectRevert(LlamaBaseAccountExtension.OnlyDelegateCall.selector);
-    rewardsClaimAccountExtension.claimRewards(targetData);
+    accountMulticallExtension.multicall(targetData);
   }
 }
