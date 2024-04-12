@@ -106,4 +106,25 @@ contract DeployAccountMulticallModule is LlamaAccountMulticallFactoryTest {
     assertEq(address(accountMulticallStorage.LLAMA_EXECUTOR()), address(EXECUTOR));
     assertTrue(accountMulticallStorage.authorizedTargetSelectors(address(0xdeadbeef), bytes4(keccak256("withdraw()"))));
   }
+
+  function test_RevertIf_SameDeployerExecutorNonce() public {
+    LlamaAccountMulticallStorage.TargetSelectorAuthorization[] memory data1 =
+      new LlamaAccountMulticallStorage.TargetSelectorAuthorization[](1);
+    data1[0] = LlamaAccountMulticallStorage.TargetSelectorAuthorization(
+      address(0xdeadbeef), bytes4(keccak256("withdraw()")), true
+    );
+    LlamaAccountMulticallFactory.LlamaAccountMulticallConfig memory config =
+      LlamaAccountMulticallFactory.LlamaAccountMulticallConfig(address(EXECUTOR), 0, data1);
+
+    // Initial deploy
+    accountMulticallFactory.deploy(config);
+
+    LlamaAccountMulticallStorage.TargetSelectorAuthorization[] memory data2 =
+      new LlamaAccountMulticallStorage.TargetSelectorAuthorization[](0);
+    config = LlamaAccountMulticallFactory.LlamaAccountMulticallConfig(address(EXECUTOR), 0, data2);
+
+    // Revert on same deployer, executor, and nonce. Even if the TargetSelectorAuthorization data is different.
+    vm.expectRevert();
+    accountMulticallFactory.deploy(config);
+  }
 }
