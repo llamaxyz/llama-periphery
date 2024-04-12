@@ -44,5 +44,5 @@ run-deploy-account-multicall-module-script flags: (run-script 'DeployLlamaAccoun
 
 dry-run-deploy-account-multicall-module: (run-deploy-account-multicall-module-script '')
 
-deploy-account-multicall-module: (run-deploy-account-multicall-module-script '--broadcast --verify')
+deploy-account-multicall-module: (run-deploy-account-multicall-module-script '--broadcast --verify --slow')
 
