@@ -1,6 +1,8 @@
 {
   "comment": "This is an account multicall deployment for Forge tests.",
+  "factory": "0x90193C961A926261B756D1E5bb255e67ff9498A1",
   "llamaExecutor": "0xdAf00E9786cABB195a8a1Cf102730863aE94Dd75",
+  "nonce": 0,
   "initialTargetSelectorAuthorizations": [
     {
       "comment": "DeadBeef.withdraw()",

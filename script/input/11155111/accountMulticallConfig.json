@@ -1,6 +1,8 @@
 {
   "comment": "This is an example account multicall deployment on Sepolia.",
+  "factory": "0x0000000000000000000000000000000000000000",
   "llamaExecutor": "0x0000000000000000000000000000000000000000",
+  "nonce": 0,
   "initialTargetSelectorAuthorizations": [
     {
       "comment": "Target::Selector",

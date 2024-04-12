@@ -10,14 +10,19 @@ import {IERC20} from "@openzeppelin/token/ERC20/IERC20.sol";
 import {LlamaPeripheryTestSetup} from "test/LlamaPeripheryTestSetup.sol";
 import {MockRewardsContract} from "test/mock/MockRewardsContract.sol";
 
-import {DeployLlamaAccountMulticall} from "script/DeployLlamaAccountMulticall.s.sol";
+import {DeployLlamaAccountMulticallFactory} from "script/DeployLlamaAccountMulticallFactory.s.sol";
+import {DeployLlamaAccountMulticallModule} from "script/DeployLlamaAccountMulticallModule.s.sol";
 
 import {ILlamaAccount} from "src/interfaces/ILlamaAccount.sol";
 import {ILlamaPolicy} from "src/interfaces/ILlamaPolicy.sol";
 import {LlamaAccountMulticallExtension} from "src/account-multicall/LlamaAccountMulticallExtension.sol";
 import {LlamaAccountMulticallStorage} from "src/account-multicall/LlamaAccountMulticallStorage.sol";
 
-contract LlamaAccountMulticallTestSetup is LlamaPeripheryTestSetup, DeployLlamaAccountMulticall {
+contract LlamaAccountMulticallTestSetup is
+  LlamaPeripheryTestSetup,
+  DeployLlamaAccountMulticallFactory,
+  DeployLlamaAccountMulticallModule
+{
   // Sample ERC20 token
   IERC20 public constant USDC = IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
 
@@ -31,8 +36,11 @@ contract LlamaAccountMulticallTestSetup is LlamaPeripheryTestSetup, DeployLlamaA
   function setUp() public virtual override {
     LlamaPeripheryTestSetup.setUp();
 
+    // Deploy the factory
+    DeployLlamaAccountMulticallFactory.run();
+
     // Deploy the Llama account multicall contracts.
-    DeployLlamaAccountMulticall.run("mockAccountMulticallConfig.json");
+    DeployLlamaAccountMulticallModule.run(LLAMA_MODULE_DEPLOYER, "mockAccountMulticallConfig.json");
 
     // Deploy the mock rewards contracts and set LlamaAccount as the reward claimer.
     // Deal ETH and UNI to the rewards contracts.

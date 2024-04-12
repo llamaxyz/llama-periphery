@@ -18,20 +18,31 @@ run-script script_name flags='' sig='' args='':
     -vvvv {{flags}}
   mv _test test
 
-run-deploy-voting-module-script flags: (run-script 'DeployLlamaTokenVotingModule' flags '--sig "run(address,string)"' '$SCRIPT_DEPLOYER_ADDRESS "tokenVotingModuleConfig.json"')
+# Token voting module
 
 dry-run-deploy: (run-script 'DeployLlamaTokenVotingFactory')
 
 deploy: (run-script 'DeployLlamaTokenVotingFactory' '--broadcast --verify --slow --build-info --build-info-path build_info')
 
+verify: (run-script 'DeployLlamaTokenVotingFactory' '--verify --resume')
+
+run-deploy-voting-module-script flags: (run-script 'DeployLlamaTokenVotingModule' flags '--sig "run(address,string)"' '$SCRIPT_DEPLOYER_ADDRESS "tokenVotingModuleConfig.json"')
+
 dry-run-deploy-voting-module: (run-deploy-voting-module-script '')
 
 deploy-voting-module: (run-deploy-voting-module-script '--broadcast --verify')
 
-run-deploy-account-multicall-script flags: (run-script 'DeployLlamaAccountMulticall' flags '--sig "run(string)"' '"accountMulticallConfig.json"')
+# Account multicall module
 
-dry-run-deploy-account-multicall: (run-deploy-account-multicall-script '')
+dry-run-deploy-acount-multicall-factory: (run-script 'DeployLlamaAccountMulticallFactory')
 
-deploy-account-multicall: (run-deploy-account-multicall-script '--broadcast --verify --slow')
+deploy-acount-multicall-factory: (run-script 'DeployLlamaAccountMulticallFactory' '--broadcast --verify --slow --build-info --build-info-path build_info')
 
-verify: (run-script 'DeployLlamaTokenVotingFactory' '--verify --resume')
+verify-account-multicall-factory: (run-script 'DeployLlamaAccountMulticallFactory' '--verify --resume')
+
+run-deploy-account-multicall-module-script flags: (run-script 'DeployLlamaAccountMulticallModule' flags '--sig "run(address,string)"' '$SCRIPT_DEPLOYER_ADDRESS "accountMulticallConfig.json"')
+
+dry-run-deploy-account-multicall-module: (run-deploy-account-multicall-module-script '')
+
+deploy-account-multicall-module: (run-deploy-account-multicall-module-script '--broadcast --verify')
+
