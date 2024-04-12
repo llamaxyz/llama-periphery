@@ -19,9 +19,20 @@ contract Constructor is LlamaAccountMulticallStorageTest {
   function test_SetsLlamaExecutor() public {
     assertEq(address(accountMulticallStorage.LLAMA_EXECUTOR()), address(EXECUTOR));
   }
+}
 
-  function test_TargetSelectorAuthorization() public {
+contract InitializeAuthorizedTargetSelectors is LlamaAccountMulticallStorageTest {
+  function test_InitializeAuthorizedTargetSelectors() public {
     assertTrue(accountMulticallStorage.authorizedTargetSelectors(address(0xdeadbeef), bytes4(keccak256("withdraw()"))));
+  }
+
+  function test_RevertIf_AlreadyInitialized() public {
+    LlamaAccountMulticallStorage.TargetSelectorAuthorization[] memory data =
+      new LlamaAccountMulticallStorage.TargetSelectorAuthorization[](0);
+
+    vm.prank(address(EXECUTOR));
+    vm.expectRevert(LlamaAccountMulticallStorage.AlreadyInitialized.selector);
+    accountMulticallStorage.initializeAuthorizedTargetSelectors(data);
   }
 }
 
