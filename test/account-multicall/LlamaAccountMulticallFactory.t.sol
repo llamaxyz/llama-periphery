@@ -29,19 +29,72 @@ contract LlamaAccountMulticallFactoryTest is LlamaPeripheryTestSetup, DeployLlam
     // Deploy the factory
     DeployLlamaAccountMulticallFactory.run();
   }
+
+  // =========================
+  // ======== Helpers ========
+  // =========================
+
+  function _getCreate2Address(address deployer, uint256 salt, bytes memory bytecode) public pure returns (address) {
+    bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), deployer, salt, keccak256(bytecode)));
+
+    // NOTE: cast last 20 bytes of hash to address
+    return address(uint160(uint256(hash)));
+  }
+
+  function _preComputeMulticallAddresses(address moduleDeployer, uint256 nonce)
+    public
+    view
+    returns (
+      address accountMulticallGuardAddress,
+      address accountMulticallExtensionAddress,
+      address accountMulticallStorageAddress
+    )
+  {
+    bytes32 salt = keccak256(abi.encodePacked(moduleDeployer, address(EXECUTOR), nonce));
+
+    bytes memory multicallStorageBytecode =
+      abi.encodePacked(type(LlamaAccountMulticallStorage).creationCode, abi.encode(address(EXECUTOR)));
+    accountMulticallStorageAddress =
+      _getCreate2Address(address(accountMulticallFactory), uint256(salt), multicallStorageBytecode);
+
+    bytes memory multicallExtensionBytecode =
+      abi.encodePacked(type(LlamaAccountMulticallExtension).creationCode, abi.encode(accountMulticallStorageAddress));
+    accountMulticallExtensionAddress =
+      _getCreate2Address(address(accountMulticallFactory), uint256(salt), multicallExtensionBytecode);
+
+    bytes memory multicallGuardBytecode =
+      abi.encodePacked(type(LlamaAccountMulticallGuard).creationCode, abi.encode(accountMulticallExtensionAddress));
+    accountMulticallGuardAddress =
+      _getCreate2Address(address(accountMulticallFactory), uint256(salt), multicallGuardBytecode);
+  }
 }
 
 contract DeployAccountMulticallModule is LlamaAccountMulticallFactoryTest {
   function test_Deploy() public {
     LlamaAccountMulticallStorage.TargetSelectorAuthorization[] memory data =
       new LlamaAccountMulticallStorage.TargetSelectorAuthorization[](1);
+    data[0] = LlamaAccountMulticallStorage.TargetSelectorAuthorization(
+      address(0xdeadbeef), bytes4(keccak256("withdraw()")), true
+    );
     LlamaAccountMulticallFactory.LlamaAccountMulticallConfig memory config =
       LlamaAccountMulticallFactory.LlamaAccountMulticallConfig(address(EXECUTOR), 0, data);
 
-    // vm.expectEmit();
-    // emit LlamaAccountMulticallModuleCreated(
-    //   address(this), address(EXECUTOR), 0, address(0), address(0), address(0), block.chainid
-    // );
+    (
+      address accountMulticallGuardAddress,
+      address accountMulticallExtensionAddress,
+      address accountMulticallStorageAddress
+    ) = _preComputeMulticallAddresses(address(this), 0);
+
+    vm.expectEmit();
+    emit LlamaAccountMulticallModuleCreated(
+      address(this),
+      address(EXECUTOR),
+      0,
+      accountMulticallGuardAddress,
+      accountMulticallExtensionAddress,
+      accountMulticallStorageAddress,
+      block.chainid
+    );
     (
       LlamaAccountMulticallGuard accountMulticallGuard,
       LlamaAccountMulticallExtension accountMulticallExtension,
@@ -51,5 +104,6 @@ contract DeployAccountMulticallModule is LlamaAccountMulticallFactoryTest {
     assertEq(address(accountMulticallGuard.ACCOUNT_MULTICALL_EXTENSION()), address(accountMulticallExtension));
     assertEq(address(accountMulticallExtension.ACCOUNT_MULTICALL_STORAGE()), address(accountMulticallStorage));
     assertEq(address(accountMulticallStorage.LLAMA_EXECUTOR()), address(EXECUTOR));
+    assertTrue(accountMulticallStorage.authorizedTargetSelectors(address(0xdeadbeef), bytes4(keccak256("withdraw()"))));
   }
 }
