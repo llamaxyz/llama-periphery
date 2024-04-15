@@ -34,9 +34,9 @@ deploy-voting-module: (run-deploy-voting-module-script '--broadcast --verify')
 
 # Account multicall module
 
-dry-run-deploy-acount-multicall-factory: (run-script 'DeployLlamaAccountMulticallFactory')
+dry-run-deploy-account-multicall-factory: (run-script 'DeployLlamaAccountMulticallFactory')
 
-deploy-acount-multicall-factory: (run-script 'DeployLlamaAccountMulticallFactory' '--broadcast --verify --slow --build-info --build-info-path build_info')
+deploy-account-multicall-factory: (run-script 'DeployLlamaAccountMulticallFactory' '--broadcast --verify --slow --build-info --build-info-path build_info')
 
 verify-account-multicall-factory: (run-script 'DeployLlamaAccountMulticallFactory' '--verify --resume')
 

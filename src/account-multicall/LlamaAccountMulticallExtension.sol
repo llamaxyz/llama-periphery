@@ -8,7 +8,7 @@ import {LlamaUtils} from "src/lib/LlamaUtils.sol";
 /// @title Llama Account Multicall Extension
 /// @author Llama (devsdosomething@llama.xyz)
 /// @notice An account extension that can multicall on behalf of the Llama account.
-/// @dev This contract should be delegate-called from a Llama account.
+/// @dev This contract should be delegatecalled from a Llama account.
 contract LlamaAccountMulticallExtension is LlamaBaseAccountExtension {
   /// @dev Struct to hold target data.
   struct TargetData {
