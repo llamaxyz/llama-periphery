@@ -36,6 +36,10 @@ contract LlamaPeripheryTestSetup is Test {
   address coreTeam4 = 0x6b45E38c87bfCa15ee90AAe2AFe3CFC58cE08F75;
   address coreTeam5 = 0xbdfcE43E5D2C7AA8599290d940c9932B8dBC94Ca;
 
+  // This is the address that we're using to deploy modules. It could be
+  // replaced with any address that we hold the private key for.
+  address LLAMA_MODULE_DEPLOYER = 0x3d9fEa8AeD0249990133132Bb4BC8d07C6a8259a;
+
   // Mock protocol for action targets.
   MockProtocol public mockProtocol;
 
