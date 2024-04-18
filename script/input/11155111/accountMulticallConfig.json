@@ -1,6 +1,6 @@
 {
   "comment": "This is an example account multicall deployment on Sepolia.",
-  "factory": "0x0000000000000000000000000000000000000000",
+  "factory": "0x5BA5e0e2f0d8C8512C6bA2cA6093Fb50B9635D35",
   "llamaExecutor": "0x0000000000000000000000000000000000000000",
   "nonce": 0,
   "initialTargetSelectorAuthorizations": [
