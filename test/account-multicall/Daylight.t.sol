@@ -24,7 +24,9 @@ import {LlamaAccountMulticallStorage} from "src/account-multicall/LlamaAccountMu
 contract Daylight is Test {
   string OPTIMISM_RPC_URL = vm.envString("OPTIMISM_RPC_URL"); // can't use constant here
 
-  // Daylights's Llama instance.
+  IProtocolRewards public constant REWARDS_CONTRACT = IProtocolRewards(0x7777777F279eba3d3Ad8F4E708545291A6fDBA8B);
+
+  // Daylight's Llama instance.
   ILlamaCore constant CORE = ILlamaCore(0x933094dB418ff18F1C4387965e4cdD6B26176E36);
   ILlamaExecutor constant EXECUTOR = ILlamaExecutor(0x4f3907664DA95607c11009F1BD987226f1689F1c);
   ILlamaPolicy constant POLICY = ILlamaPolicy(0x5d657f5FF2E34CC8015B6548245E7de8dB7C1F24);
