@@ -5,24 +5,22 @@ import {Test, console2} from "forge-std/Test.sol";
 import {Vm} from "forge-std/Vm.sol";
 import {StdUtils} from "forge-std/StdUtils.sol";
 
-import {LlamaPeripheryTestSetup} from "test/LlamaPeripheryTestSetup.sol";
 import {IProtocolRewards} from "test/mock/IProtocolRewards.sol";
-
-import {DeployLlamaAccountMulticallFactory} from "script/DeployLlamaAccountMulticallFactory.s.sol";
-import {DeployLlamaAccountMulticallModule} from "script/DeployLlamaAccountMulticallModule.s.sol";
 
 import {ILlamaAccount} from "src/interfaces/ILlamaAccount.sol";
 import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
-import {ILlamaRelativeStrategyBase} from "src/interfaces/ILlamaRelativeStrategyBase.sol";
 import {ILlamaCore} from "src/interfaces/ILlamaCore.sol";
 import {ILlamaExecutor} from "src/interfaces/ILlamaExecutor.sol";
 import {ILlamaLens} from "src/interfaces/ILlamaLens.sol";
 import {ILlamaPolicy} from "src/interfaces/ILlamaPolicy.sol";
+import {ActionInfo} from "src/lib/Structs.sol";
 import {LlamaAccountMulticallExtension} from "src/account-multicall/LlamaAccountMulticallExtension.sol";
 import {LlamaAccountMulticallStorage} from "src/account-multicall/LlamaAccountMulticallStorage.sol";
 
-contract Daylight is Test {
+contract DaylightTest is Test {
   string OPTIMISM_RPC_URL = vm.envString("OPTIMISM_RPC_URL"); // can't use constant here
+
+  event Withdraw(address indexed from, address indexed to, uint256 amount);
 
   IProtocolRewards public constant REWARDS_CONTRACT = IProtocolRewards(0x7777777F279eba3d3Ad8F4E708545291A6fDBA8B);
 
@@ -54,8 +52,57 @@ contract Daylight is Test {
     vm.createSelectFork(OPTIMISM_RPC_URL, 119_451_383);
   }
 
+  function _setupClaimRewardsData() public view returns (LlamaAccountMulticallExtension.TargetData[] memory targetData) {
+    targetData = new LlamaAccountMulticallExtension.TargetData[](1);
+    targetData[0] = LlamaAccountMulticallExtension.TargetData(
+      address(REWARDS_CONTRACT), 0, abi.encodeCall(REWARDS_CONTRACT.withdrawFor, (address(ACCOUNT), 0))
+    );
+  }
+
   function mineBlock() internal {
     vm.roll(block.number + 1);
     vm.warp(block.timestamp + 1);
+  }
+}
+
+contract Multicall is DaylightTest {
+  function _createAndQueueActionClaimRewards() public returns (ActionInfo memory actionInfo) {
+    LlamaAccountMulticallExtension.TargetData[] memory targetData = _setupClaimRewardsData();
+    bytes memory accountExtensionData = abi.encodeCall(LlamaAccountMulticallExtension.multicall, (targetData));
+    bytes memory data =
+      abi.encodeCall(ILlamaAccount.execute, (address(ACCOUNT_MULTICALL_EXTENSION), true, 0, accountExtensionData));
+
+    // Create an action to claim rewards.
+    vm.prank(policyBot);
+    uint256 actionId = CORE.createAction(
+      REWARDS_CLAIMER_ROLE,
+      INSTANT_STRATEGY,
+      address(ACCOUNT),
+      0,
+      data,
+      "# Claim Rewards for 0xD0844Dd6a7A064d2F3691A2d1b42FC9800438A10\n\n"
+    );
+    actionInfo = ActionInfo(actionId, policyBot, REWARDS_CLAIMER_ROLE, INSTANT_STRATEGY, address(ACCOUNT), 0, data);
+
+    // Queue action.
+    CORE.queueAction(actionInfo);
+  }
+
+  function test_Multicall() public {
+    ActionInfo memory actionInfo = _createAndQueueActionClaimRewards();
+
+    uint256 balanceToClaim = 666_000_000_000_000;
+    assertEq(REWARDS_CONTRACT.balanceOf(address(ACCOUNT)), balanceToClaim);
+
+    uint256 initialLlamaAccountETHBalance = address(ACCOUNT).balance;
+
+    // Execute the action.
+    vm.expectEmit();
+    emit Withdraw(address(ACCOUNT), address(ACCOUNT), balanceToClaim);
+
+    CORE.executeAction(actionInfo);
+
+    assertEq(REWARDS_CONTRACT.balanceOf(address(ACCOUNT)), 0);
+    assertEq(address(ACCOUNT).balance, initialLlamaAccountETHBalance + balanceToClaim);
   }
 }
