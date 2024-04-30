@@ -52,13 +52,6 @@ contract DaylightTest is Test {
     vm.createSelectFork(OPTIMISM_RPC_URL, 119_451_383);
   }
 
-  function _setupClaimRewardsData() public view returns (LlamaAccountMulticallExtension.TargetData[] memory targetData) {
-    targetData = new LlamaAccountMulticallExtension.TargetData[](1);
-    targetData[0] = LlamaAccountMulticallExtension.TargetData(
-      address(REWARDS_CONTRACT), 0, abi.encodeCall(REWARDS_CONTRACT.withdrawFor, (address(ACCOUNT), 0))
-    );
-  }
-
   function mineBlock() internal {
     vm.roll(block.number + 1);
     vm.warp(block.timestamp + 1);
@@ -66,13 +59,36 @@ contract DaylightTest is Test {
 }
 
 contract Multicall is DaylightTest {
+  function _setupClaimRewardsData() public pure returns (LlamaAccountMulticallExtension.TargetData[] memory targetData) {
+    targetData = new LlamaAccountMulticallExtension.TargetData[](1);
+    targetData[0] = LlamaAccountMulticallExtension.TargetData(
+      address(REWARDS_CONTRACT), 0, abi.encodeCall(REWARDS_CONTRACT.withdrawFor, (address(ACCOUNT), 0))
+    );
+    console2.logBytes(abi.encodeCall(REWARDS_CONTRACT.withdrawFor, (address(ACCOUNT), 0)));
+  }
+
   function _createAndQueueActionClaimRewards() public returns (ActionInfo memory actionInfo) {
     LlamaAccountMulticallExtension.TargetData[] memory targetData = _setupClaimRewardsData();
     bytes memory accountExtensionData = abi.encodeCall(LlamaAccountMulticallExtension.multicall, (targetData));
+    console2.logBytes(accountExtensionData);
     bytes memory data =
       abi.encodeCall(ILlamaAccount.execute, (address(ACCOUNT_MULTICALL_EXTENSION), true, 0, accountExtensionData));
+    console2.logBytes(data);
 
     // Create an action to claim rewards.
+    console2.logBytes(
+      abi.encodeCall(
+        ILlamaCore.createAction,
+        (
+          REWARDS_CLAIMER_ROLE,
+          INSTANT_STRATEGY,
+          address(ACCOUNT),
+          0,
+          data,
+          "# Claim Rewards for 0xD0844Dd6a7A064d2F3691A2d1b42FC9800438A10\n\n"
+        )
+      )
+    );
     vm.prank(policyBot);
     uint256 actionId = CORE.createAction(
       REWARDS_CLAIMER_ROLE,
