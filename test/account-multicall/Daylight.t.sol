@@ -88,7 +88,7 @@ contract Multicall is DaylightTest {
     CORE.queueAction(actionInfo);
   }
 
-  function test_Multicall() public {
+  function test_DaylightMulticall() public {
     ActionInfo memory actionInfo = _createAndQueueActionClaimRewards();
 
     uint256 balanceToClaim = 666_000_000_000_000;
