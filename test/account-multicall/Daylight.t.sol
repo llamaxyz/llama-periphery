@@ -33,6 +33,12 @@ contract Daylight is Test {
   ILlamaLens constant LENS = ILlamaLens(0x1D74803D4939aFa3CC9fF1B8667bE4d119d925cB);
   address constant RELATIVE_QUANTITY_QUORUM_LOGIC = 0x81F7D26fD7d814bFcEF78239a32c0BA5282C98Dc;
 
+  // Account Multicall Module.
+  LlamaAccountMulticallStorage constant ACCOUNT_MULTICALL_STORAGE =
+    LlamaAccountMulticallStorage(0x3A44bE9AB1182d335E27DF7E66C0c302f2EeA91d);
+  LlamaAccountMulticallExtension constant ACCOUNT_MULTICALL_EXTENSION =
+    LlamaAccountMulticallExtension(0x7c902930d282d73DbA30dBb0EB744D39ed8b6c18);
+
   uint8 public constant REWARDS_CLAIMER_ROLE = 2;
 
   address policyBot = 0xc33eDd04b044a14843B647f8f5A2fF85F55259A3;
