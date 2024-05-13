@@ -1,6 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
+import {IERC20} from "@openzeppelin/token/ERC20/IERC20.sol";
+
+/// @dev Data for sending ERC20 tokens to recipients.
+struct ERC20Data {
+  IERC20 token; // The ERC20 token to transfer.
+  address recipient; // The address to transfer the token to.
+  uint256 amount; // The amount of tokens to transfer.
+}
+
 /// @title Llama Account Logic Interface
 /// @author Llama (devsdosomething@llama.xyz)
 /// @notice This is the interface for Llama accounts which can be used to hold assets for a Llama instance.
@@ -39,4 +48,6 @@ interface ILlamaAccount {
   function execute(address target, bool withDelegatecall, uint256 value, bytes calldata callData)
     external
     returns (bytes memory);
+
+  function approveERC20(ERC20Data calldata erc20Data) external;
 }

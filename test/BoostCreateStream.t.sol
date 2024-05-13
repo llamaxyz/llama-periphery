@@ -5,7 +5,9 @@ import {Test, console2} from "forge-std/Test.sol";
 import {Vm} from "forge-std/Vm.sol";
 import {StdUtils} from "forge-std/StdUtils.sol";
 
-import {IProtocolRewards} from "test/mock/IProtocolRewards.sol";
+import {IERC20} from "@openzeppelin/token/ERC20/IERC20.sol";
+
+import {ISablierV2Batch} from "test/mock/ISablierV2Batch.sol";
 
 import {ILlamaAccount} from "src/interfaces/ILlamaAccount.sol";
 import {ILlamaStrategy} from "src/interfaces/ILlamaStrategy.sol";
@@ -14,15 +16,13 @@ import {ILlamaExecutor} from "src/interfaces/ILlamaExecutor.sol";
 import {ILlamaLens} from "src/interfaces/ILlamaLens.sol";
 import {ILlamaPolicy} from "src/interfaces/ILlamaPolicy.sol";
 import {ActionInfo} from "src/lib/Structs.sol";
-import {LlamaAccountMulticallExtension} from "src/account-multicall/LlamaAccountMulticallExtension.sol";
-import {LlamaAccountMulticallStorage} from "src/account-multicall/LlamaAccountMulticallStorage.sol";
 
 contract BoostCreateStreamTest is Test {
   string OPTIMISM_RPC_URL = vm.envString("OPTIMISM_RPC_URL"); // can't use constant here
 
-  event Withdraw(address indexed from, address indexed to, uint256 amount);
-
-  IProtocolRewards public constant REWARDS_CONTRACT = IProtocolRewards(0x7777777F279eba3d3Ad8F4E708545291A6fDBA8B);
+  ISablierV2Batch public constant SABLIER_V2_BATCH = ISablierV2Batch(0x8145429538dDBdDc4099B2bAfd24DD8958fa03b8);
+  address public constant SABLIER_V2_LOCKUP_LINEAR = 0x4b45090152a5731b5bc71b5baF71E60e05B33867;
+  IERC20 public constant OP_TOKEN = IERC20(0x4200000000000000000000000000000000000042);
 
   // Boost's Llama instance.
   ILlamaCore constant CORE = ILlamaCore(0x4C18b41AC340E18D7622310D193aa9cA2350A404);
@@ -33,15 +33,9 @@ contract BoostCreateStreamTest is Test {
   ILlamaLens constant LENS = ILlamaLens(0x1D74803D4939aFa3CC9fF1B8667bE4d119d925cB);
   address constant RELATIVE_QUANTITY_QUORUM_LOGIC = 0x81F7D26fD7d814bFcEF78239a32c0BA5282C98Dc;
 
-  // Account Multicall Module.
-  LlamaAccountMulticallStorage constant ACCOUNT_MULTICALL_STORAGE =
-    LlamaAccountMulticallStorage(0x3A44bE9AB1182d335E27DF7E66C0c302f2EeA91d);
-  LlamaAccountMulticallExtension constant ACCOUNT_MULTICALL_EXTENSION =
-    LlamaAccountMulticallExtension(0x7c902930d282d73DbA30dBb0EB744D39ed8b6c18);
+  uint8 public constant STREAM_CREATOR_ROLE = 5;
 
-  uint8 public constant REWARDS_CLAIMER_ROLE = 2;
-
-  address policyBot = 0xc33eDd04b044a14843B647f8f5A2fF85F55259A3;
+  address policyBot = 0x998c0d63AAeFaE1D44e3B735D9A0Dd00FCD87Dfa;
 
   // Othes constants.
   uint96 DEFAULT_ROLE_QTY = 1;
@@ -49,7 +43,7 @@ contract BoostCreateStreamTest is Test {
   uint64 DEFAULT_ROLE_EXPIRATION = type(uint64).max;
 
   function setUp() public virtual {
-    vm.createSelectFork(OPTIMISM_RPC_URL, 119_451_383);
+    vm.createSelectFork(OPTIMISM_RPC_URL, 120_022_066);
   }
 
   function mineBlock() internal {
@@ -58,7 +52,7 @@ contract BoostCreateStreamTest is Test {
   }
 }
 
-contract Multicall is DaylightTest {
+contract CreateStreams is BoostCreateStreamTest {
   function _setupClaimRewardsData() public pure returns (LlamaAccountMulticallExtension.TargetData[] memory targetData) {
     targetData = new LlamaAccountMulticallExtension.TargetData[](1);
     targetData[0] = LlamaAccountMulticallExtension.TargetData(
@@ -104,7 +98,8 @@ contract Multicall is DaylightTest {
     CORE.queueAction(actionInfo);
   }
 
-  function test_DaylightMulticall() public {
+  function test_CreateStreams() public {
+    ERC20Data memory approvalData = ERC20Data(OP_TOKEN, SABLIER_V2_BATCH, 250e18);
     ActionInfo memory actionInfo = _createAndQueueActionClaimRewards();
 
     uint256 balanceToClaim = 666_000_000_000_000;
