@@ -216,16 +216,13 @@ contract CreateStreams is BoostCreateStreamTest {
     );
     actionInfo = ActionInfo(actionId, policyBot, STREAM_CREATOR_ROLE, CORE_APPROVAL_STRATEGY, address(ACCOUNT), 0, data);
 
-    // Approve the action.
+    // Approve and queue the action.
     vm.prank(0xd892D6C6726dA5bdE36A605122C46dAc469a004F);
     CORE.castApproval(uint8(1), actionInfo, "");
     vm.prank(0xcD01A3acED67e266be21117376C7025B384Cd4d7);
     CORE.castApproval(uint8(1), actionInfo, "");
     vm.prank(0xd11dD72b7555205746fa537928D87DeC6bD26275);
     CORE.castApproval(uint8(1), actionInfo, "");
-
-    // Queue action.
-    CORE.queueAction(actionInfo);
   }
 
   function test_CreateStreams() public {
