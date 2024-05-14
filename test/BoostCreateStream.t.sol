@@ -36,7 +36,7 @@ contract BoostCreateStreamTest is Test {
   ILlamaLens constant LENS = ILlamaLens(0x1D74803D4939aFa3CC9fF1B8667bE4d119d925cB);
   address constant RELATIVE_QUANTITY_QUORUM_LOGIC = 0x81F7D26fD7d814bFcEF78239a32c0BA5282C98Dc;
 
-  uint8 public constant STREAM_CREATOR_ROLE = 5;
+  uint8 public constant STREAM_CREATOR_ROLE = 6;
 
   address policyBot = 0x998c0d63AAeFaE1D44e3B735D9A0Dd00FCD87Dfa;
 
@@ -46,7 +46,7 @@ contract BoostCreateStreamTest is Test {
   uint64 DEFAULT_ROLE_EXPIRATION = type(uint64).max;
 
   function setUp() public virtual {
-    vm.createSelectFork(OPTIMISM_RPC_URL, 120_022_812);
+    vm.createSelectFork(OPTIMISM_RPC_URL, 120_023_084);
   }
 
   function mineBlock() internal {
@@ -215,6 +215,14 @@ contract CreateStreams is BoostCreateStreamTest {
       STREAM_CREATOR_ROLE, CORE_APPROVAL_STRATEGY, address(ACCOUNT), 0, data, "# Create Sablier Linear Streams\n\n"
     );
     actionInfo = ActionInfo(actionId, policyBot, STREAM_CREATOR_ROLE, CORE_APPROVAL_STRATEGY, address(ACCOUNT), 0, data);
+
+    // Approve the action.
+    vm.prank(0xd892D6C6726dA5bdE36A605122C46dAc469a004F);
+    CORE.castApproval(uint8(1), actionInfo, "");
+    vm.prank(0xcD01A3acED67e266be21117376C7025B384Cd4d7);
+    CORE.castApproval(uint8(1), actionInfo, "");
+    vm.prank(0xd11dD72b7555205746fa537928D87DeC6bD26275);
+    CORE.castApproval(uint8(1), actionInfo, "");
 
     // Queue action.
     CORE.queueAction(actionInfo);
