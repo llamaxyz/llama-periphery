@@ -66,7 +66,7 @@ contract CreateStreams is BoostCreateStreamTest {
   function _setupStreamsData() public pure returns (CreateWithDurations[] memory streamsData) {
     streamsData = new CreateWithDurations[](15);
     streamsData[0] = CreateWithDurations(
-      address(EXECUTOR),
+      address(ACCOUNT),
       0x32F1406809E2C6967e41Ac44C8BDE46aB597DE3C,
       4_186_448_345_548_490_000_000,
       true,
@@ -75,7 +75,7 @@ contract CreateStreams is BoostCreateStreamTest {
       Broker(address(0), UD60x18(ud(0)))
     );
     streamsData[1] = CreateWithDurations(
-      address(EXECUTOR),
+      address(ACCOUNT),
       0xA2b430fFfA485250ddd20A81B609f507728B4ccF,
       1_823_539_872_459_710_000_000,
       true,
@@ -84,7 +84,7 @@ contract CreateStreams is BoostCreateStreamTest {
       Broker(address(0), UD60x18(ud(0)))
     );
     streamsData[2] = CreateWithDurations(
-      address(EXECUTOR),
+      address(ACCOUNT),
       0xbED050C15224a53a12815Fa79F2B1EF431887Eb2,
       1_006_915_677_288_420_000_000,
       true,
@@ -93,7 +93,7 @@ contract CreateStreams is BoostCreateStreamTest {
       Broker(address(0), UD60x18(ud(0)))
     );
     streamsData[3] = CreateWithDurations(
-      address(EXECUTOR),
+      address(ACCOUNT),
       0x512b55b00d744fC2eDB8474f223a7498c3e5a7ce,
       955_514_606_821_921_000_000,
       true,
@@ -102,7 +102,7 @@ contract CreateStreams is BoostCreateStreamTest {
       Broker(address(0), UD60x18(ud(0)))
     );
     streamsData[4] = CreateWithDurations(
-      address(EXECUTOR),
+      address(ACCOUNT),
       0x2D7F5212E93740a74b99D8a0799b4514061dbDA5,
       341_831_765_437_998_000_000,
       true,
@@ -111,7 +111,7 @@ contract CreateStreams is BoostCreateStreamTest {
       Broker(address(0), UD60x18(ud(0)))
     );
     streamsData[5] = CreateWithDurations(
-      address(EXECUTOR),
+      address(ACCOUNT),
       0xd47f59Ed8d4E889363A79a56fEDf64223609E29f,
       268_745_691_612_985_000_000,
       true,
@@ -120,7 +120,7 @@ contract CreateStreams is BoostCreateStreamTest {
       Broker(address(0), UD60x18(ud(0)))
     );
     streamsData[6] = CreateWithDurations(
-      address(EXECUTOR),
+      address(ACCOUNT),
       0xA6554D85b945Ce01505005bb07e56e6126259686,
       241_893_788_288_894_000_000,
       true,
@@ -129,7 +129,7 @@ contract CreateStreams is BoostCreateStreamTest {
       Broker(address(0), UD60x18(ud(0)))
     );
     streamsData[7] = CreateWithDurations(
-      address(EXECUTOR),
+      address(ACCOUNT),
       0xF2E82029a3B83341Ac1BA7EF71F6a93b43C75f77,
       228_912_259_795_094_000_000,
       true,
@@ -138,7 +138,7 @@ contract CreateStreams is BoostCreateStreamTest {
       Broker(address(0), UD60x18(ud(0)))
     );
     streamsData[8] = CreateWithDurations(
-      address(EXECUTOR),
+      address(ACCOUNT),
       0x4e038840C21F12f3c02Ca029376eF3b93D91CDd7,
       204_697_058_667_877_000_000,
       true,
@@ -147,7 +147,7 @@ contract CreateStreams is BoostCreateStreamTest {
       Broker(address(0), UD60x18(ud(0)))
     );
     streamsData[9] = CreateWithDurations(
-      address(EXECUTOR),
+      address(ACCOUNT),
       0xccD724B9af92A3A389150334556330EfD3f59487,
       169_308_628_738_403_000_000,
       true,
@@ -156,7 +156,7 @@ contract CreateStreams is BoostCreateStreamTest {
       Broker(address(0), UD60x18(ud(0)))
     );
     streamsData[10] = CreateWithDurations(
-      address(EXECUTOR),
+      address(ACCOUNT),
       0xd9906b2f00c0aD4DaA8bEf197718e77B8B47B773,
       158_965_842_620_510_000_000,
       true,
@@ -165,7 +165,7 @@ contract CreateStreams is BoostCreateStreamTest {
       Broker(address(0), UD60x18(ud(0)))
     );
     streamsData[11] = CreateWithDurations(
-      address(EXECUTOR),
+      address(ACCOUNT),
       0x544Ea3D7C3b93639d42D1482b3eaeb51E2335862,
       136_626_360_280_544_000_000,
       true,
@@ -174,7 +174,7 @@ contract CreateStreams is BoostCreateStreamTest {
       Broker(address(0), UD60x18(ud(0)))
     );
     streamsData[12] = CreateWithDurations(
-      address(EXECUTOR),
+      address(ACCOUNT),
       0xAe7F45e9CAc43AA06254fCce2F6077190834C37f,
       126_679_992_097_101_000_000,
       true,
@@ -183,7 +183,7 @@ contract CreateStreams is BoostCreateStreamTest {
       Broker(address(0), UD60x18(ud(0)))
     );
     streamsData[13] = CreateWithDurations(
-      address(EXECUTOR),
+      address(ACCOUNT),
       0xeBfE2bC632A46bbEb919D9C8FA8b505997FD4f1A,
       77_266_811_289_232_000_000,
       true,
@@ -192,7 +192,7 @@ contract CreateStreams is BoostCreateStreamTest {
       Broker(address(0), UD60x18(ud(0)))
     );
     streamsData[14] = CreateWithDurations(
-      address(EXECUTOR),
+      address(ACCOUNT),
       0x9477861457123C55cD34C608068c58af2BFF5DC8,
       72_653_299_052_811_800_000,
       true,
@@ -243,7 +243,7 @@ contract CreateStreams is BoostCreateStreamTest {
     assertEq(initialTreasuryOPBalance - OP_TOKEN.balanceOf(address(ACCOUNT)), 9999.9999999999908e18);
 
     assertEq(uint8(SABLIER_V2_LOCKUP_LINEAR.statusOf(initialStreamID)), uint8(Lockup.Status.STREAMING));
-    assertEq(SABLIER_V2_LOCKUP_LINEAR.getSender(initialStreamID), address(EXECUTOR));
+    assertEq(SABLIER_V2_LOCKUP_LINEAR.getSender(initialStreamID), address(ACCOUNT));
     assertEq(SABLIER_V2_LOCKUP_LINEAR.getRecipient(initialStreamID), 0x32F1406809E2C6967e41Ac44C8BDE46aB597DE3C);
     assertEq(SABLIER_V2_LOCKUP_LINEAR.getDepositedAmount(initialStreamID), 4_186_448_345_548_490_000_000);
     assertEq(address(SABLIER_V2_LOCKUP_LINEAR.getAsset(initialStreamID)), address(OP_TOKEN));
@@ -252,5 +252,37 @@ contract CreateStreams is BoostCreateStreamTest {
     assertEq(SABLIER_V2_LOCKUP_LINEAR.getRange(initialStreamID).start, block.timestamp);
     assertEq(SABLIER_V2_LOCKUP_LINEAR.getRange(initialStreamID).cliff, block.timestamp);
     assertEq(SABLIER_V2_LOCKUP_LINEAR.getRange(initialStreamID).end, block.timestamp + 60 days);
+  }
+
+  function test_CanClawbackUnvestedFunds() public {
+    ActionInfo memory actionInfo = _createAndQueueActionSetupStreams();
+    CORE.executeAction(actionInfo);
+
+    vm.warp(block.timestamp + 30 days);
+
+    uint256 initialTreasuryOPBalance = OP_TOKEN.balanceOf(address(ACCOUNT));
+    uint256 initialRecipientOPBalance = OP_TOKEN.balanceOf(address(0x32F1406809E2C6967e41Ac44C8BDE46aB597DE3C));
+
+    // Checking if Account clawback unvested funds
+    vm.prank(address(ACCOUNT));
+    SABLIER_V2_LOCKUP_LINEAR.cancel(initialStreamID);
+
+    uint256 refundedAmount = SABLIER_V2_LOCKUP_LINEAR.getRefundedAmount(initialStreamID);
+    assertEq(OP_TOKEN.balanceOf(address(ACCOUNT)), initialTreasuryOPBalance + refundedAmount);
+    assertEq(uint8(SABLIER_V2_LOCKUP_LINEAR.statusOf(initialStreamID)), uint8(Lockup.Status.CANCELED));
+
+    // Checking if recipient can withdraw vested funds from stream
+    uint256 withdrawableAmount = SABLIER_V2_LOCKUP_LINEAR.withdrawableAmountOf(initialStreamID);
+    vm.prank(0x32F1406809E2C6967e41Ac44C8BDE46aB597DE3C);
+    SABLIER_V2_LOCKUP_LINEAR.withdrawMax(initialStreamID, 0x32F1406809E2C6967e41Ac44C8BDE46aB597DE3C);
+
+    assertEq(
+      OP_TOKEN.balanceOf(address(0x32F1406809E2C6967e41Ac44C8BDE46aB597DE3C)),
+      initialRecipientOPBalance + withdrawableAmount
+    );
+    assertEq(uint8(SABLIER_V2_LOCKUP_LINEAR.statusOf(initialStreamID)), uint8(Lockup.Status.DEPLETED));
+
+    // Check that refunded amount + withdrawable amount = total deposited amount
+    assertEq(refundedAmount + withdrawableAmount, 4_186_448_345_548_490_000_000);
   }
 }
