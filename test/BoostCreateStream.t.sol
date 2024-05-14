@@ -8,7 +8,8 @@ import {StdUtils} from "forge-std/StdUtils.sol";
 import {IERC20} from "@openzeppelin/token/ERC20/IERC20.sol";
 
 import {ISablierV2Batch, CreateWithDurations, Durations, Broker} from "test/mock/ISablierV2Batch.sol";
-import {ISablierV2Lockup} from "test/mock/ISablierV2Lockup.sol";
+import {ISablierV2LockupLinear} from "@sablier/v2-core/src/interfaces/ISablierV2LockupLinear.sol";
+import {Lockup} from "@sablier/v2-core/src/types/DataTypes.sol";
 import {UD60x18, ud} from "@prb/math/src/UD60x18.sol";
 
 import {ILlamaAccount, ERC20Data} from "src/interfaces/ILlamaAccount.sol";
@@ -23,7 +24,8 @@ contract BoostCreateStreamTest is Test {
   string OPTIMISM_RPC_URL = vm.envString("OPTIMISM_RPC_URL"); // can't use constant here
 
   ISablierV2Batch public constant SABLIER_V2_BATCH = ISablierV2Batch(0x8145429538dDBdDc4099B2bAfd24DD8958fa03b8);
-  address public constant SABLIER_V2_LOCKUP_LINEAR = 0x4b45090152a5731b5bc71b5baF71E60e05B33867;
+  ISablierV2LockupLinear public constant SABLIER_V2_LOCKUP_LINEAR =
+    ISablierV2LockupLinear(0x4b45090152a5731b5bc71b5baF71E60e05B33867);
   IERC20 public constant OP_TOKEN = IERC20(0x4200000000000000000000000000000000000042);
   uint256 public constant DEPOSIT_AMOUNT = 10_000e18;
 
@@ -45,8 +47,13 @@ contract BoostCreateStreamTest is Test {
   uint96 EMPTY_ROLE_QTY = 0;
   uint64 DEFAULT_ROLE_EXPIRATION = type(uint64).max;
 
+  // Stream ID of the Sablier Linear Stream
+  uint256 initialStreamID;
+
   function setUp() public virtual {
     vm.createSelectFork(OPTIMISM_RPC_URL, 120_023_084);
+
+    initialStreamID = SABLIER_V2_LOCKUP_LINEAR.nextStreamId();
   }
 
   function mineBlock() internal {
@@ -198,7 +205,7 @@ contract CreateStreams is BoostCreateStreamTest {
   function _createAndQueueActionSetupStreams() public returns (ActionInfo memory actionInfo) {
     CreateWithDurations[] memory streamsData = _setupStreamsData();
     bytes memory sablierV2BatchData =
-      abi.encodeCall(SABLIER_V2_BATCH.createWithDurations, (SABLIER_V2_LOCKUP_LINEAR, OP_TOKEN, streamsData));
+      abi.encodeCall(SABLIER_V2_BATCH.createWithDurations, (address(SABLIER_V2_LOCKUP_LINEAR), OP_TOKEN, streamsData));
     console2.logBytes(sablierV2BatchData);
     bytes memory data = abi.encodeCall(ILlamaAccount.execute, (address(SABLIER_V2_BATCH), false, 0, sablierV2BatchData));
     console2.logBytes(data);
@@ -233,5 +240,17 @@ contract CreateStreams is BoostCreateStreamTest {
     CORE.executeAction(actionInfo);
 
     assertGe(OP_TOKEN.balanceOf(address(ACCOUNT)), initialTreasuryOPBalance - (DEPOSIT_AMOUNT));
+    assertEq(initialTreasuryOPBalance - OP_TOKEN.balanceOf(address(ACCOUNT)), 9999.9999999999908e18);
+
+    assertEq(uint8(SABLIER_V2_LOCKUP_LINEAR.statusOf(initialStreamID)), uint8(Lockup.Status.STREAMING));
+    assertEq(SABLIER_V2_LOCKUP_LINEAR.getSender(initialStreamID), address(EXECUTOR));
+    assertEq(SABLIER_V2_LOCKUP_LINEAR.getRecipient(initialStreamID), 0x32F1406809E2C6967e41Ac44C8BDE46aB597DE3C);
+    assertEq(SABLIER_V2_LOCKUP_LINEAR.getDepositedAmount(initialStreamID), 4_186_448_345_548_490_000_000);
+    assertEq(address(SABLIER_V2_LOCKUP_LINEAR.getAsset(initialStreamID)), address(OP_TOKEN));
+    assertTrue(SABLIER_V2_LOCKUP_LINEAR.isCancelable(initialStreamID));
+    assertTrue(SABLIER_V2_LOCKUP_LINEAR.isTransferable(initialStreamID));
+    assertEq(SABLIER_V2_LOCKUP_LINEAR.getRange(initialStreamID).start, block.timestamp);
+    assertEq(SABLIER_V2_LOCKUP_LINEAR.getRange(initialStreamID).cliff, block.timestamp);
+    assertEq(SABLIER_V2_LOCKUP_LINEAR.getRange(initialStreamID).end, block.timestamp + 60 days);
   }
 }

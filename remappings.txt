@@ -2,3 +2,4 @@
 @solmate=lib/solmate/src/
 @solady=lib/solady/src/
 @prb/math/=lib/prb-math/
+@sablier/v2-core/=lib/v2-core/
